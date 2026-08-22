@@ -1,0 +1,6 @@
+{
+  "name": "TaxShield Ledger",
+  "description": "Micro-LLC Expense, 5-Point Mileage, and Assisted Payroll Tax Planning & PRD Documentation Manager",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

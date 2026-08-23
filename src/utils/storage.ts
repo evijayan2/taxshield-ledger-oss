@@ -159,6 +159,8 @@ export function setStoredData<T>(key: string, val: T): void {
   }
 }
 
+export type AllAppData = ReturnType<typeof loadAllAppData>;
+
 export function loadAllAppData() {
   return {
     org: getStoredData<Organization>(STORAGE_KEYS.ORG, REAL_DEFAULT_ORG),

@@ -15,27 +15,35 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Organization, Employee } from '../types';
+import { PostgresSettingsPanel } from './PostgresSettingsPanel';
+import { AllAppData } from '../utils/storage';
 
 interface SettingsViewProps {
   org: Organization;
   employees: Employee[];
+  allData?: AllAppData;
   onSaveOrg: (org: Organization) => void;
   onSaveEmployees: (employees: Employee[]) => void;
   onResetAllData: () => void;
   onClearToFreshSlate?: () => void;
   onExportJSON: () => void;
   onImportJSON: (jsonData: any) => void;
+  onSyncToPostgres?: () => Promise<void>;
+  onPullFromPostgres?: () => Promise<void>;
 }
 
 export function SettingsView({
   org,
   employees,
+  allData,
   onSaveOrg,
   onSaveEmployees,
   onResetAllData,
   onClearToFreshSlate,
   onExportJSON,
-  onImportJSON
+  onImportJSON,
+  onSyncToPostgres,
+  onPullFromPostgres
 }: SettingsViewProps) {
   const [orgForm, setOrgForm] = useState<Organization>({ ...org });
   const [employeeList, setEmployeeList] = useState<Employee[]>([...employees]);
@@ -364,6 +372,15 @@ export function SettingsView({
         </div>
 
       </div>
+
+      {/* PostgreSQL / Vercel Postgres Cloud Database Panel */}
+      {allData && (
+        <PostgresSettingsPanel
+          currentData={allData}
+          onSyncToPostgres={onSyncToPostgres || (async () => {})}
+          onPullFromPostgres={onPullFromPostgres || (async () => {})}
+        />
+      )}
 
       {/* Data Management & Deployment Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

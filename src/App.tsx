@@ -8,14 +8,22 @@ import {
   FileText, 
   Settings,
   LogOut,
-  UserCheck
+  UserCheck,
+  Database
 } from 'lucide-react';
 import { 
   loadAllAppData, 
   saveAllAppData, 
   resetToSeedData,
-  clearToFreshRealApp
+  clearToFreshRealApp,
+  AllAppData
 } from './utils/storage';
+import { 
+  getPostgresStatus, 
+  fetchServerAppData, 
+  saveServerAppData, 
+  PostgresStatus 
+} from './utils/api';
 import { MileageAndTravelView } from './components/MileageAndTravelView';
 import { AssistedPayrollView } from './components/AssistedPayrollView';
 import { ComplianceFilingsView } from './components/ComplianceFilingsView';
@@ -38,14 +46,62 @@ import {
 type ActiveTab = 'MILEAGE' | 'PAYROLL' | 'COMPLIANCE' | 'SIMULATOR' | 'PRD' | 'SETTINGS';
 
 function MainAppContent() {
-  const [data, setData] = useState(() => loadAllAppData());
+  const [data, setData] = useState<AllAppData>(() => loadAllAppData());
   const [activeTab, setActiveTab] = useState<ActiveTab>('MILEAGE');
+  const [dbStatus, setDbStatus] = useState<PostgresStatus | null>(null);
   const { user, logOut } = useAuth();
 
-  // Sync to local storage whenever data changes
+  // Check PostgreSQL connection & pull server state on mount
+  useEffect(() => {
+    let mounted = true;
+    async function initCloudSync() {
+      try {
+        const status = await getPostgresStatus();
+        if (mounted) {
+          setDbStatus(status);
+        }
+        if (status.connected) {
+          const serverData = await fetchServerAppData();
+          if (serverData.source === 'postgres' && serverData.data && mounted) {
+            setData(serverData.data);
+            saveAllAppData(serverData.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Postgres connection check deferred:', err);
+      }
+    }
+    initCloudSync();
+    return () => { mounted = false; };
+  }, []);
+
+  // Sync to local storage and PostgreSQL backend whenever data changes
   useEffect(() => {
     saveAllAppData(data);
-  }, [data]);
+    if (dbStatus?.connected) {
+      saveServerAppData(data).catch(() => {});
+    }
+  }, [data, dbStatus?.connected]);
+
+  // Handlers for syncing with Postgres
+  const handleSyncToPostgres = async () => {
+    const res = await saveServerAppData(data);
+    if (!res.success) {
+      throw new Error(res.error || 'Failed to save data to Postgres');
+    }
+    const freshStatus = await getPostgresStatus();
+    setDbStatus(freshStatus);
+  };
+
+  const handlePullFromPostgres = async () => {
+    const res = await fetchServerAppData();
+    if (res.data) {
+      setData(res.data);
+      saveAllAppData(res.data);
+    }
+    const freshStatus = await getPostgresStatus();
+    setDbStatus(freshStatus);
+  };
 
   // Handlers for Mileage & Travel
   const handleAddMileage = (newTrip: Omit<MileageLog, 'id' | 'createdAt' | 'mileageAllowance' | 'calculatedMiles'>) => {
@@ -334,8 +390,22 @@ function MainAppContent() {
             </button>
           </nav>
 
-          {/* Right Controls: Theme Switcher & Auth status */}
+          {/* Right Controls: DB status, Theme Switcher & Auth status */}
           <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('SETTINGS')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition cursor-pointer ${
+                dbStatus?.connected
+                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-750'
+              }`}
+              title={dbStatus?.connected ? `Connected to ${dbStatus.provider || 'PostgreSQL'} (${dbStatus.host})` : 'PostgreSQL ready (Click to configure in Settings)'}
+            >
+              <Database className={`w-3.5 h-3.5 ${dbStatus?.connected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+              <span>{dbStatus?.connected ? (dbStatus.provider || 'Vercel Postgres') : 'PostgreSQL'}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${dbStatus?.connected ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}`} />
+            </button>
+
             <ThemeSwitcher />
             
             {user && (
@@ -447,12 +517,15 @@ function MainAppContent() {
           <SettingsView
             org={data.org}
             employees={data.employees}
+            allData={data}
             onSaveOrg={handleSaveOrg}
             onSaveEmployees={handleSaveEmployees}
             onResetAllData={handleResetAll}
             onClearToFreshSlate={handleClearToFresh}
             onExportJSON={handleExportJSON}
             onImportJSON={handleImportJSON}
+            onSyncToPostgres={handleSyncToPostgres}
+            onPullFromPostgres={handlePullFromPostgres}
           />
         )}
       </main>

@@ -10,6 +10,7 @@ export interface PostgresStatus {
   tableCounts?: Record<string, number>;
   help?: string;
   error?: string;
+  isLocal?: boolean;
 }
 
 export async function getPostgresStatus(): Promise<PostgresStatus> {
@@ -32,15 +33,16 @@ export async function getPostgresStatus(): Promise<PostgresStatus> {
   }
 }
 
-export async function fetchServerAppData(): Promise<{ source: 'postgres' | 'local_storage_fallback' | 'error'; data: AllAppData | null }> {
+export async function fetchServerAppData(): Promise<{ source: 'postgres' | 'error'; error?: string; data: AllAppData | null }> {
   try {
     const res = await fetch('/api/data');
     if (!res.ok) {
-      return { source: 'error', data: null };
+      const errJson = await res.json().catch(() => ({ error: res.statusText }));
+      return { source: 'error', error: errJson.error || res.statusText, data: null };
     }
     return await res.json();
-  } catch (err) {
-    return { source: 'local_storage_fallback', data: null };
+  } catch (err: any) {
+    return { source: 'error', error: `Network error connecting to backend: ${err.message}`, data: null };
   }
 }
 

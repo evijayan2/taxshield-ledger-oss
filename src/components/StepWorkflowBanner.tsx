@@ -76,7 +76,7 @@ export function StepWorkflowBanner({
     {
       id: 'STEP_PAYROLL',
       stepNumber: 4,
-      title: 'Assisted Payroll & Zelle',
+      title: 'Assisted Payroll & ACH',
       shortDesc: 'PA 3.07% & Stubs',
       icon: Calculator,
       isComplete: payrollRuns.length > 0,

@@ -83,7 +83,7 @@ export const PRD_DOCUMENT_DATA = {
           name: "Module 2: Zero-Cost Assisted Payroll & Gross-to-Net Engine",
           features: [
             "Statutory Calculation Accuracy: IRS Pub 15-T (Federal FIT), FICA (6.2% SS + 1.45% Med), PA State SIT (3.07%), PA Local EIT (higher of home vs work PSD), and PA LST ($52/yr).",
-            "Zelle & Bank Transfer Disbursement Matrix: Generates one-click payment sheets with exact net wages, recipient handles, and confirmation reference logging.",
+            "ACH Direct Deposit Bank Transfer Matrix: Generates one-click payment sheets with exact net wages, recipient bank routing/account details, and ACH trace reference logging.",
             "Itemized Pay Stubs: Clear display of gross earnings, statutory tax withholdings, non-taxable accountable plan travel reimbursements, and YTD running totals."
           ]
         },

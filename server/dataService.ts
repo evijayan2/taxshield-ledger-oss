@@ -12,35 +12,57 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
       return snapRes.rows[0].data;
     }
 
-    // Otherwise reconstruct from tables
-    const orgRes = await client.query('SELECT * FROM organizations LIMIT 1');
-    if (orgRes.rows.length === 0) return null;
-
-    const row = orgRes.rows[0];
-    const org = {
-      id: row.id,
-      name: row.name,
-      ein: row.ein,
-      stateTaxId: row.state_tax_id,
-      address: row.address,
-      city: row.city,
-      state: row.state,
-      zip: row.zip,
-      ownerName: row.owner_name,
-      ownerEmail: row.owner_email,
-      ownerTaxBracket: parseFloat(row.owner_tax_bracket),
-      filingFrequencyPA: row.filing_frequency_pa,
-      standardMileageRate: parseFloat(row.standard_mileage_rate),
-    };
+    // Reconstruct company from companies table
+    const compRes = await client.query('SELECT * FROM companies LIMIT 1');
+    let org: any = null;
+    if (compRes.rows.length > 0) {
+      const cRow = compRes.rows[0];
+      org = {
+        id: cRow.id,
+        name: cRow.name,
+        ein: cRow.ein,
+        stateTaxId: cRow.stateTaxId,
+        address: cRow.address,
+        city: cRow.city,
+        state: cRow.state,
+        zip: cRow.zip,
+        ownerName: cRow.ownerName,
+        ownerEmail: cRow.ownerEmail,
+        ownerTaxBracket: parseFloat(cRow.ownerTaxBracket),
+        filingFrequencyPA: cRow.filingFrequencyPa,
+        standardMileageRate: cRow.standardMileageRate ? parseFloat(cRow.standardMileageRate) : 0.67,
+      };
+    } else {
+      org = {
+        id: 'comp_main',
+        name: '',
+        ein: '',
+        stateTaxId: '',
+        address: '',
+        city: '',
+        state: 'PA',
+        zip: '',
+        ownerName: '',
+        ownerEmail: '',
+        ownerTaxBracket: 24,
+        filingFrequencyPA: 'MONTHLY',
+        standardMileageRate: 0.67,
+      };
+    }
 
     const empRes = await client.query('SELECT * FROM employees ORDER BY first_name ASC');
     const employees = empRes.rows.map(e => ({
       id: e.id,
       firstName: e.first_name,
       lastName: e.last_name,
+      age: e.age ? parseInt(e.age, 10) : undefined,
       email: e.email,
       phone: e.phone,
       ssnLastFour: e.ssn_last_four,
+      streetAddress: e.street_address || undefined,
+      city: e.city || undefined,
+      state: e.state || undefined,
+      zip: e.zip || undefined,
       employmentType: e.employment_type,
       payRate: parseFloat(e.pay_rate),
       payFrequency: e.pay_frequency,
@@ -56,9 +78,11 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
       paWorkPsdCode: e.pa_work_psd_code,
       paWorkEitRate: parseFloat(e.pa_work_eit_rate),
       paLstAnnual: parseFloat(e.pa_lst_annual),
-      paLstExempt: e.pa_lst_exempt,
-      zelleHandle: e.zelle_handle,
-      bankAccountMasked: e.bank_account_masked,
+      bankName: e.bank_name || undefined,
+      accountType: e.account_type || 'CHECKING',
+      routingNumber: e.routing_number || undefined,
+      accountNumber: e.account_number || undefined,
+      bankAccountMasked: e.bank_account_masked || undefined,
       isActive: e.is_active,
     }));
 
@@ -146,15 +170,15 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
       employerPaUc: parseFloat(s.employer_pa_uc),
       totalEmployerTaxes: parseFloat(s.total_employer_taxes),
       totalCompanyCost: parseFloat(s.total_company_cost),
-      disbursementMethod: s.disbursement_method,
+      disbursementMethod: s.disbursement_method || 'ACH',
       disbursementStatus: s.disbursement_status,
-      zelleConfirmationRef: s.zelle_confirmation_ref,
+      achTraceRef: s.ach_trace_ref || s.zelle_confirmation_ref || undefined,
       paidAt: s.paid_at,
       createdAt: s.created_at,
     }));
 
-    const compRes = await client.query('SELECT * FROM compliance_tasks ORDER BY due_date ASC');
-    const complianceTasks = compRes.rows.map(c => ({
+    const taskRes = await client.query('SELECT * FROM compliance_tasks ORDER BY due_date ASC');
+    const complianceTasks = taskRes.rows.map(c => ({
       id: c.id,
       jurisdiction: c.jurisdiction,
       formIdentifier: c.form_identifier,
@@ -186,7 +210,66 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
       createdAt: g.created_at,
     }));
 
+    let timesheets: any[] = [];
+    try {
+      const tsRes = await client.query('SELECT * FROM timesheets ORDER BY work_date DESC');
+      timesheets = tsRes.rows.map(t => ({
+        id: t.id,
+        employeeId: t.employee_id,
+        workDate: t.work_date,
+        startTime: t.start_time,
+        endTime: t.end_time,
+        unpaidBreakMinutes: parseInt(t.unpaid_break_minutes || '0', 10),
+        regularHours: parseFloat(t.regular_hours),
+        overtimeHours: parseFloat(t.overtime_hours),
+        notes: t.notes,
+        status: t.status,
+        linkedPayStubId: t.linked_pay_stub_id,
+        createdAt: t.created_at,
+      }));
+    } catch {}
+
+    let auditLogs: any[] = [];
+    try {
+      const auditRes = await client.query('SELECT * FROM audit_log_entries ORDER BY timestamp DESC');
+      auditLogs = auditRes.rows.map(a => ({
+        id: a.id,
+        companyId: a.companyId,
+        entityType: a.entityType,
+        entityId: a.entityId,
+        action: a.action,
+        actorId: a.actorId,
+        previousState: a.previousState,
+        newState: a.newState,
+        reason: a.reason,
+        timestamp: a.timestamp,
+      }));
+    } catch {}
+
+    let taxYears: any[] = [];
+    try {
+      const tyRes = await client.query('SELECT * FROM tax_years ORDER BY year DESC');
+      taxYears = tyRes.rows.map(t => ({
+        id: t.id,
+        companyId: t.companyId,
+        year: parseInt(t.year, 10),
+        status: t.status,
+        createdAt: t.createdAt,
+      }));
+    } catch {}
+
+    if (taxYears.length === 0) {
+      taxYears = [{
+        id: 'ty_2026',
+        companyId: org?.id || 'comp_main',
+        year: 2026,
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString(),
+      }];
+    }
+
     return {
+      company: org,
       org,
       employees,
       mileageLogs,
@@ -195,6 +278,9 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
       payStubs,
       complianceTasks,
       generalExpenses,
+      timesheets,
+      auditLogs,
+      taxYears,
     };
   } catch (err) {
     console.error('Error loading data from PostgreSQL:', err);
@@ -222,41 +308,45 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
       [JSON.stringify(data)]
     );
 
-    // 2. Sync organization table
-    if (data.org) {
+    // 2. Sync companies & organizations tables
+    const companyData = data.company || data.org;
+    if (companyData) {
+      const compId = companyData.id || 'comp_main';
+
+      // Save to companies table
       await client.query(
-        `INSERT INTO organizations (
-          id, name, ein, state_tax_id, address, city, state, zip, 
-          owner_name, owner_email, owner_tax_bracket, filing_frequency_pa, standard_mileage_rate
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `INSERT INTO companies (
+          id, name, ein, "stateTaxId", address, city, state, zip, 
+          "ownerName", "ownerEmail", "ownerTaxBracket", "filingFrequencyPa", "standardMileageRate", "updatedAt"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
         ON CONFLICT (id) DO UPDATE SET
           name = EXCLUDED.name,
           ein = EXCLUDED.ein,
-          state_tax_id = EXCLUDED.state_tax_id,
+          "stateTaxId" = EXCLUDED."stateTaxId",
           address = EXCLUDED.address,
           city = EXCLUDED.city,
           state = EXCLUDED.state,
           zip = EXCLUDED.zip,
-          owner_name = EXCLUDED.owner_name,
-          owner_email = EXCLUDED.owner_email,
-          owner_tax_bracket = EXCLUDED.owner_tax_bracket,
-          filing_frequency_pa = EXCLUDED.filing_frequency_pa,
-          standard_mileage_rate = EXCLUDED.standard_mileage_rate,
-          updated_at = CURRENT_TIMESTAMP`,
+          "ownerName" = EXCLUDED."ownerName",
+          "ownerEmail" = EXCLUDED."ownerEmail",
+          "ownerTaxBracket" = EXCLUDED."ownerTaxBracket",
+          "filingFrequencyPa" = EXCLUDED."filingFrequencyPa",
+          "standardMileageRate" = EXCLUDED."standardMileageRate",
+          "updatedAt" = CURRENT_TIMESTAMP`,
         [
-          data.org.id || 'org_main',
-          data.org.name,
-          data.org.ein,
-          data.org.stateTaxId,
-          data.org.address,
-          data.org.city,
-          data.org.state,
-          data.org.zip,
-          data.org.ownerName,
-          data.org.ownerEmail,
-          data.org.ownerTaxBracket || 24,
-          data.org.filingFrequencyPA || 'MONTHLY',
-          data.org.standardMileageRate || 0.67,
+          compId,
+          companyData.name || 'Unnamed LLC',
+          companyData.ein || '00-0000000',
+          companyData.stateTaxId || 'PA-00000000',
+          companyData.address || 'Address Pending',
+          companyData.city || 'Philadelphia',
+          companyData.state || 'PA',
+          companyData.zip || '19102',
+          companyData.ownerName || 'Managing Member',
+          companyData.ownerEmail || 'owner@micro-llc.tax',
+          companyData.ownerTaxBracket || 24,
+          companyData.filingFrequencyPA || companyData.filingFrequencyPa || 'MONTHLY',
+          companyData.standardMileageRate || 0.67,
         ]
       );
     }
@@ -267,20 +357,23 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
       for (const emp of data.employees) {
         await client.query(
           `INSERT INTO employees (
-            id, first_name, last_name, email, phone, ssn_last_four, 
+            id, first_name, last_name, age, email, phone, ssn_last_four, 
+            street_address, city, state, zip,
             employment_type, pay_rate, pay_frequency, w4_filing_status, 
             w4_multiple_jobs, w4_dependent_credit, w4_other_income, 
             w4_deductions, w4_extra_withholding, pa_psd_code, pa_psd_name, 
             pa_resident_eit_rate, pa_work_psd_code, pa_work_eit_rate, 
-            pa_lst_annual, pa_lst_exempt, zelle_handle, bank_account_masked, is_active
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`,
+            pa_lst_annual, pa_lst_exempt, bank_name, account_type, routing_number, account_number, bank_account_masked, is_active
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)`,
           [
-            emp.id, emp.firstName, emp.lastName, emp.email, emp.phone, emp.ssnLastFour,
+            emp.id, emp.firstName, emp.lastName, emp.age ?? null, emp.email, emp.phone, emp.ssnLastFour,
+            emp.streetAddress || null, emp.city || null, emp.state || null, emp.zip || null,
             emp.employmentType, emp.payRate, emp.payFrequency, emp.w4FilingStatus,
             emp.w4MultipleJobs || false, emp.w4DependentCredit || 0, emp.w4OtherIncome || 0,
             emp.w4Deductions || 0, emp.w4ExtraWithholding || 0, emp.paPsdCode, emp.paPsdName,
             emp.paResidentEitRate, emp.paWorkPsdCode, emp.paWorkEitRate,
-            emp.paLstAnnual || 52, emp.paLstExempt || false, emp.zelleHandle,
+            emp.paLstAnnual || 52, emp.paLstExempt || false, emp.bankName || null,
+            emp.accountType || 'CHECKING', emp.routingNumber || null, emp.accountNumber || null,
             emp.bankAccountMasked || null, emp.isActive ?? true
           ]
         );
@@ -359,7 +452,7 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
             travel_expenses_reimbursement, total_reimbursements, net_pay,
             employer_social_security, employer_medicare, employer_pa_uc,
             total_employer_taxes, total_company_cost, disbursement_method,
-            disbursement_status, zelle_confirmation_ref
+            disbursement_status, ach_trace_ref
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)`,
           [
             s.id, s.payrollRunId, s.employeeId, s.periodStart, s.periodEnd, s.payDate,
@@ -368,8 +461,8 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
             s.paLocalEit, s.paLst, s.totalEmployeeTaxes, s.mileageReimbursement,
             s.travelExpensesReimbursement, s.totalReimbursements, s.netPay,
             s.employerSocialSecurity, s.employerMedicare, s.employerPaUc,
-            s.totalEmployerTaxes, s.totalCompanyCost, s.disbursementMethod,
-            s.disbursementStatus, s.zelleConfirmationRef || null
+            s.totalEmployerTaxes, s.totalCompanyCost, s.disbursementMethod || 'ACH',
+            s.disbursementStatus, s.achTraceRef || (s as any).zelleConfirmationRef || null
           ]
         );
       }
@@ -387,11 +480,102 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
           [
             c.id, c.jurisdiction, c.formIdentifier, c.title, c.taxPeriodLabel,
-            c.dueDate, c.filingMethod, c.portalUrl, c.status, c.amountDue,
-            JSON.stringify(c.boxValues), c.confirmationNumber || null,
+            c.dueDate, c.filingMethod || null, c.portalUrl || null, c.status || 'PENDING', c.amountDue ?? 0,
+            JSON.stringify(c.boxValues || {}), c.confirmationNumber || null,
             c.filedDate || null, c.notes || null
           ]
         );
+      }
+    }
+
+    // 9. Sync General Expenses
+    if (Array.isArray(data.generalExpenses)) {
+      await client.query('DELETE FROM general_expenses');
+      for (const g of data.generalExpenses) {
+        await client.query(
+          `INSERT INTO general_expenses (
+            id, expense_date, category, payee, description, amount,
+            schedule_c_line, is_tax_deductible, notes
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            g.id, g.expenseDate, g.category, g.payee, g.description, g.amount,
+            g.scheduleCLine || null, g.isTaxDeductible ?? true, g.notes || null
+          ]
+        );
+      }
+    }
+
+    // 10. Sync Timesheets
+    if (Array.isArray(data.timesheets)) {
+      try {
+        await client.query('DELETE FROM timesheets');
+        for (const t of data.timesheets) {
+          await client.query(
+            `INSERT INTO timesheets (
+              id, employee_id, work_date, start_time, end_time, unpaid_break_minutes,
+              regular_hours, overtime_hours, notes, status, linked_pay_stub_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            [
+              t.id, t.employeeId, t.workDate, t.startTime, t.endTime, t.unpaidBreakMinutes || 0,
+              t.regularHours, t.overtimeHours, t.notes || null, t.status || 'SUBMITTED', t.linkedPayStubId || null
+            ]
+          );
+        }
+      } catch (tsErr) {
+        console.warn('Warning: Could not sync timesheets table:', tsErr);
+      }
+    }
+
+    // 11. Sync Audit Logs
+    if (Array.isArray(data.auditLogs)) {
+      try {
+        await client.query('DELETE FROM audit_log_entries');
+        for (const log of data.auditLogs) {
+          await client.query(
+            `INSERT INTO audit_log_entries (
+              id, "companyId", "entityType", "entityId", action, "actorId",
+              "previousState", "newState", reason, timestamp
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [
+              log.id,
+              log.companyId || data.org?.id || 'org_main',
+              log.entityType,
+              log.entityId,
+              log.action,
+              log.actorId,
+              log.previousState ? JSON.stringify(log.previousState) : null,
+              log.newState ? JSON.stringify(log.newState) : null,
+              log.reason || null,
+              log.timestamp || new Date().toISOString()
+            ]
+          );
+        }
+      } catch (auditErr) {
+        console.warn('Warning: Could not sync audit_log_entries table:', auditErr);
+      }
+    }
+
+    // 12. Sync Tax Years
+    if (Array.isArray(data.taxYears)) {
+      try {
+        for (const ty of data.taxYears) {
+          await client.query(
+            `INSERT INTO tax_years (id, "companyId", year, status, "createdAt")
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (id) DO UPDATE SET
+               status = EXCLUDED.status,
+               year = EXCLUDED.year`,
+            [
+              ty.id || `ty_${ty.year}`,
+              ty.companyId || companyData?.id || 'comp_main',
+              ty.year,
+              ty.status || 'ACTIVE',
+              ty.createdAt || new Date().toISOString(),
+            ]
+          );
+        }
+      } catch (tyErr) {
+        console.warn('Warning: Could not sync tax_years table:', tyErr);
       }
     }
 

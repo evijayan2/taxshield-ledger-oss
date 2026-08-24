@@ -1,6 +1,7 @@
 import React from 'react';
 import { 
   Printer, 
+  Download,
   Building2, 
   User, 
   FileText, 
@@ -8,6 +9,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { PayStub, Employee, Organization } from '../types';
+import { printPayStubPdf, savePayStubPdf } from '../utils/payStubPdfBuilder';
 
 interface PayStubModalProps {
   stub: PayStub;
@@ -17,13 +19,17 @@ interface PayStubModalProps {
 }
 
 export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps) {
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-6 overflow-y-auto max-h-[95vh] text-slate-800 dark:text-slate-200">
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Dark backdrop blur */}
+      <div
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-300 print:hidden"
+        onClick={onClose}
+      />
+
+      {/* Slide-over Drawer Panel */}
+      <div className="fixed inset-y-0 right-0 max-w-3xl w-full flex">
+        <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-6 text-slate-800 dark:text-slate-200">
         
         {/* Modal Top Actions */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 print:hidden">
@@ -35,18 +41,28 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               id="print-stub-btn"
-              onClick={handlePrint}
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              onClick={() => printPayStubPdf(stub, employee, org)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Generate PDF pay stub and open print dialog"
             >
-              <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Print / Save PDF</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print PDF</span>
+            </button>
+            <button
+              id="save-stub-btn"
+              onClick={() => savePayStubPdf(stub, employee, org)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Download official PDF pay stub file"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Save PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold cursor-pointer"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold cursor-pointer ml-2"
             >
               ✕
             </button>
@@ -83,12 +99,24 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
               <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Employee Information</span>
               <p className="text-sm font-bold text-slate-900 dark:text-white print:text-black">{employee.firstName} {employee.lastName}</p>
               <p className="text-slate-500 dark:text-slate-400 text-[11px]">SSN: •••-••-{employee.ssnLastFour} | Type: {employee.employmentType.replace('_', ' ')}</p>
-              <p className="text-slate-500 dark:text-slate-400 text-[11px]">Disbursement: {stub.disbursementMethod} ({employee.zelleHandle})</p>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+                Disbursement: Direct Deposit ({stub.disbursementMethod || 'ACH'}) — {employee.bankName ? `${employee.bankName} (${employee.accountType === 'SAVINGS' ? 'Savings' : 'Checking'} ${employee.bankAccountMasked || ''})` : 'ACH Account'}
+              </p>
             </div>
 
             <div className="space-y-1 sm:text-right">
               <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Tax Classification</span>
               <p className="text-slate-800 dark:text-slate-200 text-xs">W-4 Status: {employee.w4FilingStatus.replace(/_/g, ' ')}</p>
+              {employee.relationshipToOwner && employee.relationshipToOwner !== 'NONE' && (
+                <p className="text-emerald-700 dark:text-emerald-400 font-semibold text-[11px]">
+                  Owner Relation: {
+                    employee.relationshipToOwner === 'CHILD_UNDER_18' ? 'Child (Under 18) • IRC §3121(b)(3) FICA Exempt' :
+                    employee.relationshipToOwner === 'CHILD_18_TO_20' ? 'Child (18–20) • PA UC Exempt' :
+                    employee.relationshipToOwner === 'SPOUSE' ? 'Spouse • PA UC Exempt' :
+                    'Parent • PA UC Exempt'
+                  }
+                </p>
+              )}
               <p className="text-slate-500 dark:text-slate-400 text-[11px]">PA Resident PSD: <strong className="text-slate-800 dark:text-slate-200">{employee.paPsdCode}</strong> ({employee.paPsdName})</p>
               <p className="text-slate-500 dark:text-slate-400 text-[11px]">PA EIT Resident: {(employee.paResidentEitRate * 100).toFixed(2)}% | Work PSD: {(employee.paWorkEitRate * 100).toFixed(2)}%</p>
             </div>
@@ -191,15 +219,15 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
           {/* Net Take-Home Pay Summary Banner */}
           <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">Net Take-Home Pay (Disbursed via Zelle)</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">Net Take-Home Pay (Disbursed via ACH Direct Deposit)</span>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
                 Formula: (Gross ${stub.grossEarnings.toFixed(2)} - Taxes ${stub.totalEmployeeTaxes.toFixed(2)}) + Reimbursements ${stub.totalReimbursements.toFixed(2)}
               </p>
             </div>
             <div className="text-right">
               <span className="text-2xl font-black text-emerald-700 dark:text-emerald-400 font-mono tracking-tight">${stub.netPay.toFixed(2)}</span>
-              {stub.zelleConfirmationRef && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">Ref: {stub.zelleConfirmationRef}</p>
+              {stub.achTraceRef && (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">ACH Trace Ref: {stub.achTraceRef}</p>
               )}
             </div>
           </div>
@@ -222,5 +250,6 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

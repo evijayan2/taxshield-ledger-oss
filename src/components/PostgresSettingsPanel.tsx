@@ -108,10 +108,10 @@ export function PostgresSettingsPanel({
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              Vercel Postgres (PostgreSQL) Database
+              PostgreSQL Relational Database
             </h3>
             <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-              Relational database persistence for multi-device synchronization & cloud durability
+              Relational database persistence for local development and multi-device cloud synchronization
             </p>
           </div>
         </div>
@@ -133,10 +133,10 @@ export function PostgresSettingsPanel({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-emerald-800 dark:text-emerald-300">
-                Connected to {status.provider || 'Vercel Postgres'}
+                Connected to {status.provider || 'PostgreSQL'}
               </span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300">
-                SSL Active
+                {status.isLocal ? 'Local Mode' : 'SSL Active'}
               </span>
             </div>
             <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">
@@ -149,10 +149,10 @@ export function PostgresSettingsPanel({
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <span className="font-bold text-amber-800 dark:text-amber-300">
-              {status?.configured ? 'PostgreSQL Connection Notice' : 'PostgreSQL Database Ready (Local Fallback Active)'}
+              {status?.configured ? 'PostgreSQL Connection Notice' : 'PostgreSQL Development Notice'}
             </span>
             <p className="text-[11px] text-amber-700 dark:text-amber-400">
-              {status?.message || 'App is currently running in zero-latency persistent browser mode. Connect Vercel Postgres by providing POSTGRES_URL.'}
+              {status?.message || 'Local PostgreSQL or cloud POSTGRES_URL connection notice.'}
             </p>
           </div>
         </div>
@@ -233,22 +233,16 @@ export function PostgresSettingsPanel({
         </div>
       )}
 
-      {/* Vercel Postgres Environment Variable Instructions */}
+      {/* PostgreSQL Environment Variable Instructions */}
       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 font-mono text-[11px]">
         <div className="text-slate-500 dark:text-slate-400 font-sans font-bold flex items-center gap-1 text-[11px]">
-          <span>How to attach Vercel Postgres in production:</span>
+          <span>PostgreSQL Connection Configuration:</span>
         </div>
         <p className="text-slate-600 dark:text-slate-400">
-          1. In your <strong>Vercel Dashboard</strong>, go to <strong>Storage</strong> &gt; <strong>Create Database</strong> &gt; <strong>Postgres (Neon)</strong>.
+          <strong>Local Development:</strong> Connects automatically to <code>postgres://postgres:postgres@localhost:5432/taxledger</code> or customize via <code>DATABASE_URL</code>.
         </p>
         <p className="text-slate-600 dark:text-slate-400">
-          2. Connect the database to your project. Vercel automatically exposes:
-        </p>
-        <p className="text-blue-600 dark:text-blue-400 font-bold">
-          POSTGRES_URL="postgres://default:***@ep-***-pooler.us-east-1.postgres.vercel-storage.com/verceldb?sslmode=require"
-        </p>
-        <p className="text-slate-500 dark:text-slate-400 text-[10px]">
-          The backend automatically runs schema migrations and persists all 8 tables seamlessly.
+          <strong>Vercel Production:</strong> Attach Vercel Postgres (Neon) in Storage tab to auto-export <code>POSTGRES_URL</code>.
         </p>
       </div>
 

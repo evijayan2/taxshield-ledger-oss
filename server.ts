@@ -6,8 +6,15 @@ import { createServer as createViteServer } from 'vite';
 import { getPool, initPostgresTables, getPostgresConnectionString } from './server/db.js';
 import { loadAllDataFromPostgres, saveAllDataToPostgres } from './server/dataService.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const getCurrentDirname = () => {
+  if (typeof __dirname !== 'undefined' && __dirname) return __dirname;
+  try {
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    return process.cwd();
+  }
+};
+const currentDir = getCurrentDirname();
 
 async function startServer() {
   const app = express();
@@ -46,6 +53,11 @@ async function startServer() {
         // ignore parse error
       }
 
+      const isLocalHost = safeHost === 'localhost' || safeHost === '127.0.0.1';
+      const provider = isLocalHost
+        ? 'Local PostgreSQL'
+        : (safeHost.includes('vercel') ? 'Vercel Postgres' : (safeHost.includes('neon') ? 'Neon Postgres' : 'PostgreSQL Database'));
+
       return res.json({
         configured: true,
         connected: initResult.success,
@@ -53,7 +65,8 @@ async function startServer() {
         tableCounts: initResult.tableCounts,
         host: safeHost,
         database: safeDb,
-        provider: safeHost.includes('vercel') ? 'Vercel Postgres' : (safeHost.includes('neon') ? 'Neon Postgres' : 'PostgreSQL Database')
+        provider,
+        isLocal: isLocalHost
       });
     } catch (err: any) {
       return res.json({
@@ -79,17 +92,19 @@ async function startServer() {
   app.get('/api/data', async (req, res) => {
     const connStr = getPostgresConnectionString();
     if (!connStr) {
-      return res.json({ source: 'local_storage_fallback', data: null });
+      return res.status(503).json({ source: 'error', error: 'PostgreSQL connection is not configured in environment variables (POSTGRES_URL / DATABASE_URL).', data: null });
     }
 
     try {
-      // Ensure tables exist
-      await initPostgresTables();
+      const initResult = await initPostgresTables();
+      if (!initResult.success) {
+        return res.status(503).json({ source: 'error', error: `PostgreSQL connection failed: ${initResult.message}`, data: null });
+      }
       const data = await loadAllDataFromPostgres();
       return res.json({ source: 'postgres', data });
     } catch (err: any) {
       console.error('Error in GET /api/data:', err);
-      return res.status(500).json({ source: 'error', error: err.message, data: null });
+      return res.status(503).json({ source: 'error', error: err.message, data: null });
     }
   });
 
@@ -97,16 +112,67 @@ async function startServer() {
   app.post('/api/data', async (req, res) => {
     const connStr = getPostgresConnectionString();
     if (!connStr) {
-      return res.json({ success: false, message: 'Postgres not configured in environment' });
+      return res.status(503).json({ success: false, error: 'PostgreSQL connection is not configured in environment variables.' });
     }
 
     try {
-      await initPostgresTables();
+      const initResult = await initPostgresTables();
+      if (!initResult.success) {
+        return res.status(503).json({ success: false, error: `PostgreSQL connection failed: ${initResult.message}` });
+      }
       const result = await saveAllDataToPostgres(req.body);
       return res.json(result);
     } catch (err: any) {
       console.error('Error in POST /api/data:', err);
-      return res.status(500).json({ success: false, error: err.message });
+      return res.status(503).json({ success: false, error: err.message });
+    }
+  });
+
+  // Mercury Bank API Integration Routes
+  app.post('/api/mercury/test-connection', async (req, res) => {
+    try {
+      const { apiKey, environment } = req.body;
+      const { fetchMercuryAccounts } = await import('./server/services/mercuryService.js');
+      const accounts = await fetchMercuryAccounts(apiKey, environment || 'SANDBOX');
+      return res.json({ success: true, accounts });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/mercury/disburse-tax', async (req, res) => {
+    try {
+      const { apiKey, environment, accountId, task, company } = req.body;
+
+      if (task && (task.status === 'FILED' || task.confirmationNumber)) {
+        return res.status(400).json({
+          success: false,
+          error: `Tax return (${task.formIdentifier || task.title}) has already been marked as paid and filed with confirmation ref ${task.confirmationNumber || 'LOGGED'}. Duplicate ACH disbursements are blocked.`
+        });
+      }
+
+      const { disburseMercuryTaxPayment } = await import('./server/services/mercuryService.js');
+      const { buildFederal941TXP, buildPaStateSitTXP } = await import('./server/services/txpGenerator.js');
+
+      let txpAddenda = '';
+      if (task.jurisdiction === 'FEDERAL_IRS') {
+        txpAddenda = buildFederal941TXP(company.ein || '000000000', task.dueDate, task.amountDue);
+      } else if (task.jurisdiction === 'PA_MYPATH_SIT') {
+        txpAddenda = buildPaStateSitTXP(company.stateTaxId || '00000000', task.dueDate, task.amountDue);
+      }
+
+      const result = await disburseMercuryTaxPayment(apiKey, environment || 'SANDBOX', {
+        accountId,
+        amount: task.amountDue,
+        paymentMethod: 'ach',
+        recipientName: task.jurisdiction === 'FEDERAL_IRS' ? 'IRS EFTPS Payroll Tax' : 'PA Dept of Revenue Withholding',
+        paymentReference: task.title || 'Tax Remittance',
+        txpAddenda,
+      });
+
+      return res.json({ success: true, ...result });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, error: err.message });
     }
   });
 

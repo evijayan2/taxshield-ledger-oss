@@ -1,4 +1,4 @@
-export interface Organization {
+export interface Company {
   id: string;
   name: string;
   ein: string;
@@ -11,19 +11,35 @@ export interface Organization {
   ownerEmail: string;
   ownerTaxBracket: number; // e.g. 24 for 24%
   filingFrequencyPA: 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY';
+  payFrequency?: 'WEEKLY' | 'BI_WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY';
   standardMileageRate: number; // e.g. 0.67
+  // Company Banking & Mercury API Integration
+  bankName?: string;
+  routingNumber?: string;
+  accountNumber?: string;
+  mercuryApiKey?: string;
+  mercuryAccountId?: string;
+  mercuryEnvironment?: 'SANDBOX' | 'PRODUCTION';
 }
+
+export type Organization = Company;
 
 export interface Employee {
   id: string;
   firstName: string;
   lastName: string;
+  age?: number;
+  relationshipToOwner?: 'NONE' | 'CHILD_UNDER_18' | 'CHILD_18_TO_20' | 'SPOUSE' | 'PARENT';
   email: string;
   phone: string;
   ssnLastFour: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   employmentType: 'W2_HOURLY' | 'W2_SALARY' | '1099_CONTRACTOR';
   payRate: number; // hourly rate ($) or salary per period ($)
-  payFrequency: 'WEEKLY' | 'BI_WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY';
+  payFrequency?: 'WEEKLY' | 'BI_WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY';
   // Federal W-4
   w4FilingStatus: 'SINGLE' | 'MARRIED_FILING_JOINTLY' | 'HEAD_OF_HOUSEHOLD';
   w4MultipleJobs: boolean;
@@ -39,8 +55,11 @@ export interface Employee {
   paWorkEitRate: number;
   paLstAnnual: number; // typically 52 ($52/yr)
   paLstExempt: boolean;
-  // Payout Details
-  zelleHandle: string;
+  // Payout Details — ACH Direct Deposit (Single Bank Supported)
+  bankName?: string;
+  accountType?: 'CHECKING' | 'SAVINGS';
+  routingNumber?: string;
+  accountNumber?: string;
   bankAccountMasked?: string;
   isActive: boolean;
 }
@@ -117,9 +136,9 @@ export interface PayStub {
   totalEmployerTaxes: number;
   totalCompanyCost: number; // Gross + Employer Taxes + Reimbursements
   // Disbursement
-  disbursementMethod: 'ZELLE' | 'ACH' | 'CHECK';
+  disbursementMethod: 'ACH' | 'CHECK';
   disbursementStatus: 'PENDING' | 'PAID';
-  zelleConfirmationRef?: string;
+  achTraceRef?: string;
   paidAt?: string;
   createdAt: string;
 }
@@ -143,6 +162,7 @@ export interface PayrollRun {
 
 export interface ComplianceTask {
   id: string;
+  taxYear?: number;
   jurisdiction: 'FEDERAL_IRS' | 'PA_MYPATH_SIT' | 'PA_MYPATH_UC' | 'LOCAL_EIT' | 'SSA_W2';
   formIdentifier: string; // 'FORM_941', 'REV_1667', 'PA_UC_2', 'LOCAL_EIT_QTR', 'W2_W3'
   title: string;
@@ -157,10 +177,67 @@ export interface ComplianceTask {
 
 export interface GeneralExpense {
   id: string;
-  expenseDate: string;
-  category: 'LEGAL_ACCOUNTING' | 'SOFTWARE_TECH' | 'OFFICE_SUPPLIES' | 'PHONE_INTERNET' | 'BANK_FEES' | 'MARKETING';
+  expenseDate: string; // YYYY-MM-DD
+  category: 'LEGAL_ACCOUNTING' | 'SOFTWARE_TECH' | 'OFFICE_SUPPLIES' | 'PHONE_INTERNET' | 'BANK_FEES' | 'MARKETING' | 'UTILITIES' | 'RENT_LEASE' | 'OTHER';
+  payee: string;
   description: string;
   amount: number;
   paidBy: 'OWNER_PERSONAL' | 'LLC_ACCOUNT';
+  scheduleCLine?: string; // e.g. "Line 18 - Office Expense", "Line 8 - Advertising"
+  isTaxDeductible?: boolean;
+  receiptUrl?: string;
+  receiptNote?: string;
   notes?: string;
+  createdAt?: string;
 }
+
+export interface AuditLogEntry {
+  id: string;
+  companyId?: string;
+  entityType: string; // e.g. "GeneralExpense", "PayrollRun", "MileageLog", "TaxRuleVersion"
+  entityId: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'ACTIVATE';
+  actorId: string;
+  previousState?: Record<string, unknown> | null;
+  newState?: Record<string, unknown> | null;
+  reason?: string;
+  timestamp: string;
+}
+
+export interface CalculationSnapshot {
+  id: string;
+  calculationType: string; // e.g. "PAYROLL_WITHHOLDING", "MILEAGE_DEDUCTION"
+  entityId: string;
+  ruleVersionIds: string[];
+  snapshotData: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface TaxYear {
+  id: string;
+  companyId?: string;
+  year: number;
+  status: 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
+  createdAt: string;
+}
+
+export type TimesheetStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+
+export interface TimesheetEntry {
+  id: string;
+  employeeId: string;
+  workDate: string; // YYYY-MM-DD
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+  unpaidBreakMinutes: number;
+  regularHours: number;
+  overtimeHours: number;
+  notes?: string;
+  status: TimesheetStatus;
+  linkedPayStubId?: string;
+  createdAt: string;
+}
+
+export type AllAppData = import('./utils/storage').AllAppData;
+
+

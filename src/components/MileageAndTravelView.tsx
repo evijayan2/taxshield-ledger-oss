@@ -12,16 +12,18 @@ import {
   Calendar, 
   MapPin, 
   FileCheck2, 
-  DollarSign 
+  DollarSign,
+  Lock
 } from 'lucide-react';
 import { MileageLog, TravelExpense, Employee, Organization } from '../types';
-import { validateIrs5PointMileage } from '../utils/taxEngine';
+import { validateIrs5PointMileage, getRecordYear, isFutureYear, isFutureDateString } from '../utils/taxEngine';
 
 interface MileageAndTravelViewProps {
   mileageLogs: MileageLog[];
   travelExpenses: TravelExpense[];
   employees: Employee[];
   org: Organization;
+  activeTaxYear?: number;
   onAddMileage: (log: Omit<MileageLog, 'id' | 'createdAt' | 'mileageAllowance' | 'calculatedMiles'>) => void;
   onDeleteMileage: (id: string) => void;
   onAddTravelExpense: (expense: Omit<TravelExpense, 'id' | 'createdAt'>) => void;
@@ -33,6 +35,7 @@ export function MileageAndTravelView({
   travelExpenses,
   employees,
   org,
+  activeTaxYear = 2026,
   onAddMileage,
   onDeleteMileage,
   onAddTravelExpense,
@@ -43,10 +46,14 @@ export function MileageAndTravelView({
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [filterEmployee, setFilterEmployee] = useState<string>('ALL');
 
+  const defaultDate = new Date().getFullYear() === activeTaxYear
+    ? new Date().toISOString().split('T')[0]
+    : `${activeTaxYear}-01-15`;
+
   // New Trip State
   const [tripForm, setTripForm] = useState({
     employeeId: employees[0]?.id || '',
-    tripDate: new Date().toISOString().split('T')[0],
+    tripDate: defaultDate,
     originLocation: '',
     destinationLocation: '',
     businessPurpose: '',
@@ -62,7 +69,7 @@ export function MileageAndTravelView({
   const [expenseForm, setExpenseForm] = useState({
     employeeId: employees[0]?.id || '',
     mileageLogId: '',
-    expenseDate: new Date().toISOString().split('T')[0],
+    expenseDate: defaultDate,
     category: 'TOLL_ROAD' as TravelExpense['category'],
     description: '',
     amount: '',
@@ -86,17 +93,24 @@ export function MileageAndTravelView({
     endOdometer: parsedEnd,
   });
 
-  const filteredMileage = mileageLogs.filter(m => filterEmployee === 'ALL' || m.employeeId === filterEmployee);
-  const filteredExpenses = travelExpenses.filter(e => filterEmployee === 'ALL' || e.employeeId === filterEmployee);
+  const yearMileage = mileageLogs.filter(m => getRecordYear(m.tripDate) === activeTaxYear);
+  const yearExpenses = travelExpenses.filter(e => getRecordYear(e.expenseDate) === activeTaxYear);
+
+  const filteredMileage = yearMileage.filter(m => filterEmployee === 'ALL' || m.employeeId === filterEmployee);
+  const filteredExpenses = yearExpenses.filter(e => filterEmployee === 'ALL' || e.employeeId === filterEmployee);
 
   const totalMiles = filteredMileage.reduce((sum, m) => sum + m.calculatedMiles, 0);
   const totalMileageDollars = filteredMileage.reduce((sum, m) => sum + m.mileageAllowance, 0);
   const totalTollsAndParking = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
   const combinedTravelTotal = totalMileageDollars + totalTollsAndParking;
 
+  const isFutureActiveYear = isFutureYear(activeTaxYear);
+  const isTripDateFuture = isFutureDateString(tripForm.tripDate);
+  const isExpenseDateFuture = isFutureDateString(expenseForm.expenseDate);
+
   const handleTripSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tripValidation.isValid) return;
+    if (!tripValidation.isValid || isFutureActiveYear || isTripDateFuture) return;
 
     onAddMileage({
       employeeId: tripForm.employeeId,
@@ -127,7 +141,7 @@ export function MileageAndTravelView({
   const handleExpenseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(expenseForm.amount);
-    if (!amt || amt <= 0 || !expenseForm.description) return;
+    if (!amt || amt <= 0 || !expenseForm.description || isFutureActiveYear || isExpenseDateFuture) return;
 
     onAddTravelExpense({
       employeeId: expenseForm.employeeId,
@@ -182,6 +196,17 @@ export function MileageAndTravelView({
 
   return (
     <div className="space-y-6">
+      {/* Future Tax Year Warning Banner */}
+      {isFutureActiveYear && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs font-medium flex items-center gap-3 shadow-sm">
+          <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <div>
+            <span className="font-bold block text-sm">Future Tax Year Locked ({activeTaxYear})</span>
+            <span>Logging mileage trips or travel expenses for future tax years is disabled until tax year {activeTaxYear} begins.</span>
+          </div>
+        </div>
+      )}
+
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
@@ -282,20 +307,32 @@ export function MileageAndTravelView({
 
               <button
                 id="add-trip-btn"
-                onClick={() => setShowTripModal(true)}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-md shadow-emerald-700/20 cursor-pointer"
+                onClick={() => !isFutureActiveYear && setShowTripModal(true)}
+                disabled={isFutureActiveYear}
+                title={isFutureActiveYear ? `Logging trips for future tax year (${activeTaxYear}) is locked` : 'Log 5-Point Trip'}
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
+                  isFutureActiveYear
+                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-700/20 cursor-pointer'
+                }`}
               >
-                <Plus className="w-3.5 h-3.5" />
+                {isFutureActiveYear ? <Lock className="w-3.5 h-3.5 text-amber-500" /> : <Plus className="w-3.5 h-3.5" />}
                 <span>Log 5-Point Trip</span>
               </button>
             </div>
           ) : (
             <button
               id="add-expense-btn"
-              onClick={() => setShowExpenseModal(true)}
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-md shadow-emerald-700/20 cursor-pointer"
+              onClick={() => !isFutureActiveYear && setShowExpenseModal(true)}
+              disabled={isFutureActiveYear}
+              title={isFutureActiveYear ? `Logging travel expenses for future tax year (${activeTaxYear}) is locked` : 'Add Toll / Parking'}
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
+                isFutureActiveYear
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-700/20 cursor-pointer'
+              }`}
             >
-              <Plus className="w-3.5 h-3.5" />
+              {isFutureActiveYear ? <Lock className="w-3.5 h-3.5 text-amber-500" /> : <Plus className="w-3.5 h-3.5" />}
               <span>Add Toll / Parking</span>
             </button>
           )}
@@ -483,8 +520,13 @@ export function MileageAndTravelView({
 
       {/* Modal: Log 5-Point Trip */}
       {showTripModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
+            onClick={() => setShowTripModal(false)}
+          />
+          <div className="fixed inset-y-0 right-0 max-w-xl w-full flex">
+            <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
@@ -653,12 +695,18 @@ export function MileageAndTravelView({
             </form>
           </div>
         </div>
+      </div>
       )}
 
       {/* Modal: Add Toll / Parking Expense */}
       {showExpenseModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
+            onClick={() => setShowExpenseModal(false)}
+          />
+          <div className="fixed inset-y-0 right-0 max-w-lg w-full flex">
+            <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -766,6 +814,7 @@ export function MileageAndTravelView({
             </form>
           </div>
         </div>
+      </div>
       )}
     </div>
   );

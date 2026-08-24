@@ -1,19 +1,192 @@
-import { Employee, MileageLog, TravelExpense, PayStub } from '../types';
+import { Employee, MileageLog, ComplianceTask } from '../types';
+import { resolveActiveRuleSync, computeFederalWithholdingFromRule } from '../server/rules-engine/taxRulesEngine';
 
 /**
- * PA Statutory State Income Tax Flat Rate
+ * Get current system calendar year.
  */
-export const PA_SIT_RATE = 0.0307; // 3.07%
+export function getCurrentCalendarYear(): number {
+  return new Date().getFullYear();
+}
 
 /**
- * Social Security and Medicare statutory rates
+ * Returns true if a given tax year is strictly in the future (greater than current calendar year).
  */
-export const SOCIAL_SECURITY_RATE = 0.062; // 6.2%
-export const MEDICARE_RATE = 0.0145; // 1.45%
-export const PA_EMPLOYER_UC_DEFAULT_RATE = 0.03822; // 3.822% PA Employer UC standard new employer rate
+export function isFutureYear(year?: number): boolean {
+  const currentYear = getCurrentCalendarYear();
+  const targetYear = year || currentYear;
+  return targetYear > currentYear;
+}
 
 /**
- * Calculate Federal Income Tax Withholding (IRS Pub 15-T Wage Bracket / Percentage Method for 2020+ W-4)
+ * Returns true if a date string falls in a future tax year (greater than current calendar year).
+ */
+export function isFutureDateString(dateStr?: string): boolean {
+  if (!dateStr) return false;
+  const year = getRecordYear(dateStr);
+  return year > getCurrentCalendarYear();
+}
+
+/**
+ * Helper error message for future year restriction.
+ */
+export function getFutureYearLockMessage(year: number, actionName: string = 'adding entries or filing returns'): string {
+  const currentYear = getCurrentCalendarYear();
+  return `Action locked: Tax year ${year} is in the future (current system year is ${currentYear}). ${actionName} is strictly prohibited until tax year ${year} begins.`;
+}
+
+/**
+ * Safely parse calendar year from an ISO date string, period label, or formatted string.
+ */
+export function getRecordYear(dateStr?: string): number {
+  if (!dateStr) return getCurrentCalendarYear();
+  const match = dateStr.match(/\b(20\d\d)\b/);
+  if (match) return parseInt(match[1], 10);
+  const parsedDate = new Date(dateStr);
+  if (!isNaN(parsedDate.getTime())) return parsedDate.getFullYear();
+  return getCurrentCalendarYear();
+}
+
+/**
+ * Determine tax year for a ComplianceTask entity.
+ */
+export function getTaskTaxYear(task: ComplianceTask): number {
+  if (task.taxYear && typeof task.taxYear === 'number') {
+    return task.taxYear;
+  }
+  if (task.taxPeriodLabel) {
+    const labelMatch = task.taxPeriodLabel.match(/\b(20\d\d)\b/);
+    if (labelMatch) return parseInt(labelMatch[1], 10);
+  }
+  if (task.dueDate) {
+    const dueMatch = task.dueDate.match(/^20\d\d/);
+    if (dueMatch) return parseInt(dueMatch[0], 10);
+  }
+  return getCurrentCalendarYear();
+}
+
+
+/**
+ * Generate default compliance tasks baseline for a given tax year.
+ */
+export function createDefaultComplianceTasks(year: number): ComplianceTask[] {
+  return [
+    {
+      id: `comp_pa_sit_${year}`,
+      taxYear: year,
+      jurisdiction: 'PA_MYPATH_SIT',
+      formIdentifier: 'REV_1667',
+      title: 'PA myPATH Form REV-1667 (State Withholding Return)',
+      taxPeriodLabel: `${year} Monthly / Quarterly`,
+      dueDate: `${year}-09-15`,
+      status: 'READY_TO_FILE',
+      amountDue: 0.00,
+      boxValues: {
+        'box1_gross': { label: 'Total PA Gross Compensation', value: '$0.00', helper: 'Total wages paid to PA residents and for PA work' },
+        'box2_tax_withheld': { label: 'PA Income Tax Withheld (3.07%)', value: '$0.00', helper: 'Exact 3.07% PA statutory withholding' },
+        'box3_remittance': { label: 'Total Remittance Amount', value: '$0.00', helper: 'Paid via myPATH electronic bank debit / credit' }
+      }
+    },
+    {
+      id: `comp_fed_941_${year}`,
+      taxYear: year,
+      jurisdiction: 'FEDERAL_IRS',
+      formIdentifier: 'FORM_941',
+      title: 'IRS Form 941 (Employer Quarterly Federal Tax Return)',
+      taxPeriodLabel: `${year} Q3 (Jul - Sep)`,
+      dueDate: `${year}-10-31`,
+      status: 'READY_TO_FILE',
+      amountDue: 0.00,
+      boxValues: {
+        'box1_employees': { label: '1. Number of employees paid in period', value: '0' },
+        'box2_wages': { label: '2. Wages, tips, and other compensation', value: '$0.00' },
+        'box3_fed_tax': { label: '3. Federal income tax withheld from wages', value: '$0.00' },
+        'box5a_ss_wages': { label: '5a. Taxable social security wages', value: '$0.00', helper: 'Both employee (6.2%) and employer (6.2%)' },
+        'box5c_med_wages': { label: '5c. Taxable Medicare wages', value: '$0.00', helper: 'Both employee (1.45%) and employer (1.45%)' },
+        'box10_total_taxes': { label: '10. Total taxes after adjustments', value: '$0.00' }
+      }
+    },
+    {
+      id: `comp_pa_uc_${year}`,
+      taxYear: year,
+      jurisdiction: 'PA_MYPATH_UC',
+      formIdentifier: 'PA_UC_2',
+      title: 'PA Unemployment Compensation Return (Form UC-2 / UC-2A)',
+      taxPeriodLabel: `${year} Q3 (Jul - Sep)`,
+      dueDate: `${year}-10-31`,
+      status: 'PENDING',
+      amountDue: 0.00,
+      boxValues: {
+        'total_wages': { label: 'Gross PA UC Covered Wages', value: '$0.00' },
+        'employer_contribution': { label: 'Employer UC Contribution (3.822%)', value: '$0.00' },
+        'employee_withholding': { label: 'Employee UC Tax Withholding (0.07%)', value: '$0.00' }
+      }
+    },
+    {
+      id: `comp_w2_w3_${year}`,
+      taxYear: year,
+      jurisdiction: 'SSA_W2',
+      formIdentifier: 'W2_W3',
+      title: 'Year-End Forms W-2 / W-3 Portal Package (SSA BSO & myPATH)',
+      taxPeriodLabel: `${year} Annual Filing`,
+      dueDate: `${year + 1}-01-31`,
+      status: 'PENDING',
+      amountDue: 0.00,
+      boxValues: {
+        'box1_wages': { label: 'Box 1: Wages, tips, other compensation', value: '$0.00' },
+        'box2_fed_withheld': { label: 'Box 2: Federal income tax withheld', value: '$0.00' },
+        'box3_ss_wages': { label: 'Box 3: Social security wages', value: '$0.00' },
+        'box4_ss_tax': { label: 'Box 4: Social security tax withheld', value: '$0.00' },
+        'box5_med_wages': { label: 'Box 5: Medicare wages and tips', value: '$0.00' },
+        'box6_med_tax': { label: 'Box 6: Medicare tax withheld', value: '$0.00' },
+        'box16_pa_wages': { label: 'Box 16: State wages (PA)', value: '$0.00' },
+        'box17_pa_tax': { label: 'Box 17: State income tax (PA 3.07%)', value: '$0.00' },
+        'box18_local_wages': { label: 'Box 18: Local wages, tips, etc.', value: '$0.00' },
+        'box19_local_tax': { label: 'Box 19: Local income tax (EIT)', value: '$0.00' }
+      }
+    },
+    {
+      id: `comp_local_eit_${year}`,
+      taxYear: year,
+      jurisdiction: 'LOCAL_EIT',
+      formIdentifier: 'PA_LOCAL_EIT',
+      title: 'PA Local EIT & LST Quarterly Return (Act 32 PSD)',
+      taxPeriodLabel: `${year} Q3 (Jul - Sep)`,
+      dueDate: `${year}-10-31`,
+      status: 'READY_TO_FILE',
+      amountDue: 0.00,
+      boxValues: {
+        'local_wages': { label: 'Gross Local Taxable Compensation', value: '$0.00' },
+        'local_eit_tax': { label: 'Local Earned Income Tax (EIT) Withheld', value: '$0.00' },
+        'local_lst_tax': { label: 'Local Services Tax (LST) Withheld', value: '$0.00' },
+        'total_local_remittance': { label: 'Total Remittance to Local Collector', value: '$0.00' }
+      }
+    }
+  ];
+}
+
+/**
+ * Dynamic Tax Rate Getter (resolves from Tax Rules Engine)
+ */
+export const getActiveRates = () => {
+  const paSit = resolveActiveRuleSync('PA-STATE', 'PA_SIT_RATE');
+  const ficaSs = resolveActiveRuleSync('US-FED', 'FED_FICA_SS');
+  const ficaMed = resolveActiveRuleSync('US-FED', 'FED_FICA_MEDICARE');
+  const paUc = resolveActiveRuleSync('PA-STATE', 'PA_UC_EMPLOYER');
+
+  if (paSit.payload.rate === undefined || ficaSs.payload.rate === undefined || ficaMed.payload.rate === undefined || paUc.payload.rate === undefined) {
+    throw new Error('Required tax rate missing from Tax Rules Engine payload');
+  }
+
+  return {
+    paSitRate: paSit.payload.rate,
+    socialSecurityRate: ficaSs.payload.rate,
+    medicareRate: ficaMed.payload.rate,
+    paEmployerUcRate: paUc.payload.rate,
+  };
+};
+
+/**
+ * Calculate Federal Income Tax Withholding using dynamic rules engine brackets
  */
 export function calculateFederalIncomeTax(
   grossPay: number,
@@ -32,49 +205,19 @@ export function calculateFederalIncomeTax(
     MONTHLY: 12
   }[payFrequency] || 26;
 
-  // Annualize taxable wage
   const annualizedGross = (grossPay * periodsPerYear) + otherIncome - deductions;
   if (annualizedGross <= 0) return extraWithholding;
 
-  // Standard deduction allowance under 2024/2026 rules
-  let standardAllowance = 14600; // Single
-  if (w4Status === 'MARRIED_FILING_JOINTLY') standardAllowance = 29200;
-  if (w4Status === 'HEAD_OF_HOUSEHOLD') standardAllowance = 21900;
+  const rule = resolveActiveRuleSync('US-FED', 'FED_FIT_WITHHOLDING');
+  let annualTax = computeFederalWithholdingFromRule(annualizedGross, w4Status, rule);
 
-  if (multipleJobs) {
-    standardAllowance = standardAllowance / 2;
-  }
-
-  const taxableAnnual = Math.max(0, annualizedGross - standardAllowance);
-  if (taxableAnnual <= 0) return extraWithholding;
-
-  // Federal Tax Brackets
-  let annualTax = 0;
-  if (w4Status === 'MARRIED_FILING_JOINTLY') {
-    if (taxableAnnual <= 23200) annualTax = taxableAnnual * 0.10;
-    else if (taxableAnnual <= 94300) annualTax = 2320 + (taxableAnnual - 23200) * 0.12;
-    else if (taxableAnnual <= 201050) annualTax = 10852 + (taxableAnnual - 94300) * 0.22;
-    else if (taxableAnnual <= 383900) annualTax = 34337 + (taxableAnnual - 201050) * 0.24;
-    else annualTax = 78221 + (taxableAnnual - 383900) * 0.32;
-  } else {
-    // Single or Head of Household
-    if (taxableAnnual <= 11600) annualTax = taxableAnnual * 0.10;
-    else if (taxableAnnual <= 47150) annualTax = 1160 + (taxableAnnual - 11600) * 0.12;
-    else if (taxableAnnual <= 100525) annualTax = 5426 + (taxableAnnual - 47150) * 0.22;
-    else if (taxableAnnual <= 191950) annualTax = 17168.50 + (taxableAnnual - 100525) * 0.24;
-    else annualTax = 39110.50 + (taxableAnnual - 191950) * 0.32;
-  }
-
-  // Factor in Step 3 Dependent Tax Credits
   annualTax = Math.max(0, annualTax - dependentCredit);
-
-  // De-annualize back to pay period
   const periodTax = (annualTax / periodsPerYear) + extraWithholding;
   return Math.round(periodTax * 100) / 100;
 }
 
 /**
- * Compute Complete Gross-to-Net Pay & Employer Costs
+ * Compute Gross-to-Net Pay & Employer Costs driven by dynamic rules engine
  */
 export function calculateGrossToNet(
   employee: Employee,
@@ -87,7 +230,8 @@ export function calculateGrossToNet(
   const overtimeEarnings = overtimeHours * (employee.payRate * 1.5);
   const grossEarnings = Math.round((regularEarnings + overtimeEarnings) * 100) / 100;
 
-  // 1. Employee Federal Taxes
+  const rates = getActiveRates();
+
   const federalIncomeTax = calculateFederalIncomeTax(
     grossEarnings,
     employee.payFrequency,
@@ -99,32 +243,27 @@ export function calculateGrossToNet(
     employee.w4ExtraWithholding
   );
 
-  const socialSecurityTax = Math.round(grossEarnings * SOCIAL_SECURITY_RATE * 100) / 100;
-  const medicareTax = Math.round(grossEarnings * MEDICARE_RATE * 100) / 100;
+  const rel = employee.relationshipToOwner || (employee.age !== undefined && employee.age < 18 ? 'CHILD_UNDER_18' : 'NONE');
+  const isFicaExempt = rel === 'CHILD_UNDER_18';
+  const isPaUcExempt = rel === 'CHILD_UNDER_18' || rel === 'CHILD_18_TO_20' || rel === 'SPOUSE' || rel === 'PARENT';
 
-  // 2. PA State & Local Withholdings
-  const paStateTax = Math.round(grossEarnings * PA_SIT_RATE * 100) / 100;
+  const socialSecurityTax = isFicaExempt ? 0 : Math.round(grossEarnings * rates.socialSecurityRate * 100) / 100;
+  const medicareTax = isFicaExempt ? 0 : Math.round(grossEarnings * rates.medicareRate * 100) / 100;
 
-  // PA Local EIT rule: Higher of Resident PSD rate or Work PSD rate
+  const paStateTax = Math.round(grossEarnings * rates.paSitRate * 100) / 100;
   const effectiveEitRate = Math.max(employee.paResidentEitRate, employee.paWorkEitRate);
   const paLocalEit = Math.round(grossEarnings * effectiveEitRate * 100) / 100;
 
-  // PA LST ($52/year prorated across periods)
   const periodsPerYear = employee.payFrequency === 'WEEKLY' ? 52 : employee.payFrequency === 'BI_WEEKLY' ? 26 : employee.payFrequency === 'SEMI_MONTHLY' ? 24 : 12;
-  const paLst = employee.paLstExempt ? 0 : Math.round((employee.paLstAnnual / periodsPerYear) * 100) / 100;
+  const paLst = (grossEarnings === 0 || employee.paLstExempt) ? 0 : Math.round((employee.paLstAnnual / periodsPerYear) * 100) / 100;
 
   const totalEmployeeTaxes = Math.round((federalIncomeTax + socialSecurityTax + medicareTax + paStateTax + paLocalEit + paLst) * 100) / 100;
-
-  // 3. Non-Taxable Accountable Plan Reimbursements (Mileage + Tolls/Parking)
   const totalReimbursements = Math.round((approvedMileageReimbursement + approvedTravelReimbursement) * 100) / 100;
-
-  // 4. Net Take-Home Pay (Gross - Taxes + Non-taxable Reimbursements)
   const netPay = Math.round((grossEarnings - totalEmployeeTaxes + totalReimbursements) * 100) / 100;
 
-  // 5. Employer Side Taxes (Company Cost)
   const employerSocialSecurity = socialSecurityTax;
   const employerMedicare = medicareTax;
-  const employerPaUc = Math.round(grossEarnings * PA_EMPLOYER_UC_DEFAULT_RATE * 100) / 100;
+  const employerPaUc = isPaUcExempt ? 0 : Math.round(grossEarnings * rates.paEmployerUcRate * 100) / 100;
   const totalEmployerTaxes = Math.round((employerSocialSecurity + employerMedicare + employerPaUc) * 100) / 100;
 
   const totalCompanyCost = Math.round((grossEarnings + totalEmployerTaxes + totalReimbursements) * 100) / 100;
@@ -149,7 +288,10 @@ export function calculateGrossToNet(
     employerMedicare,
     employerPaUc,
     totalEmployerTaxes,
-    totalCompanyCost
+    totalCompanyCost,
+    isFicaExempt,
+    isPaUcExempt,
+    relationshipToOwner: rel
   };
 }
 
@@ -158,7 +300,7 @@ export function calculateGrossToNet(
  */
 export function validateIrs5PointMileage(trip: Partial<MileageLog>): {
   isValid: boolean;
-  score: number; // 0 to 100
+  score: number;
   missingFields: string[];
   warnings: string[];
 } {
@@ -166,33 +308,28 @@ export function validateIrs5PointMileage(trip: Partial<MileageLog>): {
   const warnings: string[] = [];
   let score = 0;
 
-  // Point 1: Date
   if (trip.tripDate) score += 20;
   else missingFields.push('Point 1: Trip Date is required');
 
-  // Point 2a & 2b: Origin & Destination
   if (trip.originLocation && trip.originLocation.trim().length > 3) score += 10;
   else missingFields.push('Point 2a: Specific Origin Address/Location required');
 
   if (trip.destinationLocation && trip.destinationLocation.trim().length > 3) score += 10;
   else missingFields.push('Point 2b: Specific Destination Address/Location required');
 
-  // Point 3: Specific Business Purpose
   if (trip.businessPurpose && trip.businessPurpose.trim().length >= 8) {
     score += 20;
     const vagueKeywords = ['meeting', 'errand', 'drive', 'work', 'client', 'business'];
     if (vagueKeywords.includes(trip.businessPurpose.trim().toLowerCase())) {
-      warnings.push('Business purpose is very short/vague. IRS audits require specific context (e.g., "Client contract signing & site inspection").');
+      warnings.push('Business purpose is vague. Specific context required.');
     }
   } else {
     missingFields.push('Point 3: Detailed Business Purpose required');
   }
 
-  // Point 4: Start Odometer
   if (trip.startOdometer !== undefined && trip.startOdometer > 0) score += 20;
   else missingFields.push('Point 4: Starting Odometer reading is required');
 
-  // Point 5: End Odometer & Calculated Miles
   if (trip.endOdometer !== undefined && trip.endOdometer > (trip.startOdometer || 0)) {
     score += 20;
   } else {
@@ -208,7 +345,7 @@ export function validateIrs5PointMileage(trip: Partial<MileageLog>): {
 }
 
 /**
- * Calculate Pass-Through Tax Benefit for Owner Form 1040 (Schedule C / Form 1065)
+ * Calculate Pass-Through Tax Benefit for Owner Form 1040
  */
 export function calculatePassThroughSavings(
   totalGrossWages: number,
@@ -216,24 +353,19 @@ export function calculatePassThroughSavings(
   totalMileageAllowance: number,
   totalTravelExpenses: number,
   totalGeneralExpenses: number,
-  ownerTaxBracketPercent: number = 24, // e.g. 24%
-  ownerPaTaxRate: number = 0.0307 // 3.07% PA
+  ownerTaxBracketPercent: number = 24,
+  ownerPaTaxRate?: number
 ) {
-  // Total ordinary & necessary business expenses incurred by LLC
-  const totalBusinessLossExpenses = 
-    totalGrossWages + 
-    totalEmployerTaxes + 
-    totalMileageAllowance + 
-    totalTravelExpenses + 
+  const paRate = ownerPaTaxRate ?? getActiveRates().paSitRate;
+  const totalBusinessLossExpenses =
+    totalGrossWages +
+    totalEmployerTaxes +
+    totalMileageAllowance +
+    totalTravelExpenses +
     totalGeneralExpenses;
 
-  // Federal personal tax reduction
   const federalTaxSavings = totalBusinessLossExpenses * (ownerTaxBracketPercent / 100);
-
-  // PA State personal tax reduction
-  const paStateTaxSavings = totalBusinessLossExpenses * ownerPaTaxRate;
-
-  // Total cash preserved on Personal Form 1040
+  const paStateTaxSavings = totalBusinessLossExpenses * paRate;
   const totalEstimatedTaxSavings = federalTaxSavings + paStateTaxSavings;
 
   return {
@@ -243,3 +375,4 @@ export function calculatePassThroughSavings(
     totalEstimatedTaxSavings: Math.round(totalEstimatedTaxSavings * 100) / 100
   };
 }
+

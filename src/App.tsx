@@ -1,556 +1,348 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  ShieldCheck, 
-  Car, 
-  Calculator, 
-  Landmark, 
-  TrendingDown, 
-  FileText, 
-  Settings,
-  LogOut,
-  UserCheck,
-  Database
+  Database, 
+  UserCheck, 
+  LogOut, 
+  Building2 
 } from 'lucide-react';
-import { 
-  loadAllAppData, 
-  saveAllAppData, 
-  resetToSeedData,
-  clearToFreshRealApp,
-  AllAppData
-} from './utils/storage';
-import { 
-  getPostgresStatus, 
-  fetchServerAppData, 
-  saveServerAppData, 
-  PostgresStatus 
-} from './utils/api';
+import { useAuth, AuthProvider } from './context/AuthContext';
+import { AuthGate } from './components/AuthGate';
+import { LLCOnboardingModal } from './components/LLCOnboardingModal';
+import { TaxYearSetupModal } from './components/TaxYearSetupModal';
+import { NavigationSidebar, NavigationTab } from './components/NavigationSidebar';
+import { DashboardOverviewView } from './components/DashboardOverviewView';
+import { ExpenseTrackerView } from './components/ExpenseTrackerView';
+import { AuditTrailView } from './components/AuditTrailView';
+import { YearEndExportView } from './components/YearEndExportView';
 import { MileageAndTravelView } from './components/MileageAndTravelView';
 import { AssistedPayrollView } from './components/AssistedPayrollView';
 import { ComplianceFilingsView } from './components/ComplianceFilingsView';
-import { PassThroughSimulatorView } from './components/PassThroughSimulatorView';
-import { PRDDocView } from './components/PRDDocView';
+import { TaxRuleAdminView } from './components/TaxRuleAdminView';
 import { SettingsView } from './components/SettingsView';
-import { AuthGate } from './components/AuthGate';
+import { TimesheetsView } from './components/TimesheetsView';
+import { StaffOnboardingView } from './components/StaffOnboardingView';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
-import { StepWorkflowBanner } from './components/StepWorkflowBanner';
-import { useAuth } from './context/AuthContext';
-import { 
-  Organization, 
-  Employee, 
-  MileageLog, 
-  TravelExpense, 
-  PayrollRun, 
-  PayStub
-} from './types';
+import { FontSizeControl } from './components/FontSizeControl';
+import { FontSizeProvider } from './context/FontSizeContext';
+import { DatabaseOfflineBanner } from './components/DatabaseOfflineBanner';
+import { isOrgConfigured } from './utils/storage';
+import { useAppState } from './hooks/useAppState';
+import { getTaskTaxYear, isFutureYear, isFutureDateString } from './utils/taxEngine';
+import { PayrollRun, PayStub } from './types';
 
-type ActiveTab = 'MILEAGE' | 'PAYROLL' | 'COMPLIANCE' | 'SIMULATOR' | 'PRD' | 'SETTINGS';
+function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
+  const {
+    data,
+    setData,
+    dbStatus,
+    dbError,
+    retryDatabaseConnection,
+    isInitialLoading,
+    handleAddGeneralExpense,
+    handleDeleteGeneralExpense,
+    handleAddMileage,
+    handleDeleteMileage,
+    handleAddTravelExpense,
+    handleDeleteTravelExpense,
+    handleAddTimesheet,
+    handleBulkAddTimesheets,
+    handleUpdateTimesheetStatus,
+    handleDeleteTimesheet,
+    handleSetTaxYear,
+    handleCreateTaxYear,
+    handleSaveOrg,
+  } = state;
 
-function MainAppContent() {
-  const [data, setData] = useState<AllAppData>(() => loadAllAppData());
-  const [activeTab, setActiveTab] = useState<ActiveTab>('MILEAGE');
-  const [dbStatus, setDbStatus] = useState<PostgresStatus | null>(null);
-  const { user, logOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<NavigationTab>('DASHBOARD');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTaxYearModal, setShowTaxYearModal] = useState(false);
+  const { user, signOut, devBypass } = useAuth();
+  const displayUserEmail = user?.email || data?.company?.ownerEmail || data?.org?.ownerEmail || (devBypass ? 'Sandbox Mode' : 'Owner');
 
-  // Check PostgreSQL connection & pull server state on mount
-  useEffect(() => {
-    let mounted = true;
-    async function initCloudSync() {
-      try {
-        const status = await getPostgresStatus();
-        if (mounted) {
-          setDbStatus(status);
-        }
-        if (status.connected) {
-          const serverData = await fetchServerAppData();
-          if (serverData.source === 'postgres' && serverData.data && mounted) {
-            setData(serverData.data);
-            saveAllAppData(serverData.data);
-          }
-        }
-      } catch (err) {
-        console.warn('Postgres connection check deferred:', err);
-      }
-    }
-    initCloudSync();
-    return () => { mounted = false; };
-  }, []);
+  const isConfigured = isOrgConfigured(data.org);
+  // Prompt for company setup automatically when no company is configured and initial data fetch is finished
+  const shouldShowOnboardingModal = showOnboarding || (!isConfigured && !isInitialLoading && dbStatus?.connected);
 
-  // Sync to local storage and PostgreSQL backend whenever data changes
-  useEffect(() => {
-    saveAllAppData(data);
-    if (dbStatus?.connected) {
-      saveServerAppData(data).catch(() => {});
-    }
-  }, [data, dbStatus?.connected]);
-
-  // Handlers for syncing with Postgres
-  const handleSyncToPostgres = async () => {
-    const res = await saveServerAppData(data);
-    if (!res.success) {
-      throw new Error(res.error || 'Failed to save data to Postgres');
-    }
-    const freshStatus = await getPostgresStatus();
-    setDbStatus(freshStatus);
-  };
-
-  const handlePullFromPostgres = async () => {
-    const res = await fetchServerAppData();
-    if (res.data) {
-      setData(res.data);
-      saveAllAppData(res.data);
-    }
-    const freshStatus = await getPostgresStatus();
-    setDbStatus(freshStatus);
-  };
-
-  // Handlers for Mileage & Travel
-  const handleAddMileage = (newTrip: Omit<MileageLog, 'id' | 'createdAt' | 'mileageAllowance' | 'calculatedMiles'>) => {
-    const calculatedMiles = Math.max(0, newTrip.endOdometer - newTrip.startOdometer);
-    const mileageAllowance = Math.round(calculatedMiles * newTrip.rateApplied * 100) / 100;
-    const log: MileageLog = {
-      ...newTrip,
-      id: `mile_${Date.now()}`,
-      calculatedMiles,
-      mileageAllowance,
-      createdAt: new Date().toISOString(),
-    };
-    setData(prev => ({
-      ...prev,
-      mileageLogs: [log, ...prev.mileageLogs]
-    }));
-  };
-
-  const handleDeleteMileage = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      mileageLogs: prev.mileageLogs.filter(m => m.id !== id)
-    }));
-  };
-
-  const handleAddTravelExpense = (newExp: Omit<TravelExpense, 'id' | 'createdAt'>) => {
-    const exp: TravelExpense = {
-      ...newExp,
-      id: `trv_${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    setData(prev => ({
-      ...prev,
-      travelExpenses: [exp, ...prev.travelExpenses]
-    }));
-  };
-
-  const handleDeleteTravelExpense = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      travelExpenses: prev.travelExpenses.filter(t => t.id !== id)
-    }));
-  };
-
-  // Handlers for Payroll
-  const handleCreatePayrollRun = (
-    runData: Omit<PayrollRun, 'id' | 'createdAt'>,
-    stubsData: Omit<PayStub, 'id' | 'payrollRunId' | 'createdAt'>[]
-  ) => {
-    const runId = `run_${Date.now()}`;
-    const newRun: PayrollRun = {
-      ...runData,
-      id: runId,
-      createdAt: new Date().toISOString(),
-      lockedAt: new Date().toISOString(),
-    };
-
-    const newStubs: PayStub[] = stubsData.map((s, idx) => ({
-      ...s,
-      id: `stub_${Date.now()}_${idx}`,
-      payrollRunId: runId,
-      createdAt: new Date().toISOString(),
-    }));
-
-    // Mark included mileage & expenses as reimbursed
-    const updatedMileage = data.mileageLogs.map(m => {
-      if (m.status === 'APPROVED' && !m.linkedPayStubId) {
-        return { ...m, status: 'REIMBURSED' as const, linkedPayStubId: runId };
-      }
-      return m;
-    });
-
-    const updatedExpenses = data.travelExpenses.map(t => {
-      if (t.status === 'APPROVED' && !t.linkedPayStubId) {
-        return { ...t, status: 'REIMBURSED' as const, linkedPayStubId: runId };
-      }
-      return t;
-    });
-
-    setData(prev => ({
-      ...prev,
-      payrollRuns: [newRun, ...prev.payrollRuns],
-      payStubs: [...newStubs, ...prev.payStubs],
-      mileageLogs: updatedMileage,
-      travelExpenses: updatedExpenses,
-    }));
-  };
-
-  const handleUpdateStubDisbursement = (stubId: string, zelleRef: string) => {
-    setData(prev => ({
-      ...prev,
-      payStubs: prev.payStubs.map(s => {
-        if (s.id === stubId) {
-          return {
-            ...s,
-            disbursementStatus: 'PAID' as const,
-            zelleConfirmationRef: zelleRef,
-            paidAt: new Date().toISOString(),
-          };
-        }
-        return s;
-      })
-    }));
-  };
-
-  // Handlers for Compliance
-  const handleMarkTaskFiled = (taskId: string, confirmationNum: string) => {
-    setData(prev => ({
-      ...prev,
-      complianceTasks: prev.complianceTasks.map(t => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            status: 'FILED' as const,
-            confirmationNumber: confirmationNum,
-            filedDate: new Date().toISOString().split('T')[0],
-          };
-        }
-        return t;
-      })
-    }));
-  };
-
-  // Handlers for Settings & Tax Bracket
-  const handleUpdateTaxBracket = (bracket: number) => {
-    setData(prev => ({
-      ...prev,
-      org: { ...prev.org, ownerTaxBracket: bracket }
-    }));
-  };
-
-  const handleSaveOrg = (updatedOrg: Organization) => {
-    setData(prev => ({ ...prev, org: updatedOrg }));
-  };
-
-  const handleSaveEmployees = (updatedEmployees: Employee[]) => {
-    setData(prev => ({ ...prev, employees: updatedEmployees }));
-  };
-
-  const handleResetAll = () => {
-    if (window.confirm('Reset all records back to sample demo data?')) {
-      const reset = resetToSeedData();
-      setData(reset);
-    }
-  };
-
-  const handleClearToFresh = () => {
-    if (window.confirm('Clear all sample records to start with a fresh, clean slate? Your LLC entity profile will be preserved.')) {
-      const fresh = clearToFreshRealApp();
-      setData(fresh);
-    }
-  };
-
-  const handleExportJSON = () => {
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', jsonString);
-    downloadAnchor.setAttribute('download', `TaxShield_Ledger_Backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  const handleImportJSON = (jsonData: any) => {
-    if (jsonData && jsonData.org && jsonData.employees) {
-      setData(jsonData);
-    }
-  };
+  const isDbOffline = !isInitialLoading && Boolean(dbStatus && !dbStatus.connected);
+  const currentActiveTaxYear = data.activeTaxYear || 2026;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-150">
-      
-      {/* Primary Top Header */}
-      <header className="border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3">
-          
-          {/* Logo & Entity Details */}
-          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  TaxShield Ledger
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-medium">
-                    PA & IRS Micro-LLC
-                  </span>
-                </h1>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">{data.org.name} • EIN: {data.org.ein}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 md:hidden">
-              <ThemeSwitcher />
-              {user && (
-                <button
-                  onClick={() => logOut()}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
-                  title="Sign out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Navigation Tab Pills */}
-          <nav className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 md:pb-0 scrollbar-none">
-            <button
-              id="nav-tab-mileage"
-              onClick={() => setActiveTab('MILEAGE')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'MILEAGE'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <Car className="w-3.5 h-3.5" />
-              <span>1. Mileage & Travel</span>
-            </button>
-
-            <button
-              id="nav-tab-payroll"
-              onClick={() => setActiveTab('PAYROLL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'PAYROLL'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <Calculator className="w-3.5 h-3.5" />
-              <span>2. Assisted Payroll</span>
-            </button>
-
-            <button
-              id="nav-tab-compliance"
-              onClick={() => setActiveTab('COMPLIANCE')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'COMPLIANCE'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <Landmark className="w-3.5 h-3.5" />
-              <span>3. PA & IRS Filings</span>
-            </button>
-
-            <button
-              id="nav-tab-simulator"
-              onClick={() => setActiveTab('SIMULATOR')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'SIMULATOR'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <TrendingDown className="w-3.5 h-3.5" />
-              <span>4. Tax Strategy</span>
-            </button>
-
-            <button
-              id="nav-tab-prd"
-              onClick={() => setActiveTab('PRD')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'PRD'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>5. PRD Reference</span>
-            </button>
-
-            <button
-              id="nav-tab-settings"
-              onClick={() => setActiveTab('SETTINGS')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'SETTINGS'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Settings</span>
-            </button>
-          </nav>
-
-          {/* Right Controls: DB status, Theme Switcher & Auth status */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('SETTINGS')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition cursor-pointer ${
-                dbStatus?.connected
-                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-750'
-              }`}
-              title={dbStatus?.connected ? `Connected to ${dbStatus.provider || 'PostgreSQL'} (${dbStatus.host})` : 'PostgreSQL ready (Click to configure in Settings)'}
-            >
-              <Database className={`w-3.5 h-3.5 ${dbStatus?.connected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
-              <span>{dbStatus?.connected ? (dbStatus.provider || 'Vercel Postgres') : 'PostgreSQL'}</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${dbStatus?.connected ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}`} />
-            </button>
-
-            <ThemeSwitcher />
-            
-            {user && (
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-[11px] font-medium">
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span className="max-w-[120px] truncate">{user.email}</span>
-                </div>
-                <button
-                  onClick={() => logOut()}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                  title="Sign out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-
-        </div>
-      </header>
-
-      {/* Step-by-Step Workflow Guide Banner */}
-      <div className="max-w-7xl mx-auto px-4 pt-6 w-full">
-        <StepWorkflowBanner
-          currentStep={
-            activeTab === 'SETTINGS' ? 'STEP_ORG' :
-            activeTab === 'MILEAGE' ? 'STEP_MILEAGE' :
-            activeTab === 'PAYROLL' ? 'STEP_PAYROLL' :
-            activeTab === 'COMPLIANCE' ? 'STEP_COMPLIANCE' :
-            'STEP_SIMULATOR'
-          }
-          onSelectStep={(step) => {
-            if (step === 'STEP_ORG' || step === 'STEP_EMPLOYEES') {
-              setActiveTab('SETTINGS');
-            } else if (step === 'STEP_MILEAGE') {
-              setActiveTab('MILEAGE');
-            } else if (step === 'STEP_PAYROLL') {
-              setActiveTab('PAYROLL');
-            } else if (step === 'STEP_COMPLIANCE') {
-              setActiveTab('COMPLIANCE');
-            } else if (step === 'STEP_SIMULATOR') {
-              setActiveTab('SIMULATOR');
-            }
-          }}
-          org={data.org}
-          employees={data.employees}
-          mileageLogs={data.mileageLogs}
-          payrollRuns={data.payrollRuns}
-          complianceTasks={data.complianceTasks}
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 flex transition-colors duration-200">
+      {/* Database Offline Service Banner */}
+      {isDbOffline && (
+        <DatabaseOfflineBanner
+          dbStatus={dbStatus}
+          errorMessage={dbError}
+          onRetry={retryDatabaseConnection}
         />
+      )}
+
+      {/* Sidebar Navigation */}
+      <NavigationSidebar
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        org={data.org}
+        activeTaxYear={currentActiveTaxYear}
+        taxYears={data.taxYears}
+        onTaxYearChange={handleSetTaxYear}
+        onOpenTaxYearSetup={() => setShowTaxYearModal(true)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        pendingTaxCount={(data.complianceTasks || []).filter(t => getTaskTaxYear(t) === currentActiveTaxYear && t.status !== 'FILED').length}
+      />
+
+      {/* Main Content Area */}
+      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+              <Building2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{data?.company?.name || data?.org?.name || 'Micro-LLC Setup Pending'}</span>
+              <span className="text-slate-300 dark:text-slate-600">|</span>
+              <span className="text-indigo-600 dark:text-indigo-300 font-bold">Tax Year {currentActiveTaxYear} Active</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Theme Switcher Toggle */}
+            <ThemeSwitcher />
+
+            {/* Font Size Selector Control */}
+            <FontSizeControl />
+
+            {/* Postgres Connection Status */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs font-mono">
+              <Database className={`w-3.5 h-3.5 ${dbStatus?.connected ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`} />
+              <span className={dbStatus?.connected ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-rose-600 dark:text-rose-400 font-semibold'}>
+                {dbStatus?.connected ? 'Postgres Connected' : 'Postgres Offline'}
+              </span>
+            </div>
+
+            {/* User Profile / Logout */}
+            <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                <UserCheck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                <span className="hidden sm:inline" title={devBypass ? 'Sandbox Mode' : 'Logged In User'}>
+                  {displayUserEmail}
+                </span>
+              </div>
+              <button
+                onClick={signOut}
+                title="Log out"
+                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Onboarding Banner if not configured */}
+        {!isConfigured && !isInitialLoading && (
+          <div className="mx-6 mt-6 p-4 rounded-xl bg-gradient-to-r from-indigo-900/90 to-violet-900/90 border border-indigo-500/40 text-white flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3">
+              <Building2 className="w-6 h-6 text-indigo-300" />
+              <div>
+                <h4 className="font-bold text-sm">LLC & Tax Year Configuration Required</h4>
+                <p className="text-xs text-indigo-200">Set up your Pennsylvania LLC EIN, owner classification, and active Tax Year to start automated payroll & filings.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowOnboarding(true)}
+              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-600/30 cursor-pointer transition-all"
+            >
+              Configure LLC & Tax Year
+            </button>
+          </div>
+        )}
+
+        {/* Dynamic Content Views */}
+        <main className="p-6">
+          {activeTab === 'DASHBOARD' && (
+            <DashboardOverviewView data={data} onNavigateTab={setActiveTab} />
+          )}
+
+          {activeTab === 'EXPENSES' && (
+            <ExpenseTrackerView
+              expenses={data.generalExpenses}
+              activeTaxYear={currentActiveTaxYear}
+              onAddExpense={handleAddGeneralExpense}
+              onDeleteExpense={handleDeleteGeneralExpense}
+            />
+          )}
+
+          {activeTab === 'MILEAGE' && (
+            <MileageAndTravelView
+              employees={data.employees}
+              mileageLogs={data.mileageLogs}
+              travelExpenses={data.travelExpenses}
+              org={data.org}
+              activeTaxYear={currentActiveTaxYear}
+              onAddMileage={handleAddMileage}
+              onDeleteMileage={handleDeleteMileage}
+              onAddTravelExpense={handleAddTravelExpense}
+              onDeleteTravelExpense={handleDeleteTravelExpense}
+            />
+          )}
+
+          {activeTab === 'TIMESHEETS' && (
+            <TimesheetsView
+              timesheets={data.timesheets}
+              employees={data.employees}
+              activeTaxYear={currentActiveTaxYear}
+              onAddTimesheet={handleAddTimesheet}
+              onBulkAddTimesheets={handleBulkAddTimesheets}
+              onUpdateTimesheetStatus={handleUpdateTimesheetStatus}
+              onDeleteTimesheet={handleDeleteTimesheet}
+              onNavigateToPayroll={() => setActiveTab('PAYROLL')}
+            />
+          )}
+
+          {activeTab === 'STAFF' && (
+            <StaffOnboardingView
+              employees={data.employees}
+              onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
+              onNavigateToTimesheets={() => setActiveTab('TIMESHEETS')}
+              onNavigateToPayroll={() => setActiveTab('PAYROLL')}
+            />
+          )}
+
+          {activeTab === 'PAYROLL' && (
+            <AssistedPayrollView
+              employees={data.employees}
+              org={data.org}
+              mileageLogs={data.mileageLogs}
+              travelExpenses={data.travelExpenses}
+              payrollRuns={data.payrollRuns}
+              payStubs={data.payStubs}
+              timesheets={data.timesheets}
+              activeTaxYear={currentActiveTaxYear}
+              onCreatePayrollRun={(runData, stubsData) => {
+                if (isFutureYear(currentActiveTaxYear) || isFutureDateString(runData.periodEndDate) || isFutureDateString(runData.payDate)) {
+                  console.warn(`Cannot create payroll run for future tax year (${currentActiveTaxYear})`);
+                  return;
+                }
+                const runId = `run_${Date.now()}`;
+                const newRun: PayrollRun = {
+                  ...runData,
+                  id: runId,
+                  createdAt: new Date().toISOString(),
+                };
+                const newStubs: PayStub[] = stubsData.map((s, idx) => ({
+                  ...s,
+                  id: `stub_${Date.now()}_${idx}`,
+                  payrollRunId: runId,
+                  createdAt: new Date().toISOString(),
+                }));
+                setData(prev => ({
+                  ...prev,
+                  payrollRuns: [newRun, ...prev.payrollRuns],
+                  payStubs: [...newStubs, ...prev.payStubs]
+                }));
+              }}
+              onUpdateStubDisbursement={(stubId, zelleRef) => {
+                setData(prev => ({
+                  ...prev,
+                  payStubs: prev.payStubs.map(s => s.id === stubId ? { ...s, disbursementStatus: 'PAID', zelleConfirmationRef: zelleRef, paidAt: new Date() } : s)
+                }));
+              }}
+            />
+          )}
+
+          {activeTab === 'COMPLIANCE' && (
+            <ComplianceFilingsView
+              complianceTasks={data.complianceTasks}
+              org={data.org}
+              employees={data.employees}
+              payrollRuns={data.payrollRuns}
+              payStubs={data.payStubs}
+              activeTaxYear={currentActiveTaxYear}
+              onMarkTaskFiled={state.handleMarkTaskFiled}
+              onNavigateToAuditTrail={() => setActiveTab('AUDIT_LOGS')}
+            />
+          )}
+
+          {activeTab === 'TAX_RULES' && (
+            <TaxRuleAdminView employees={data.employees} />
+          )}
+
+          {activeTab === 'AUDIT_LOGS' && (
+            <AuditTrailView logs={data.auditLogs || []} />
+          )}
+
+          {activeTab === 'EXPORT' && (
+            <YearEndExportView data={data} />
+          )}
+
+          {activeTab === 'SETTINGS' && (
+            <SettingsView
+              org={data.org}
+              employees={data.employees}
+              allData={data}
+              onSaveOrg={handleSaveOrg}
+              onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
+              onResetAllData={() => setData(prev => ({ ...prev, generalExpenses: [], mileageLogs: [], travelExpenses: [], payrollRuns: [], payStubs: [], timesheets: [], auditLogs: [] }))}
+              onExportJSON={() => {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `taxshield_backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+              }}
+              onImportJSON={(jsonData) => {
+                if (jsonData && typeof jsonData === 'object') {
+                  setData(jsonData);
+                }
+              }}
+            />
+          )}
+        </main>
       </div>
 
-      {/* Main View Body */}
-      <main className="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
-        {activeTab === 'MILEAGE' && (
-          <MileageAndTravelView
-            mileageLogs={data.mileageLogs}
-            travelExpenses={data.travelExpenses}
-            employees={data.employees}
-            org={data.org}
-            onAddMileage={handleAddMileage}
-            onDeleteMileage={handleDeleteMileage}
-            onAddTravelExpense={handleAddTravelExpense}
-            onDeleteTravelExpense={handleDeleteTravelExpense}
-          />
-        )}
+      {/* LLC Setup Onboarding Modal (Automatically opened if company setup is missing) */}
+      <LLCOnboardingModal
+        isOpen={shouldShowOnboardingModal}
+        initialOrg={data.org}
+        isDismissable={isConfigured}
+        onSave={(newOrg, taxYear) => {
+          handleSaveOrg(newOrg);
+          if (taxYear) {
+            handleCreateTaxYear(taxYear);
+          }
+          setShowOnboarding(false);
+        }}
+        onClose={() => setShowOnboarding(false)}
+      />
 
-        {activeTab === 'PAYROLL' && (
-          <AssistedPayrollView
-            employees={data.employees}
-            org={data.org}
-            payrollRuns={data.payrollRuns}
-            payStubs={data.payStubs}
-            mileageLogs={data.mileageLogs}
-            travelExpenses={data.travelExpenses}
-            onCreatePayrollRun={handleCreatePayrollRun}
-            onUpdateStubDisbursement={handleUpdateStubDisbursement}
-          />
-        )}
-
-        {activeTab === 'COMPLIANCE' && (
-          <ComplianceFilingsView
-            complianceTasks={data.complianceTasks}
-            org={data.org}
-            payrollRuns={data.payrollRuns}
-            payStubs={data.payStubs}
-            onMarkTaskFiled={handleMarkTaskFiled}
-          />
-        )}
-
-        {activeTab === 'SIMULATOR' && (
-          <PassThroughSimulatorView
-            org={data.org}
-            payrollRuns={data.payrollRuns}
-            payStubs={data.payStubs}
-            mileageLogs={data.mileageLogs}
-            travelExpenses={data.travelExpenses}
-            generalExpenses={data.generalExpenses}
-            onUpdateTaxBracket={handleUpdateTaxBracket}
-          />
-        )}
-
-        {activeTab === 'PRD' && (
-          <PRDDocView />
-        )}
-
-        {activeTab === 'SETTINGS' && (
-          <SettingsView
-            org={data.org}
-            employees={data.employees}
-            allData={data}
-            onSaveOrg={handleSaveOrg}
-            onSaveEmployees={handleSaveEmployees}
-            onResetAllData={handleResetAll}
-            onClearToFreshSlate={handleClearToFresh}
-            onExportJSON={handleExportJSON}
-            onImportJSON={handleImportJSON}
-            onSyncToPostgres={handleSyncToPostgres}
-            onPullFromPostgres={handlePullFromPostgres}
-          />
-        )}
-      </main>
-
-      {/* Persistent Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-4 px-4 text-xs text-slate-500 transition-colors">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>TaxShield Ledger • Micro-LLC Zero-Cost Tax & Compliance Engine</span>
-          <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-[11px]">
-            <span>PA Statutory Flat SIT (3.07%)</span>
-            <span>•</span>
-            <span>IRS 5-Point Rule (Treas. Reg. § 1.274-5)</span>
-            <span>•</span>
-            <span>Authorized: tovijayan@gmail.com</span>
-          </div>
-        </div>
-      </footer>
+      {/* Dedicated Tax Year Setup Modal */}
+      <TaxYearSetupModal
+        isOpen={showTaxYearModal}
+        activeYear={data.activeTaxYear || 2026}
+        existingYears={data.taxYears}
+        onSave={(year) => {
+          handleCreateTaxYear(year);
+        }}
+        onClose={() => setShowTaxYearModal(false)}
+      />
     </div>
   );
 }
 
 export default function App() {
+  const appState = useAppState();
+  const ownerEmail = appState.data?.company?.ownerEmail || appState.data?.org?.ownerEmail || '';
+
   return (
-    <AuthGate>
-      <MainAppContent />
-    </AuthGate>
+    <FontSizeProvider>
+      <AuthProvider ownerEmail={ownerEmail}>
+        <AuthGate>
+          <MainAppContent state={appState} />
+        </AuthGate>
+      </AuthProvider>
+    </FontSizeProvider>
   );
 }
+

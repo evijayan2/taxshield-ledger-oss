@@ -38,6 +38,7 @@ export const DEFAULT_EMPTY_COMPANY: Company = {
   ownerName: '',
   ownerEmail: '',
   ownerTaxBracket: 24, // 24% Marginal Federal Bracket default
+  stateFilingFrequency: 'MONTHLY',
   filingFrequencyPA: 'MONTHLY',
   payFrequency: 'BI_WEEKLY',
   standardMileageRate: 0.67, // 67 cents/mile standard IRS rate

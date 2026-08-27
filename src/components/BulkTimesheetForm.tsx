@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, FileText, Layers, AlertTriangle } from 'lucide-react';
 import { Employee, TimesheetEntry } from '../types';
 import { generateBulkTimesheets, calculateTimesheetHours } from '../utils/timesheetUtils';

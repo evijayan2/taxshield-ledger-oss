@@ -110,9 +110,9 @@ export function generatePayStubPdf(
   doc.text(org.ein || 'N/A', margin + 85, y + 46);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('PA State Tax ID:', margin + 8, y + 60);
+  doc.text('State Tax ID:', margin + 8, y + 60);
   doc.setFont('helvetica', 'normal');
-  doc.text(org.stateTaxId || 'N/A', margin + 85, y + 60);
+  doc.text(`${org.stateTaxId || 'N/A'} (${org.state || 'PA'})`, margin + 85, y + 60);
 
   doc.setFont('helvetica', 'bold');
   doc.text('Pay Frequency:', margin + 8, y + 74);
@@ -140,10 +140,13 @@ export function generatePayStubPdf(
   const w4Text = employee.w4FilingStatus ? employee.w4FilingStatus.replace(/_/g, ' ') : 'SINGLE';
   doc.text(w4Text + (employee.w4ExtraWithholding ? ` (+$${employee.w4ExtraWithholding}/pay)` : ''), empX + 85, y + 60);
 
+  const empState = stub.stateCode || employee.state || org.state || 'PA';
+  const locName = stub.localityName || employee.localTaxJurisdictionName || employee.paPsdName || 'State Tax Resident';
+
   doc.setFont('helvetica', 'bold');
-  doc.text('PA Resident PSD:', empX + 8, y + 74);
+  doc.text('State / Locality:', empX + 8, y + 74);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${employee.paPsdCode || 'N/A'} (${employee.paPsdName || 'PA PSD'})`, empX + 85, y + 74);
+  doc.text(`${empState} - ${locName}`, empX + 85, y + 74);
 
   y += 102;
 
@@ -209,13 +212,20 @@ export function generatePayStubPdf(
 
   const taxColW = (contentWidth - 16) / 3;
 
+  const stateIncVal = stub.stateIncomeTax ?? stub.paStateTax ?? 0;
+  const localIncVal = stub.localIncomeTax ?? stub.paLocalEit ?? 0;
+  const localFlatVal = stub.localFlatTax ?? stub.paLst ?? 0;
+  const stateLabel = empState === 'DE' ? 'DE State Income Tax' : `${empState} State Tax`;
+  const localLabel = locName ? `${locName} Local Tax` : 'Local Tax';
+  const flatLabel = empState === 'PA' ? 'PA Local LST' : 'Local Flat Tax';
+
   const taxes = [
     { label: 'Federal Income Tax', val: stub.federalIncomeTax },
     { label: 'Social Security (6.2%)', val: stub.socialSecurityTax },
     { label: 'Medicare (1.45%)', val: stub.medicareTax },
-    { label: 'PA State Income Tax (3.07%)', val: stub.paStateTax },
-    { label: 'PA Local EIT', val: stub.paLocalEit },
-    { label: 'PA Local LST', val: stub.paLst },
+    { label: stateLabel, val: stateIncVal },
+    { label: localLabel, val: localIncVal },
+    { label: flatLabel, val: localFlatVal },
   ];
 
   taxes.forEach((t, idx) => {
@@ -326,11 +336,14 @@ export function generatePayStubPdf(
   doc.setDrawColor(226, 232, 240);
   doc.rect(margin, y, contentWidth, 32, 'S');
 
+  const sutaLabel = empState === 'DE' ? 'DE SUTA' : `${empState} UC`;
+  const sutaVal = stub.employerStateUnemployment ?? stub.employerPaUc ?? 0;
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
   doc.text(
-    `Employer Match: Social Security ${fmtCurr(stub.employerSocialSecurity)} | Medicare ${fmtCurr(stub.employerMedicare)} | PA UC ${fmtCurr(stub.employerPaUc)}`,
+    `Employer Match: Social Security ${fmtCurr(stub.employerSocialSecurity)} | Medicare ${fmtCurr(stub.employerMedicare)} | ${sutaLabel} ${fmtCurr(sutaVal)}`,
     margin + 10,
     y + 19
   );

@@ -5,42 +5,9 @@
       "name": "US Federal Government",
       "level": "FEDERAL",
       "state": null
-    },
-    {
-      "code": "PA-STATE",
-      "name": "Commonwealth of Pennsylvania",
-      "level": "STATE",
-      "state": "PA"
-    },
-    {
-      "code": "PA-PSD-460401",
-      "name": "Lower Merion Township PSD",
-      "level": "LOCAL",
-      "state": "PA"
     }
   ],
   "rules": [
-    {
-      "jurisdictionCode": "PA-STATE",
-      "ruleCode": "PA_SIT_RATE",
-      "name": "PA Personal Income Tax Rate",
-      "category": "WITHHOLDING",
-      "description": "Pennsylvania statutory flat state income tax withholding rate of 3.07%.",
-      "version": {
-        "versionNumber": 1,
-        "status": "ACTIVE",
-        "ruleType": "FLAT_RATE",
-        "ruleData": {
-          "rate": 0.0307
-        },
-        "sourceTitle": "PA Dept of Revenue Tax Rates Schedule",
-        "sourceUrl": "https://www.revenue.pa.gov/TaxTypes/PIT/Pages/default.aspx",
-        "sourcePublisher": "PA Department of Revenue",
-        "statuteReference": "72 P.S. § 7302",
-        "citationTier": "TIER_1_OFFICIAL",
-        "effectiveStart": "2026-01-01T00:00:00Z"
-      }
-    },
     {
       "jurisdictionCode": "US-FED",
       "ruleCode": "FED_FICA_SS",
@@ -106,27 +73,6 @@
       }
     },
     {
-      "jurisdictionCode": "PA-STATE",
-      "ruleCode": "PA_UC_EMPLOYER",
-      "name": "PA Employer UC Default Rate",
-      "category": "EMPLOYER_TAX",
-      "description": "PA UC standard new employer experience rate.",
-      "version": {
-        "versionNumber": 1,
-        "status": "ACTIVE",
-        "ruleType": "FLAT_RATE",
-        "ruleData": {
-          "rate": 0.03822
-        },
-        "sourceTitle": "PA Office of Unemployment Compensation Employer Rates",
-        "sourceUrl": "https://www.uc.pa.gov/employers/tax-information",
-        "sourcePublisher": "PA Department of Labor & Industry",
-        "statuteReference": "43 P.S. § 781",
-        "citationTier": "TIER_1_OFFICIAL",
-        "effectiveStart": "2026-01-01T00:00:00Z"
-      }
-    },
-    {
       "jurisdictionCode": "US-FED",
       "ruleCode": "FED_FIT_WITHHOLDING",
       "name": "Federal Income Tax Withholding Brackets",
@@ -163,27 +109,6 @@
         "sourceUrl": "https://www.irs.gov/pub/irs-pdf/p15t.pdf",
         "sourcePublisher": "Internal Revenue Service",
         "statuteReference": "26 U.S. Code § 3402",
-        "citationTier": "TIER_1_OFFICIAL",
-        "effectiveStart": "2026-01-01T00:00:00Z"
-      }
-    },
-    {
-      "jurisdictionCode": "PA-PSD-460401",
-      "ruleCode": "PA_EIT_LOWER_MERION",
-      "name": "Lower Merion Township Local EIT Rate",
-      "category": "WITHHOLDING",
-      "description": "PA Act 32 Local Earned Income Tax (EIT) resident withholding rate of 1.00% for Lower Merion Township (PSD 460401).",
-      "version": {
-        "versionNumber": 1,
-        "status": "ACTIVE",
-        "ruleType": "FLAT_RATE",
-        "ruleData": {
-          "rate": 0.01
-        },
-        "sourceTitle": "PA DCED Municipal Tax Register (PSD 460401)",
-        "sourceUrl": "https://dced.pa.gov/local-government/local-income-tax-information/",
-        "sourcePublisher": "PA Dept of Community & Economic Development",
-        "statuteReference": "53 P.S. § 6924.301 (Act 32)",
         "citationTier": "TIER_1_OFFICIAL",
         "effectiveStart": "2026-01-01T00:00:00Z"
       }

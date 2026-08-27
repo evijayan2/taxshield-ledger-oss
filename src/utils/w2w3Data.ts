@@ -95,9 +95,9 @@ export function calculateEmployeeW2(
   let fedTax = empStubs.reduce((sum, s) => sum + (s.federalIncomeTax || 0), 0);
   let ssTax = empStubs.reduce((sum, s) => sum + (s.socialSecurityTax || 0), 0);
   let medTax = empStubs.reduce((sum, s) => sum + (s.medicareTax || 0), 0);
-  let stateTax = empStubs.reduce((sum, s) => sum + (s.paStateTax || 0), 0);
-  let localTax = empStubs.reduce((sum, s) => sum + (s.paLocalEit || 0), 0);
-  let paLst = empStubs.reduce((sum, s) => sum + (s.paLst || 0), 0);
+  let stateTax = empStubs.reduce((sum, s) => sum + (s.stateIncomeTax ?? s.paStateTax ?? 0), 0);
+  let localTax = empStubs.reduce((sum, s) => sum + (s.localIncomeTax ?? s.paLocalEit ?? 0), 0);
+  let localFlat = empStubs.reduce((sum, s) => sum + (s.localFlatTax ?? s.paLst ?? 0), 0);
 
   // Fallback estimates if no stubs are generated yet but employee has payRate
   if (empStubs.length === 0 && employee.payRate > 0) {
@@ -117,18 +117,23 @@ export function calculateEmployeeW2(
     ssTax = gross * rates.socialSecurityRate;
     medTax = gross * rates.medicareRate;
     stateTax = gross * rates.paSitRate;
-    localTax = annualEst * (employee.paResidentEitRate || 0.01);
-    if (!employee.paLstExempt) {
-      paLst = employee.paLstAnnual || 52;
+    localTax = annualEst * (employee.localTaxRate || employee.paResidentEitRate || 0.01);
+    const isExempt = employee.localFlatTaxExempt ?? employee.paLstExempt ?? false;
+    if (!isExempt) {
+      localFlat = employee.localFlatTaxAnnual || employee.paLstAnnual || 52;
     }
   }
 
   const ssCap = 168600;
   const ssWages = Math.min(gross, ssCap);
 
+  const empState = (employee.state || employee.workState || org.state || 'PA').toUpperCase();
+  const locality = employee.localTaxJurisdictionName || employee.paPsdName || (empState === 'DE' ? 'Delaware' : 'Lower Merion / Montgomery');
+
   const box14Parts: string[] = [];
-  if (paLst > 0) {
-    box14Parts.push(`PA LST ${formatCurrency(paLst)}`);
+  if (localFlat > 0) {
+    const flatLabel = empState === 'PA' ? 'PA LST' : 'Local Flat Tax';
+    box14Parts.push(`${flatLabel} ${formatCurrency(localFlat)}`);
   }
 
   return {
@@ -152,13 +157,13 @@ export function calculateEmployeeW2(
       box13RetirementPlan: false,
       box13ThirdPartySick: false,
       box14Other: box14Parts.join(' | ') || '',
-      box15State: 'PA',
+      box15State: empState,
       box15StateId: org.stateTaxId || '77-88990',
       box16StateWages: gross,
       box17StateTax: stateTax,
       box18LocalWages: gross,
       box19LocalTax: localTax,
-      box20Locality: employee.paPsdName || 'Lower Merion / Montgomery'
+      box20Locality: locality
     }
   };
 }

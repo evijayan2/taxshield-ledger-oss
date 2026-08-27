@@ -164,7 +164,7 @@ export function useAppState() {
   };
 
   const handleAddMileage = (newTrip: Omit<MileageLog, 'id' | 'createdAt' | 'mileageAllowance' | 'calculatedMiles'>) => {
-    if (isFutureDateString(newTrip.date) || isFutureYear(data.activeTaxYear)) {
+    if (isFutureDateString(newTrip.tripDate) || isFutureYear(data.activeTaxYear)) {
       console.warn(getFutureYearLockMessage(data.activeTaxYear || 2026, 'Logging mileage trip'));
       return;
     }
@@ -228,7 +228,7 @@ export function useAppState() {
   };
 
   const handleAddTimesheet = (newEntry: Omit<TimesheetEntry, 'id' | 'createdAt'>) => {
-    if (isFutureDateString(newEntry.date) || isFutureYear(data.activeTaxYear)) {
+    if (isFutureDateString(newEntry.workDate) || isFutureYear(data.activeTaxYear)) {
       console.warn(getFutureYearLockMessage(data.activeTaxYear || 2026, 'Adding timesheet entry'));
       return;
     }
@@ -244,7 +244,7 @@ export function useAppState() {
   };
 
   const handleBulkAddTimesheets = (entries: Omit<TimesheetEntry, 'id' | 'createdAt'>[]) => {
-    const validEntries = entries.filter(e => !isFutureDateString(e.date));
+    const validEntries = entries.filter(e => !isFutureDateString(e.workDate));
     if (validEntries.length === 0 || isFutureYear(data.activeTaxYear)) {
       console.warn(getFutureYearLockMessage(data.activeTaxYear || 2026, 'Bulk adding timesheets'));
       return;

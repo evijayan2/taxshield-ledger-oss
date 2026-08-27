@@ -10,7 +10,8 @@ export interface Company {
   ownerName: string;
   ownerEmail: string;
   ownerTaxBracket: number; // e.g. 24 for 24%
-  filingFrequencyPA: 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY';
+  stateFilingFrequency?: 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY';
+  filingFrequencyPA?: 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY'; // Legacy alias
   payFrequency?: 'WEEKLY' | 'BI_WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY';
   standardMileageRate: number; // e.g. 0.67
   // Company Banking & Mercury API Integration
@@ -47,14 +48,24 @@ export interface Employee {
   w4OtherIncome: number;
   w4Deductions: number;
   w4ExtraWithholding: number;
-  // PA State & Local
-  paPsdCode: string; // 6 digit code e.g. 460401
-  paPsdName: string; // e.g. Lower Merion / Montgomery
-  paResidentEitRate: number; // e.g. 0.01 (1.0%)
-  paWorkPsdCode: string;
-  paWorkEitRate: number;
-  paLstAnnual: number; // typically 52 ($52/yr)
-  paLstExempt: boolean;
+  // Generic State & Local Tax
+  workState?: string;
+  stateW4FilingStatus?: string;
+  stateAllowances?: number;
+  localTaxJurisdictionCode?: string; // e.g. 460401 or DE-WILMINGTON
+  localTaxJurisdictionName?: string;
+  localTaxRate?: number; // e.g. 0.01 (1.0%)
+  localFlatTaxAnnual?: number; // e.g. 52 ($52/yr LST)
+  localFlatTaxExempt?: boolean;
+  taxAttributes?: Record<string, unknown>;
+  // Legacy PA aliases (optional)
+  paPsdCode?: string;
+  paPsdName?: string;
+  paResidentEitRate?: number;
+  paWorkPsdCode?: string;
+  paWorkEitRate?: number;
+  paLstAnnual?: number;
+  paLstExempt?: boolean;
   // Payout Details — ACH Direct Deposit (Single Bank Supported)
   bankName?: string;
   accountType?: 'CHECKING' | 'SAVINGS';
@@ -119,9 +130,13 @@ export interface PayStub {
   federalIncomeTax: number;
   socialSecurityTax: number; // 6.2%
   medicareTax: number; // 1.45%
-  paStateTax: number; // 3.07%
-  paLocalEit: number; // PSD %
-  paLst: number; // Local Services Tax
+  // State & Locality Attribution
+  stateCode?: string; // e.g. "PA", "DE", "NJ"
+  localityCode?: string; // e.g. "PA-PSD-460401"
+  localityName?: string; // e.g. "Lower Merion Township"
+  stateIncomeTax?: number;
+  localIncomeTax?: number;
+  localFlatTax?: number;
   totalEmployeeTaxes: number;
   // Accountable Plan Reimbursements (Non-Taxable)
   mileageReimbursement: number;
@@ -132,7 +147,13 @@ export interface PayStub {
   // Employer Taxes (Company Cost)
   employerSocialSecurity: number; // 6.2%
   employerMedicare: number; // 1.45%
-  employerPaUc: number; // PA Unemployment e.g. 3.5%
+  employerStateUnemployment?: number; // SUTA e.g. 3.5%
+  taxBreakdown?: Record<string, unknown>;
+  // Legacy aliases
+  paStateTax?: number;
+  paLocalEit?: number;
+  paLst?: number;
+  employerPaUc?: number;
   totalEmployerTaxes: number;
   totalCompanyCost: number; // Gross + Employer Taxes + Reimbursements
   // Disbursement

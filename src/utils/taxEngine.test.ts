@@ -117,3 +117,27 @@ describe('Tax Year Helper Utilities', () => {
   });
 });
 
+describe('Delaware Multi-State Tax Calculations', () => {
+  it('should calculate DE state income tax and DE SUTA for Delaware employee', () => {
+    const deEmployee: Employee = {
+      ...baseEmployee,
+      state: 'DE',
+      workState: 'DE',
+      localTaxJurisdictionCode: 'DE-LOCAL-WILMINGTON',
+      localTaxJurisdictionName: 'City of Wilmington',
+      localTaxRate: 0.0125,
+      relationshipToOwner: 'NONE',
+    };
+
+    const result = calculateGrossToNet(deEmployee, 40); // $600 gross
+    expect(result.stateCode).toBe('DE');
+    expect(result.localityName).toBe('City of Wilmington');
+    expect(result.stateIncomeTax).toBeGreaterThan(0);
+    expect(result.localIncomeTax).toBe(Math.round(600 * 0.0125 * 100) / 100);
+    expect(result.employerStateUnemployment).toBeGreaterThan(0);
+    expect(result.taxBreakdown).toBeDefined();
+    expect((result.taxBreakdown as any).state.code).toBe('DE');
+  });
+});
+
+

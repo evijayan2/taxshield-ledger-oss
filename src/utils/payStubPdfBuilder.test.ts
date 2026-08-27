@@ -14,6 +14,7 @@ const mockOrg: Organization = {
   ownerName: 'Jane Owner',
   ownerEmail: 'jane@acme.com',
   ownerTaxBracket: 24,
+  stateFilingFrequency: 'MONTHLY',
   filingFrequencyPA: 'MONTHLY',
   payFrequency: 'BI_WEEKLY',
   standardMileageRate: 0.67,

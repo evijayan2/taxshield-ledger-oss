@@ -1,5 +1,5 @@
 import { PrismaClient, RuleStatus, CitationTier, RuleType } from '@prisma/client';
-import taxRulesData from './fixtures/tax-rules.json';
+import { allTaxRuleFixtures } from './fixtures/index';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,7 @@ async function main() {
 
   // 1. Tax Jurisdictions
   const jurisdictionMap = new Map<string, string>();
-  for (const j of taxRulesData.jurisdictions) {
+  for (const j of allTaxRuleFixtures.jurisdictions) {
     const record = await prisma.taxJurisdiction.upsert({
       where: { code: j.code },
       update: { name: j.name, level: j.level as string, state: j.state },
@@ -23,7 +23,7 @@ async function main() {
   }
 
   // 2. Tax Rules & Versions
-  for (const r of taxRulesData.rules) {
+  for (const r of allTaxRuleFixtures.rules) {
     const jurisdictionId = jurisdictionMap.get(r.jurisdictionCode);
     if (!jurisdictionId) {
       throw new Error(`Jurisdiction ${r.jurisdictionCode} not found in fixture.`);

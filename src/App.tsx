@@ -220,7 +220,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
               timesheets={data.timesheets}
               activeTaxYear={currentActiveTaxYear}
               onCreatePayrollRun={(runData, stubsData) => {
-                if (isFutureYear(currentActiveTaxYear) || isFutureDateString(runData.periodEndDate) || isFutureDateString(runData.payDate)) {
+                if (isFutureYear(currentActiveTaxYear) || isFutureDateString(runData.periodEnd) || isFutureDateString(runData.payDate)) {
                   console.warn(`Cannot create payroll run for future tax year (${currentActiveTaxYear})`);
                   return;
                 }

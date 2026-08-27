@@ -29,7 +29,8 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
         ownerName: cRow.ownerName,
         ownerEmail: cRow.ownerEmail,
         ownerTaxBracket: parseFloat(cRow.ownerTaxBracket),
-        filingFrequencyPA: cRow.filingFrequencyPa,
+        stateFilingFrequency: cRow.stateFilingFrequency || cRow.filingFrequencyPa || 'MONTHLY',
+        filingFrequencyPA: cRow.stateFilingFrequency || cRow.filingFrequencyPa || 'MONTHLY',
         standardMileageRate: cRow.standardMileageRate ? parseFloat(cRow.standardMileageRate) : 0.67,
       };
     } else {
@@ -45,46 +46,65 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
         ownerName: '',
         ownerEmail: '',
         ownerTaxBracket: 24,
+        stateFilingFrequency: 'MONTHLY',
         filingFrequencyPA: 'MONTHLY',
         standardMileageRate: 0.67,
       };
     }
 
     const empRes = await client.query('SELECT * FROM employees ORDER BY first_name ASC');
-    const employees = empRes.rows.map(e => ({
-      id: e.id,
-      firstName: e.first_name,
-      lastName: e.last_name,
-      age: e.age ? parseInt(e.age, 10) : undefined,
-      email: e.email,
-      phone: e.phone,
-      ssnLastFour: e.ssn_last_four,
-      streetAddress: e.street_address || undefined,
-      city: e.city || undefined,
-      state: e.state || undefined,
-      zip: e.zip || undefined,
-      employmentType: e.employment_type,
-      payRate: parseFloat(e.pay_rate),
-      payFrequency: e.pay_frequency,
-      w4FilingStatus: e.w4_filing_status,
-      w4MultipleJobs: e.w4_multiple_jobs,
-      w4DependentCredit: parseFloat(e.w4_dependent_credit),
-      w4OtherIncome: parseFloat(e.w4_other_income),
-      w4Deductions: parseFloat(e.w4_deductions),
-      w4ExtraWithholding: parseFloat(e.w4_extra_withholding),
-      paPsdCode: e.pa_psd_code,
-      paPsdName: e.pa_psd_name,
-      paResidentEitRate: parseFloat(e.pa_resident_eit_rate),
-      paWorkPsdCode: e.pa_work_psd_code,
-      paWorkEitRate: parseFloat(e.pa_work_eit_rate),
-      paLstAnnual: parseFloat(e.pa_lst_annual),
-      bankName: e.bank_name || undefined,
-      accountType: e.account_type || 'CHECKING',
-      routingNumber: e.routing_number || undefined,
-      accountNumber: e.account_number || undefined,
-      bankAccountMasked: e.bank_account_masked || undefined,
-      isActive: e.is_active,
-    }));
+    const employees = empRes.rows.map(e => {
+      const locCode = e.local_tax_jurisdiction_code || e.pa_psd_code || undefined;
+      const locName = e.local_tax_jurisdiction_name || e.pa_psd_name || undefined;
+      const locRate = e.local_tax_rate !== undefined && e.local_tax_rate !== null ? parseFloat(e.local_tax_rate) : (e.pa_resident_eit_rate ? parseFloat(e.pa_resident_eit_rate) : 0);
+      const flatAnn = e.local_flat_tax_annual !== undefined && e.local_flat_tax_annual !== null ? parseFloat(e.local_flat_tax_annual) : (e.pa_lst_annual ? parseFloat(e.pa_lst_annual) : 52);
+      const flatExempt = e.local_flat_tax_exempt ?? e.pa_lst_exempt ?? false;
+
+      return {
+        id: e.id,
+        firstName: e.first_name,
+        lastName: e.last_name,
+        age: e.age ? parseInt(e.age, 10) : undefined,
+        email: e.email,
+        phone: e.phone,
+        ssnLastFour: e.ssn_last_four,
+        streetAddress: e.street_address || undefined,
+        city: e.city || undefined,
+        state: e.state || undefined,
+        zip: e.zip || undefined,
+        employmentType: e.employment_type,
+        payRate: parseFloat(e.pay_rate),
+        payFrequency: e.pay_frequency,
+        w4FilingStatus: e.w4_filing_status,
+        w4MultipleJobs: e.w4_multiple_jobs,
+        w4DependentCredit: parseFloat(e.w4_dependent_credit),
+        w4OtherIncome: parseFloat(e.w4_other_income),
+        w4Deductions: parseFloat(e.w4_deductions),
+        w4ExtraWithholding: parseFloat(e.w4_extra_withholding),
+        workState: e.work_state || undefined,
+        stateW4FilingStatus: e.state_w4_filing_status || undefined,
+        stateAllowances: e.state_allowances ? parseInt(e.state_allowances, 10) : 0,
+        localTaxJurisdictionCode: locCode,
+        localTaxJurisdictionName: locName,
+        localTaxRate: locRate,
+        localFlatTaxAnnual: flatAnn,
+        localFlatTaxExempt: flatExempt,
+        taxAttributes: e.tax_attributes || undefined,
+        paPsdCode: locCode || '',
+        paPsdName: locName || '',
+        paResidentEitRate: locRate,
+        paWorkPsdCode: locCode || '',
+        paWorkEitRate: locRate,
+        paLstAnnual: flatAnn,
+        paLstExempt: flatExempt,
+        bankName: e.bank_name || undefined,
+        accountType: e.account_type || 'CHECKING',
+        routingNumber: e.routing_number || undefined,
+        accountNumber: e.account_number || undefined,
+        bankAccountMasked: e.bank_account_masked || undefined,
+        isActive: e.is_active,
+      };
+    });
 
     const milRes = await client.query('SELECT * FROM mileage_logs ORDER BY trip_date DESC');
     const mileageLogs = milRes.rows.map(m => ({
@@ -143,39 +163,57 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
     }));
 
     const stubRes = await client.query('SELECT * FROM pay_stubs ORDER BY pay_date DESC');
-    const payStubs = stubRes.rows.map(s => ({
-      id: s.id,
-      payrollRunId: s.payroll_run_id,
-      employeeId: s.employee_id,
-      periodStart: s.period_start,
-      periodEnd: s.period_end,
-      payDate: s.pay_date,
-      hoursWorked: parseFloat(s.hours_worked),
-      overtimeHours: parseFloat(s.overtime_hours),
-      hourlyRate: parseFloat(s.hourly_rate),
-      grossEarnings: parseFloat(s.gross_earnings),
-      federalIncomeTax: parseFloat(s.federal_income_tax),
-      socialSecurityTax: parseFloat(s.social_security_tax),
-      medicareTax: parseFloat(s.medicare_tax),
-      paStateTax: parseFloat(s.pa_state_tax),
-      paLocalEit: parseFloat(s.pa_local_eit),
-      paLst: parseFloat(s.pa_lst),
-      totalEmployeeTaxes: parseFloat(s.total_employee_taxes),
-      mileageReimbursement: parseFloat(s.mileage_reimbursement),
-      travelExpensesReimbursement: parseFloat(s.travel_expenses_reimbursement),
-      totalReimbursements: parseFloat(s.total_reimbursements),
-      netPay: parseFloat(s.net_pay),
-      employerSocialSecurity: parseFloat(s.employer_social_security),
-      employerMedicare: parseFloat(s.employer_medicare),
-      employerPaUc: parseFloat(s.employer_pa_uc),
-      totalEmployerTaxes: parseFloat(s.total_employer_taxes),
-      totalCompanyCost: parseFloat(s.total_company_cost),
-      disbursementMethod: s.disbursement_method || 'ACH',
-      disbursementStatus: s.disbursement_status,
-      achTraceRef: s.ach_trace_ref || s.zelle_confirmation_ref || undefined,
-      paidAt: s.paid_at,
-      createdAt: s.created_at,
-    }));
+    const payStubs = stubRes.rows.map(s => {
+      const stateCode = s.state_code || 'PA';
+      const localityCode = s.locality_code || undefined;
+      const localityName = s.locality_name || undefined;
+      const stateIncTax = parseFloat(s.state_income_tax ?? s.pa_state_tax ?? 0);
+      const localIncTax = parseFloat(s.local_income_tax ?? s.pa_local_eit ?? 0);
+      const localFlat = parseFloat(s.local_flat_tax ?? s.pa_lst ?? 0);
+      const employerSuta = parseFloat(s.employer_state_unemployment ?? s.employer_pa_uc ?? 0);
+
+      return {
+        id: s.id,
+        payrollRunId: s.payroll_run_id,
+        employeeId: s.employee_id,
+        periodStart: s.period_start,
+        periodEnd: s.period_end,
+        payDate: s.pay_date,
+        hoursWorked: parseFloat(s.hours_worked),
+        overtimeHours: parseFloat(s.overtime_hours),
+        hourlyRate: parseFloat(s.hourly_rate),
+        grossEarnings: parseFloat(s.gross_earnings),
+        federalIncomeTax: parseFloat(s.federal_income_tax),
+        socialSecurityTax: parseFloat(s.social_security_tax),
+        medicareTax: parseFloat(s.medicare_tax),
+        stateCode,
+        localityCode,
+        localityName,
+        stateIncomeTax: stateIncTax,
+        localIncomeTax: localIncTax,
+        localFlatTax: localFlat,
+        paStateTax: stateIncTax,
+        paLocalEit: localIncTax,
+        paLst: localFlat,
+        totalEmployeeTaxes: parseFloat(s.total_employee_taxes),
+        mileageReimbursement: parseFloat(s.mileage_reimbursement),
+        travelExpensesReimbursement: parseFloat(s.travel_expenses_reimbursement),
+        totalReimbursements: parseFloat(s.total_reimbursements),
+        netPay: parseFloat(s.net_pay),
+        employerSocialSecurity: parseFloat(s.employer_social_security),
+        employerMedicare: parseFloat(s.employer_medicare),
+        employerStateUnemployment: employerSuta,
+        employerPaUc: employerSuta,
+        taxBreakdown: s.tax_breakdown || undefined,
+        totalEmployerTaxes: parseFloat(s.total_employer_taxes),
+        totalCompanyCost: parseFloat(s.total_company_cost),
+        disbursementMethod: s.disbursement_method || 'ACH',
+        disbursementStatus: s.disbursement_status,
+        achTraceRef: s.ach_trace_ref || s.zelle_confirmation_ref || undefined,
+        paidAt: s.paid_at,
+        createdAt: s.created_at,
+      };
+    });
 
     const taskRes = await client.query('SELECT * FROM compliance_tasks ORDER BY due_date ASC');
     const complianceTasks = taskRes.rows.map(c => ({
@@ -317,7 +355,7 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
       await client.query(
         `INSERT INTO companies (
           id, name, ein, "stateTaxId", address, city, state, zip, 
-          "ownerName", "ownerEmail", "ownerTaxBracket", "filingFrequencyPa", "standardMileageRate", "updatedAt"
+          "ownerName", "ownerEmail", "ownerTaxBracket", "stateFilingFrequency", "standardMileageRate", "updatedAt"
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
         ON CONFLICT (id) DO UPDATE SET
           name = EXCLUDED.name,
@@ -330,7 +368,7 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
           "ownerName" = EXCLUDED."ownerName",
           "ownerEmail" = EXCLUDED."ownerEmail",
           "ownerTaxBracket" = EXCLUDED."ownerTaxBracket",
-          "filingFrequencyPa" = EXCLUDED."filingFrequencyPa",
+          "stateFilingFrequency" = EXCLUDED."stateFilingFrequency",
           "standardMileageRate" = EXCLUDED."standardMileageRate",
           "updatedAt" = CURRENT_TIMESTAMP`,
         [
@@ -345,7 +383,7 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
           companyData.ownerName || 'Managing Member',
           companyData.ownerEmail || 'owner@micro-llc.tax',
           companyData.ownerTaxBracket || 24,
-          companyData.filingFrequencyPA || companyData.filingFrequencyPa || 'MONTHLY',
+          companyData.stateFilingFrequency || companyData.filingFrequencyPA || companyData.filingFrequencyPa || 'MONTHLY',
           companyData.standardMileageRate || 0.67,
         ]
       );
@@ -355,25 +393,32 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
     if (Array.isArray(data.employees)) {
       await client.query('DELETE FROM employees');
       for (const emp of data.employees) {
+        const locCode = emp.localTaxJurisdictionCode || emp.paPsdCode || null;
+        const locName = emp.localTaxJurisdictionName || emp.paPsdName || null;
+        const locRate = emp.localTaxRate ?? emp.paResidentEitRate ?? 0;
+        const flatAnn = emp.localFlatTaxAnnual ?? emp.paLstAnnual ?? 52;
+        const flatExempt = emp.localFlatTaxExempt ?? emp.paLstExempt ?? false;
+
         await client.query(
           `INSERT INTO employees (
             id, first_name, last_name, age, email, phone, ssn_last_four, 
             street_address, city, state, zip,
             employment_type, pay_rate, pay_frequency, w4_filing_status, 
             w4_multiple_jobs, w4_dependent_credit, w4_other_income, 
-            w4_deductions, w4_extra_withholding, pa_psd_code, pa_psd_name, 
-            pa_resident_eit_rate, pa_work_psd_code, pa_work_eit_rate, 
-            pa_lst_annual, pa_lst_exempt, bank_name, account_type, routing_number, account_number, bank_account_masked, is_active
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)`,
+            w4_deductions, w4_extra_withholding, work_state, state_w4_filing_status,
+            state_allowances, local_tax_jurisdiction_code, local_tax_jurisdiction_name,
+            local_tax_rate, local_flat_tax_annual, local_flat_tax_exempt, tax_attributes,
+            bank_name, account_type, routing_number, account_number, bank_account_masked, is_active
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)`,
           [
             emp.id, emp.firstName, emp.lastName, emp.age ?? null, emp.email, emp.phone, emp.ssnLastFour,
             emp.streetAddress || null, emp.city || null, emp.state || null, emp.zip || null,
             emp.employmentType, emp.payRate, emp.payFrequency, emp.w4FilingStatus,
             emp.w4MultipleJobs || false, emp.w4DependentCredit || 0, emp.w4OtherIncome || 0,
-            emp.w4Deductions || 0, emp.w4ExtraWithholding || 0, emp.paPsdCode, emp.paPsdName,
-            emp.paResidentEitRate, emp.paWorkPsdCode, emp.paWorkEitRate,
-            emp.paLstAnnual || 52, emp.paLstExempt || false, emp.bankName || null,
-            emp.accountType || 'CHECKING', emp.routingNumber || null, emp.accountNumber || null,
+            emp.w4Deductions || 0, emp.w4ExtraWithholding || 0, emp.workState || null,
+            emp.stateW4FilingStatus || null, emp.stateAllowances || 0, locCode, locName,
+            locRate, flatAnn, flatExempt, emp.taxAttributes ? JSON.stringify(emp.taxAttributes) : null,
+            emp.bankName || null, emp.accountType || 'CHECKING', emp.routingNumber || null, emp.accountNumber || null,
             emp.bankAccountMasked || null, emp.isActive ?? true
           ]
         );
@@ -443,24 +488,35 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
     if (Array.isArray(data.payStubs)) {
       await client.query('DELETE FROM pay_stubs');
       for (const s of data.payStubs) {
+        const stateCode = s.stateCode || 'PA';
+        const localityCode = s.localityCode || s.paPsdCode || null;
+        const localityName = s.localityName || s.paPsdName || null;
+        const stateInc = s.stateIncomeTax ?? s.paStateTax ?? 0;
+        const localInc = s.localIncomeTax ?? s.paLocalEit ?? 0;
+        const localFlat = s.localFlatTax ?? s.paLst ?? 0;
+        const employerSuta = s.employerStateUnemployment ?? s.employerPaUc ?? 0;
+
         await client.query(
           `INSERT INTO pay_stubs (
             id, payroll_run_id, employee_id, period_start, period_end, pay_date,
             hours_worked, overtime_hours, hourly_rate, gross_earnings,
-            federal_income_tax, social_security_tax, medicare_tax, pa_state_tax,
-            pa_local_eit, pa_lst, total_employee_taxes, mileage_reimbursement,
+            federal_income_tax, social_security_tax, medicare_tax,
+            state_code, locality_code, locality_name, state_income_tax,
+            local_income_tax, local_flat_tax, total_employee_taxes, mileage_reimbursement,
             travel_expenses_reimbursement, total_reimbursements, net_pay,
-            employer_social_security, employer_medicare, employer_pa_uc,
-            total_employer_taxes, total_company_cost, disbursement_method,
+            employer_social_security, employer_medicare, employer_state_unemployment,
+            tax_breakdown, total_employer_taxes, total_company_cost, disbursement_method,
             disbursement_status, ach_trace_ref
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)`,
           [
             s.id, s.payrollRunId, s.employeeId, s.periodStart, s.periodEnd, s.payDate,
             s.hoursWorked, s.overtimeHours, s.hourlyRate, s.grossEarnings,
-            s.federalIncomeTax, s.socialSecurityTax, s.medicareTax, s.paStateTax,
-            s.paLocalEit, s.paLst, s.totalEmployeeTaxes, s.mileageReimbursement,
+            s.federalIncomeTax, s.socialSecurityTax, s.medicareTax,
+            stateCode, localityCode, localityName, stateInc,
+            localInc, localFlat, s.totalEmployeeTaxes, s.mileageReimbursement,
             s.travelExpensesReimbursement, s.totalReimbursements, s.netPay,
-            s.employerSocialSecurity, s.employerMedicare, s.employerPaUc,
+            s.employerSocialSecurity, s.employerMedicare, employerSuta,
+            s.taxBreakdown ? JSON.stringify(s.taxBreakdown) : null,
             s.totalEmployerTaxes, s.totalCompanyCost, s.disbursementMethod || 'ACH',
             s.disbursementStatus, s.achTraceRef || (s as any).zelleConfirmationRef || null
           ]

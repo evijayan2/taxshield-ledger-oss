@@ -250,23 +250,94 @@ export function calculateGrossToNet(
   const socialSecurityTax = isFicaExempt ? 0 : Math.round(grossEarnings * rates.socialSecurityRate * 100) / 100;
   const medicareTax = isFicaExempt ? 0 : Math.round(grossEarnings * rates.medicareRate * 100) / 100;
 
-  const paStateTax = Math.round(grossEarnings * rates.paSitRate * 100) / 100;
-  const effectiveEitRate = Math.max(employee.paResidentEitRate, employee.paWorkEitRate);
-  const paLocalEit = Math.round(grossEarnings * effectiveEitRate * 100) / 100;
+  const stateCode = (employee.state || 'PA').toUpperCase();
+  const localityCode = employee.localTaxJurisdictionCode || employee.paPsdCode || undefined;
+  const localityName = employee.localTaxJurisdictionName || employee.paPsdName || undefined;
+
+  let stateIncomeTax = 0;
+  let employerStateUnemployment = 0;
+
+  if (stateCode === 'DE') {
+    try {
+      const deSitRule = resolveActiveRuleSync('DE-STATE', 'DE_SIT_BRACKETS');
+      if (deSitRule && deSitRule.payload && Array.isArray(deSitRule.payload.brackets)) {
+        const periods = employee.payFrequency === 'WEEKLY' ? 52 : employee.payFrequency === 'BI_WEEKLY' ? 26 : employee.payFrequency === 'SEMI_MONTHLY' ? 24 : 12;
+        const annualizedGross = grossEarnings * periods;
+        let annualTax = 0;
+        const matchingBracket = deSitRule.payload.brackets.find((b: any) =>
+          annualizedGross > b.over && (b.max === null || b.max === undefined || annualizedGross <= b.max)
+        );
+        if (matchingBracket) {
+          const taxableExcess = annualizedGross - matchingBracket.over;
+          annualTax = (matchingBracket.baseTax || 0) + (taxableExcess * matchingBracket.rate);
+        }
+        stateIncomeTax = Math.round((annualTax / periods) * 100) / 100;
+      }
+    } catch {
+      stateIncomeTax = Math.round(grossEarnings * 0.032 * 100) / 100;
+    }
+
+    try {
+      const deSutaRule = resolveActiveRuleSync('DE-STATE', 'DE_SUTA_EMPLOYER');
+      const deRate = deSutaRule?.payload?.rate ?? 0.023;
+      employerStateUnemployment = isPaUcExempt ? 0 : Math.round(grossEarnings * deRate * 100) / 100;
+    } catch {
+      employerStateUnemployment = isPaUcExempt ? 0 : Math.round(grossEarnings * 0.023 * 100) / 100;
+    }
+  } else {
+    // Default PA calculation
+    stateIncomeTax = Math.round(grossEarnings * rates.paSitRate * 100) / 100;
+    employerStateUnemployment = isPaUcExempt ? 0 : Math.round(grossEarnings * rates.paEmployerUcRate * 100) / 100;
+  }
+
+  const effectiveEitRate = Math.max(
+    employee.localTaxRate || 0,
+    employee.paResidentEitRate || 0,
+    employee.paWorkEitRate || 0
+  );
+  const localIncomeTax = Math.round(grossEarnings * effectiveEitRate * 100) / 100;
 
   const periodsPerYear = employee.payFrequency === 'WEEKLY' ? 52 : employee.payFrequency === 'BI_WEEKLY' ? 26 : employee.payFrequency === 'SEMI_MONTHLY' ? 24 : 12;
-  const paLst = (grossEarnings === 0 || employee.paLstExempt) ? 0 : Math.round((employee.paLstAnnual / periodsPerYear) * 100) / 100;
+  const isFlatExempt = employee.localFlatTaxExempt ?? employee.paLstExempt ?? false;
+  const flatAnnual = employee.localFlatTaxAnnual ?? employee.paLstAnnual ?? 52;
+  const localFlatTax = (grossEarnings === 0 || isFlatExempt) ? 0 : Math.round((flatAnnual / periodsPerYear) * 100) / 100;
 
-  const totalEmployeeTaxes = Math.round((federalIncomeTax + socialSecurityTax + medicareTax + paStateTax + paLocalEit + paLst) * 100) / 100;
+  const paStateTax = stateIncomeTax;
+  const paLocalEit = localIncomeTax;
+  const paLst = localFlatTax;
+
+  const totalEmployeeTaxes = Math.round((federalIncomeTax + socialSecurityTax + medicareTax + stateIncomeTax + localIncomeTax + localFlatTax) * 100) / 100;
   const totalReimbursements = Math.round((approvedMileageReimbursement + approvedTravelReimbursement) * 100) / 100;
   const netPay = Math.round((grossEarnings - totalEmployeeTaxes + totalReimbursements) * 100) / 100;
 
   const employerSocialSecurity = socialSecurityTax;
   const employerMedicare = medicareTax;
-  const employerPaUc = isPaUcExempt ? 0 : Math.round(grossEarnings * rates.paEmployerUcRate * 100) / 100;
-  const totalEmployerTaxes = Math.round((employerSocialSecurity + employerMedicare + employerPaUc) * 100) / 100;
+  const employerPaUc = employerStateUnemployment;
+  const totalEmployerTaxes = Math.round((employerSocialSecurity + employerMedicare + employerStateUnemployment) * 100) / 100;
 
   const totalCompanyCost = Math.round((grossEarnings + totalEmployerTaxes + totalReimbursements) * 100) / 100;
+
+  const taxBreakdown = {
+    state: {
+      code: stateCode,
+      name: stateCode === 'DE' ? 'Delaware State Income Tax' : 'PA State Personal Income Tax',
+      amount: stateIncomeTax
+    },
+    locality: localityName || localityCode ? {
+      code: localityCode,
+      name: localityName || localityCode,
+      amount: localIncomeTax
+    } : null,
+    flatLocalTax: localFlatTax > 0 ? {
+      name: stateCode === 'PA' ? 'PA Local Services Tax (LST)' : 'Local Flat Tax',
+      amount: localFlatTax
+    } : null,
+    suta: {
+      state: stateCode,
+      name: stateCode === 'DE' ? 'DE Unemployment Insurance (SUTA)' : 'PA Employer UC',
+      amount: employerStateUnemployment
+    }
+  };
 
   return {
     grossEarnings,
@@ -275,6 +346,14 @@ export function calculateGrossToNet(
     federalIncomeTax,
     socialSecurityTax,
     medicareTax,
+    stateCode,
+    localityCode,
+    localityName,
+    stateIncomeTax,
+    localIncomeTax,
+    localFlatTax,
+    employerStateUnemployment,
+    taxBreakdown,
     paStateTax,
     paLocalEit,
     effectiveEitRate,

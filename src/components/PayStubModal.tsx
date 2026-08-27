@@ -80,7 +80,7 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
               <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 mt-2">
                 <span>Federal EIN: <strong className="text-slate-800 dark:text-slate-200 print:text-black">{org.ein}</strong></span>
                 <span>•</span>
-                <span>PA Tax ID: <strong className="text-slate-800 dark:text-slate-200 print:text-black">{org.stateTaxId}</strong></span>
+                <span>State Tax ID ({org.state || 'PA'}): <strong className="text-slate-800 dark:text-slate-200 print:text-black">{org.stateTaxId}</strong></span>
               </div>
             </div>
 
@@ -111,14 +111,18 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
                 <p className="text-emerald-700 dark:text-emerald-400 font-semibold text-[11px]">
                   Owner Relation: {
                     employee.relationshipToOwner === 'CHILD_UNDER_18' ? 'Child (Under 18) • IRC §3121(b)(3) FICA Exempt' :
-                    employee.relationshipToOwner === 'CHILD_18_TO_20' ? 'Child (18–20) • PA UC Exempt' :
-                    employee.relationshipToOwner === 'SPOUSE' ? 'Spouse • PA UC Exempt' :
-                    'Parent • PA UC Exempt'
+                    employee.relationshipToOwner === 'CHILD_18_TO_20' ? 'Child (18–20) • State Unemployment Exempt' :
+                    employee.relationshipToOwner === 'SPOUSE' ? 'Spouse • State Unemployment Exempt' :
+                    'Parent • State Unemployment Exempt'
                   }
                 </p>
               )}
-              <p className="text-slate-500 dark:text-slate-400 text-[11px]">PA Resident PSD: <strong className="text-slate-800 dark:text-slate-200">{employee.paPsdCode}</strong> ({employee.paPsdName})</p>
-              <p className="text-slate-500 dark:text-slate-400 text-[11px]">PA EIT Resident: {(employee.paResidentEitRate * 100).toFixed(2)}% | Work PSD: {(employee.paWorkEitRate * 100).toFixed(2)}%</p>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+                State Tax Jurisdiction: <strong className="text-slate-800 dark:text-slate-200">{stub.stateCode || employee.state || org.state || 'PA'}</strong>
+              </p>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+                Locality: <strong className="text-slate-800 dark:text-slate-200">{stub.localityName || employee.localTaxJurisdictionName || employee.paPsdName || 'None'}</strong>
+              </p>
             </div>
           </div>
 
@@ -174,16 +178,16 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
                 <span className="font-mono font-bold text-slate-900 dark:text-white">${stub.medicareTax.toFixed(2)}</span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-xs">
-                <span className="text-slate-500 dark:text-slate-400">PA State Tax (3.07%)</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">${stub.paStateTax.toFixed(2)}</span>
+                <span className="text-slate-500 dark:text-slate-400">State Tax ({stub.stateCode || employee.state || org.state || 'PA'})</span>
+                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">${(stub.stateIncomeTax ?? stub.paStateTax ?? 0).toFixed(2)}</span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-xs">
-                <span className="text-slate-500 dark:text-slate-400">PA Local EIT</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">${stub.paLocalEit.toFixed(2)}</span>
+                <span className="text-slate-500 dark:text-slate-400">Local Tax</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white">${(stub.localIncomeTax ?? stub.paLocalEit ?? 0).toFixed(2)}</span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-xs">
-                <span className="text-slate-500 dark:text-slate-400">PA Local LST</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">${stub.paLst.toFixed(2)}</span>
+                <span className="text-slate-500 dark:text-slate-400">Local Flat Tax</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white">${(stub.localFlatTax ?? stub.paLst ?? 0).toFixed(2)}</span>
               </div>
             </div>
             <div className="flex justify-between items-center p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold">
@@ -234,7 +238,7 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
 
           {/* Employer Tax Contributions (Informational) */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap justify-between gap-2">
-            <span>Employer Match: FICA SS ${stub.employerSocialSecurity.toFixed(2)} | Medicare ${stub.employerMedicare.toFixed(2)} | PA UC ${stub.employerPaUc.toFixed(2)}</span>
+            <span>Employer Match: FICA SS ${stub.employerSocialSecurity.toFixed(2)} | Medicare ${stub.employerMedicare.toFixed(2)} | SUTA ({stub.stateCode || employee.state || org.state || 'PA'}) ${(stub.employerStateUnemployment ?? stub.employerPaUc ?? 0).toFixed(2)}</span>
             <span className="text-slate-700 dark:text-slate-300 font-medium">Total LLC Cost for Employee: ${stub.totalCompanyCost.toFixed(2)}</span>
           </div>
         </div>
@@ -251,5 +255,5 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
       </div>
     </div>
   </div>
-);
+  );
 }

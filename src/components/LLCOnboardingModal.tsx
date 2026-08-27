@@ -95,6 +95,7 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
       ownerName: ownerName.trim(),
       ownerEmail: ownerEmail.trim() || 'owner@example.com',
       ownerTaxBracket: Number(ownerTaxBracket) || 24,
+      stateFilingFrequency: filingFrequencyPA,
       filingFrequencyPA,
       standardMileageRate: Number(standardMileageRate) || 0.67,
     };

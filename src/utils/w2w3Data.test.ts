@@ -20,6 +20,7 @@ const sampleOrg: Organization = {
   ownerName: 'Jane Doe',
   ownerEmail: 'jane@acme.com',
   ownerTaxBracket: 24,
+  stateFilingFrequency: 'MONTHLY',
   filingFrequencyPA: 'MONTHLY',
   standardMileageRate: 0.67
 };

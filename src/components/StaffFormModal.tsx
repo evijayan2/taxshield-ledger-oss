@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, User, DollarSign, MapPin, Building, FileText, CheckCircle2 } from 'lucide-react';
 import { Employee } from '../types';
 import { PA_SCHOOL_DISTRICTS, findDistrictByPsdCode } from '../utils/paSchoolDistricts';
+import { getLocalJurisdictionsByState, findLocalJurisdictionByCode } from '../utils/localTaxDistricts';
 
 interface StaffFormModalProps {
   isOpen: boolean;
@@ -189,7 +190,7 @@ export function StaffFormModal({ isOpen, employee, onSave, onClose }: StaffFormM
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
-            <Building className="w-3.5 h-3.5" /> PA Local Tax (PSD)
+            <Building className="w-3.5 h-3.5" /> State & Local Tax
           </button>
           <button
             type="button"
@@ -449,54 +450,94 @@ export function StaffFormModal({ isOpen, employee, onSave, onClose }: StaffFormM
 
           {activeTab === 'localTax' && (
             <div className="space-y-4">
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
-                  PA Resident School District Tax Jurisdiction
-                </label>
-                <select
-                  value={
-                    PA_SCHOOL_DISTRICTS.some((d) => d.psdCode === formData.paPsdCode)
-                      ? formData.paPsdCode
-                      : 'CUSTOM'
-                  }
-                  onChange={(e) => handleDistrictChange(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-medium"
-                >
-                  <optgroup label="PA School Districts">
-                    {PA_SCHOOL_DISTRICTS.map((district) => (
-                      <option key={district.psdCode} value={district.psdCode}>
-                        {district.name} — PSD {district.psdCode} ({parseFloat((district.defaultEitRate * 100).toFixed(3))}% EIT)
-                      </option>
-                    ))}
-                  </optgroup>
-                  <option value="CUSTOM">-- Custom / Manual PSD --</option>
-                </select>
-              </div>
+              {(() => {
+                const currentEmpState = (formData.workState || formData.state || 'DE').toUpperCase();
+                const availableLocalDistricts = getLocalJurisdictionsByState(currentEmpState);
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">6-Digit PSD Code</label>
-                  <input
-                    type="text"
-                    value={formData.paPsdCode}
-                    onChange={(e) => handleChange('paPsdCode', e.target.value)}
-                    className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-mono font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Resident EIT Rate (Decimal)</label>
-                  <input
-                    type="number"
-                    step="0.00001"
-                    value={formData.paResidentEitRate}
-                    onChange={(e) => handleChange('paResidentEitRate', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-mono"
-                  />
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-mono">
-                    Equivalent Rate: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{parseFloat(((formData.paResidentEitRate || 0) * 100).toFixed(3))}%</strong>
-                  </span>
-                </div>
-              </div>
+                return (
+                  <>
+                    <div>
+                      <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
+                        {currentEmpState} Local Tax Jurisdiction
+                      </label>
+                      <select
+                        value={
+                          formData.localTaxJurisdictionCode ||
+                          (PA_SCHOOL_DISTRICTS.some((d) => d.psdCode === formData.paPsdCode) ? formData.paPsdCode : 'CUSTOM')
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'CUSTOM' || val === 'NONE') {
+                            handleChange('localTaxJurisdictionCode', '');
+                            handleChange('localTaxJurisdictionName', 'None / Out of Area');
+                            handleChange('localTaxRate', 0);
+                          } else {
+                            const match = availableLocalDistricts.find(d => d.code === val || d.code.endsWith(val));
+                            if (match) {
+                              handleChange('localTaxJurisdictionCode', match.code);
+                              handleChange('localTaxJurisdictionName', match.name);
+                              handleChange('localTaxRate', match.defaultRate);
+                              if (currentEmpState === 'PA') {
+                                handleChange('paPsdCode', val.replace('PA-PSD-', ''));
+                                handleChange('paResidentEitRate', match.defaultRate);
+                              }
+                            } else {
+                              handleDistrictChange(val);
+                            }
+                          }
+                        }}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-medium"
+                      >
+                        {availableLocalDistricts.length > 0 ? (
+                          <optgroup label={`${currentEmpState} Local Tax Jurisdictions`}>
+                            {availableLocalDistricts.map((district) => (
+                              <option key={district.code} value={district.code}>
+                                {district.name} — {district.code} ({parseFloat((district.defaultRate * 100).toFixed(3))}% Rate)
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : (
+                          <option value="NONE">No local earned income tax required for {currentEmpState}</option>
+                        )}
+                        <option value="CUSTOM">-- Custom / Manual Local Jurisdiction --</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Jurisdiction Code / PSD</label>
+                        <input
+                          type="text"
+                          value={formData.localTaxJurisdictionCode || formData.paPsdCode || ''}
+                          onChange={(e) => {
+                            handleChange('localTaxJurisdictionCode', e.target.value);
+                            if (currentEmpState === 'PA') handleChange('paPsdCode', e.target.value);
+                          }}
+                          className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-mono font-bold"
+                          placeholder="e.g. DE-LOCAL-WILMINGTON or 150202"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Local Tax Rate (Decimal)</label>
+                        <input
+                          type="number"
+                          step="0.00001"
+                          value={formData.localTaxRate ?? formData.paResidentEitRate ?? 0}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            handleChange('localTaxRate', val);
+                            if (currentEmpState === 'PA') handleChange('paResidentEitRate', val);
+                          }}
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-mono"
+                        />
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-mono">
+                          Equivalent Rate: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{parseFloat((((formData.localTaxRate ?? formData.paResidentEitRate ?? 0)) * 100).toFixed(3))}%</strong>
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 

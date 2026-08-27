@@ -2,7 +2,7 @@
 
 This file tells any coding agent (Antigravity, Claude Code, Cursor, etc.) how to work in this repository. It applies to the whole repo unless a subdirectory has its own `AGENTS.md`, which takes precedence for that subtree.
 
-**Read `docs/taxshield-ledger-development-plan.md` before starting any task.** It's the source of truth for phases, dependencies, architecture, and risks. This file is the short, operational version of the rules that document already spells out in full — if the two ever conflict, the development plan wins and this file should be updated to match it.
+**Read `docs/taxshield-ledger-development-plan.md` and check `docs/phase-status.md` before starting any task.** `taxshield-ledger-development-plan.md` is the source of truth for phases, dependencies, architecture, and risks. `docs/phase-status.md` is the live tracking document for completed deliverables, test metrics, and pending tasks — **you MUST update `docs/phase-status.md` whenever any feature work or phase deliverable is completed.** This file (`AGENTS.md`) is the short, operational version of the rules that document already spells out in full — if the two ever conflict, the development plan wins and this file should be updated to match it.
 
 ---
 
@@ -25,6 +25,7 @@ If a task seems to need a hardcoded number to move faster, stop and say so inste
 The project is sequenced into 5 phases (0 through 4), each with explicit dependencies, exit criteria, and a risk table in the development plan. Rules for agents:
 
 - **Build one phase at a time, in order.** Don't start Phase 2 work while Phase 1's exit criteria are unmet, and don't reach ahead into Phase 3 "while you're in there." If given a vague instruction like "build the app," ask which phase to work on rather than attempting everything.
+- **Keep phase status documentation updated.** Whenever any feature work, phase deliverable, or major bug fix is completed, update `docs/phase-status.md` with the new module status, file references, test metrics, and remaining pending backlog items.
 - **Respect the dependency graph**, not just the phase numbers — e.g., Phase 3 depends on *both* Phase 1 (payroll engine to extend) and Phase 2 (automated rule engine to keep multi-jurisdiction rules current). Don't treat either dependency as optional because the other is closer to done.
 - **Pause for explicit review before implementing or modifying the Phase 0 core schema** (`Company`, `TaxYear`, `TaxJurisdiction`, `TaxRule`, `TaxRuleVersion`, `EffectivePeriod`, `CalculationSnapshot`, `AuditLogEntry`). This is load-bearing for every later phase. Present the proposed schema/migration as a plan and wait for approval before generating code.
 - **Every schema change must create a Prisma migration file.** Whenever modifying `prisma/schema.prisma`, always run `pnpm prisma:migrate` (or `pnpm exec prisma migrate dev --name <migration_name>`) to generate and apply a corresponding migration file in `prisma/migrations/`. Never update database models without generating a matching migration file.

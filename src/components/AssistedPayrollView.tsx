@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { 
   Calculator, 
   Play, 
@@ -183,6 +184,14 @@ export function AssistedPayrollView({
       federalIncomeTax: sp.federalIncomeTax,
       socialSecurityTax: sp.socialSecurityTax,
       medicareTax: sp.medicareTax,
+      stateCode: sp.stateCode || sp.employee.state || 'PA',
+      localityCode: sp.localityCode || sp.employee.localTaxJurisdictionCode,
+      localityName: sp.localityName || sp.employee.localTaxJurisdictionName,
+      stateIncomeTax: sp.stateIncomeTax ?? sp.paStateTax,
+      localIncomeTax: sp.localIncomeTax ?? sp.paLocalEit,
+      localFlatTax: sp.localFlatTax ?? sp.paLst,
+      employerStateUnemployment: sp.employerStateUnemployment ?? sp.employerPaUc,
+      taxBreakdown: sp.taxBreakdown,
       paStateTax: sp.paStateTax,
       paLocalEit: sp.paLocalEit,
       paLst: sp.paLst,

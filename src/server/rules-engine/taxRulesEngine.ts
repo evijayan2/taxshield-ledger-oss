@@ -1,7 +1,7 @@
 import { RuleType } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { logWarn } from '../../lib/logger';
-import taxRulesFixture from '../../../prisma/fixtures/tax-rules.json';
+import { allTaxRuleFixtures } from '../../../prisma/fixtures/index';
 
 export interface TaxRulePayload {
   rate?: number;
@@ -23,7 +23,7 @@ export interface ResolvedRule {
  */
 function buildInitialCache(): Record<string, ResolvedRule> {
   const cache: Record<string, ResolvedRule> = {};
-  for (const r of taxRulesFixture.rules) {
+  for (const r of allTaxRuleFixtures.rules) {
     cache[r.ruleCode] = {
       versionId: `${r.ruleCode.toLowerCase()}_v${r.version.versionNumber}`,
       ruleCode: r.ruleCode,

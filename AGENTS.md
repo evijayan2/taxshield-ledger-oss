@@ -8,7 +8,14 @@ This file tells any coding agent (Antigravity, Claude Code, Cursor, etc.) how to
 
 ## What this project is
 
-TaxShield Ledger is a tax-year-aware financial ledger for a micro-LLC: expenses, mileage, payroll, reimbursements, and a full audit trail — designed so every tax calculation can be traced back to the exact rule and source document that produced it. It's being built solo, PA-first, with multi-state support as a required (not optional) feature since the project will be open-sourced for users in other states. Single-owner access only — no multi-user roles, no shared logins; CPA handoff is via PDF/Excel export, not portal access.
+TaxShield Ledger is a tax-year-aware financial ledger for a micro-LLC: expenses, mileage, payroll, reimbursements, and a full audit trail — designed so every tax calculation can be traced back to the exact rule and source document that produced it. It's being built solo, PA-first, with multi-state support as a required (not optional) feature since the project will be open-sourced for users in other states.
+
+The product architecture is intentionally split into a shared core and a product wrapper:
+- the shared core handles the ledger, payroll, tax rule engine, compliance, audit log, and employee/payroll workflows
+- the SaaS wrapper adds multi-user access, multi-company tenancy, roles, billing, and workspaces
+- the open-source runtime is the same core with a simplified single-owner profile
+
+The open-source version is a one-user, one-default-company, multi-year product. The SaaS version is multi-user and multi-company, but the business logic stays common.
 
 ---
 
@@ -28,6 +35,8 @@ The project is sequenced into 5 phases (0 through 4), each with explicit depende
 - **Keep phase status documentation updated.** Whenever any feature work, phase deliverable, or major bug fix is completed, update `docs/phase-status.md` with the new module status, file references, test metrics, and remaining pending backlog items.
 - **Respect the dependency graph**, not just the phase numbers — e.g., Phase 3 depends on *both* Phase 1 (payroll engine to extend) and Phase 2 (automated rule engine to keep multi-jurisdiction rules current). Don't treat either dependency as optional because the other is closer to done.
 - **Pause for explicit review before implementing or modifying the Phase 0 core schema** (`Company`, `TaxYear`, `TaxJurisdiction`, `TaxRule`, `TaxRuleVersion`, `EffectivePeriod`, `CalculationSnapshot`, `AuditLogEntry`). This is load-bearing for every later phase. Present the proposed schema/migration as a plan and wait for approval before generating code.
+- **Do not add SaaS-only concerns into the core ledger logic.** Multi-user roles, billing, workspace access, and company tenancy rules belong in the wrapper layer, not in the core payroll, tax calculation, or audit logic.
+- **Model employees as `Person` + `Employment` records, not as a single global employee record.** A person can work for multiple companies; each company must have its own employment record and company-scoped payroll data.
 - **Every schema change must create a Prisma migration file.** Whenever modifying `prisma/schema.prisma`, always run `pnpm prisma:migrate` (or `pnpm exec prisma migrate dev --name <migration_name>`) to generate and apply a corresponding migration file in `prisma/migrations/`. Never update database models without generating a matching migration file.
 - **Every write path touching money, payroll, or tax calculations must write to the audit trail in the same change**, not as a follow-up task. A feature that can modify a financial record without an audit log entry is incomplete, not "done, logging comes later."
 
@@ -43,7 +52,9 @@ These come from the risk tables in the development plan — treat them as requir
 - **Only Tier 1 (authoritative government) sources can auto-activate a rule.** Tier 3 (third-party) sources never activate a rule without explicit human confirmation, regardless of how "obviously correct" the data looks.
 - **Multi-state payroll runs are blocked, not degraded, when a required jurisdiction's rule isn't `Active`.** Never fall back to a best-guess or default rate for a missing jurisdiction rule.
 - **Duplicate/transaction matching defaults to "needs review," not auto-confirmed**, until false-positive rates are actually measured and known to be low.
+- **No company data contamination is allowed.** Employee, payroll, leave, W-2, W-9, timesheet, and paystub records must be company-scoped and employment-scoped; one person may have multiple employments across companies, but each employment remains isolated.
 - **Row-level ownership fields** (`company_id`, `created_by`, etc.) are included on every table from Phase 0 onward, even though only one user exists — this is a schema decision made once, not deferred.
+- **Payroll and employee data are scoped to `company_id + employment_id + tax_year_id` at minimum; person-only lookups are never sufficient for payroll writes.**
 
 ---
 
@@ -79,6 +90,8 @@ Every developer and coding agent creating or modifying UI components in this rep
 - A rule version cannot move to `ACTIVE` without passing the regression-test harness (fixed set of "inputs → expected output" cases). This exists from Phase 0 onward, not just once automation arrives in Phase 2.
 - Any change to calculation logic (payroll, mileage, withholding) needs a regression test added or updated in the same change, not a separate follow-up.
 - Multi-state features (Phase 3) should be validated against real, worked examples for each jurisdiction before being considered done — not just unit tests against mocked rule data.
+- Any employee/payroll change must include company-scope and data-isolation tests: person multi-company employment, timesheet isolation by company, leave balance isolation, and W-2/paystub visibility restrictions.
+- The core product must remain stable in both OSS and SaaS modes; tests should validate the same ledger behavior under both runtime profiles, with only access-policy differences changing.
 
 ---
 

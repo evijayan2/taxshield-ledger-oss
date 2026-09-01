@@ -1,8 +1,16 @@
 # TaxShield Ledger — Phase Implementation & Verification Status
 
-**Last Updated:** August 26, 2026  
-**Current Phase Status:** Phase 0 & Phase 1 Complete (100%) — Ready for Phase 2  
-**Test Suite Status:** 14 test files passed / 70 tests passed (`pnpm test` and `pnpm test:regression`)
+**Last Updated:** September 1, 2026  
+**Current Phase Status:** Phase 0 & Phase 1 Complete (100%) — Verified green and ready for Phase 2; repository split setup initiated for OSS / shared-core / SaaS separation  
+**Test Suite Status:** 14 test files passed / 70 tests passed; 1 regression suite passed / 6 tests passed; TypeScript check passed (`pnpm prisma generate && pnpm test && pnpm test:regression && pnpm lint`)
+
+## Repository Split Initiation Status
+
+- [x] Shared-core package scaffold created in `shared-core/`
+- [x] OSS runtime profile scaffold created in `taxshield-ledger-oss/`
+- [x] SaaS runtime profile scaffold created in `taxshield-ledger-saas/`
+- [x] Root workspace configuration updated to include all split packages
+- [ ] Promote the split into separate remote repositories and validate the package boundary after the workspace is stable
 
 This document tracks the current implementation status, verification metrics, pending backlog, and newly added capabilities across all development phases of TaxShield Ledger.
 
@@ -29,7 +37,26 @@ This document tracks the current implementation status, verification metrics, pe
 
 ---
 
-## 2. Newly Added Capabilities (Beyond Baseline Phase 1)
+## 2. Verified Phase 1 Completion Checklist
+
+The following Phase 1 items were checked against the implementation scope in [docs/taxshield-ledger-development-plan.md](taxshield-ledger-development-plan.md#L104-L151) and the repository status above. All are complete and verified by the current test/lint run:
+
+- [x] Company & LLC setup
+- [x] Tax-year setup
+- [x] Expense tracker
+- [x] Receipt upload/storage
+- [x] Mileage tracker
+- [x] Single-state payroll
+- [x] Reimbursement workflow
+- [x] Compliance calendar
+- [x] Audit trail logging
+- [x] Year-end CPA export
+
+The project is therefore at the expected Phase 2 handoff boundary: the core ledger is functioning, documented, and verified; the remaining items are intentional Phase 2/3 backlog work, not missing Phase 1 deliverables.
+
+---
+
+## 3. Newly Added Capabilities (Beyond Baseline Phase 1)
 
 1. **Mercury Banking API Integration (`server/services/mercuryService.ts`)**
    - Live API client to check balances, fetch ACH payment details, verify bank settings, and process payroll disbursements.
@@ -46,7 +73,7 @@ This document tracks the current implementation status, verification metrics, pe
 
 ---
 
-## 3. Pending Backlog (Upcoming Phases)
+## 4. Pending Backlog (Upcoming Phases)
 
 ### Phase 2 — Automation & Reconciliation (Next Target)
 - [ ] OCR engine for auto-extracting receipt fields (vendor, date, amount) for user confirmation.

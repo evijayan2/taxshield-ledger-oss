@@ -57,6 +57,9 @@ importers:
         specifier: ^6.2.3
         version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12)
     devDependencies:
+      '@rollup/rollup-linux-x64-gnu':
+        specifier: ^4.63.1
+        version: 4.63.1
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.25
@@ -87,6 +90,39 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@22.20.1)(vite@6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12))
+
+  shared-core:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.4.1
+        version: 6.19.3(prisma@6.19.3(typescript@5.8.3))(typescript@5.8.3)
+    devDependencies:
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@22.20.1)(vite@6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12))
+
+  taxshield-ledger-oss:
+    dependencies:
+      taxshield-ledger-core:
+        specifier: workspace:*
+        version: link:../shared-core
+    devDependencies:
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+
+  taxshield-ledger-saas:
+    dependencies:
+      taxshield-ledger-core:
+        specifier: workspace:*
+        version: link:../shared-core
+    devDependencies:
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
 
 packages:
 
@@ -919,6 +955,11 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@rollup/rollup-linux-x64-gnu@4.63.1':
+    resolution: {integrity: sha512-gfI5T24WLLuFfSKw7Go/zDXjAAV0fny0swTaDv+WjK7vqcw4cRhFfdsyKL1n+ukI+ooBxn3bVQnyrn06WpI50w==}
+    cpu: [x64]
+    os: [linux]
 
   '@rollup/rollup-linux-x64-musl@4.62.5':
     resolution: {integrity: sha512-xs+OXQtEXgpXT0DmA5+U3qnRZHdCST/5HRQxS8wSPZTUZN/EMWeHuSIod32LQklTBZBV9DyfncKBQ8n5V3eFdw==}
@@ -3019,6 +3060,8 @@ snapshots:
 
   '@rollup/rollup-linux-x64-gnu@4.62.5':
     optional: true
+
+  '@rollup/rollup-linux-x64-gnu@4.63.1': {}
 
   '@rollup/rollup-linux-x64-musl@4.62.5':
     optional: true

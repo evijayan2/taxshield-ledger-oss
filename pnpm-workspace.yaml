@@ -1,0 +1,4 @@
+packages:
+  - 'shared-core'
+  - 'taxshield-ledger-oss'
+  - 'taxshield-ledger-saas'

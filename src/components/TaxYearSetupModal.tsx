@@ -136,7 +136,7 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
             {/* Tax Entity Classification */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                LLC Tax Classification ({selectedYear})
+                Tax Classification ({selectedYear})
               </label>
               <select
                 value={taxClassification}

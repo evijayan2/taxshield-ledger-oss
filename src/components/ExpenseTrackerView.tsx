@@ -160,7 +160,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
           <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
             ${totalDeductible.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
-          <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1 block font-medium">Reduces Taxable LLC Profit</span>
+          <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1 block font-medium">Reduces Taxable Business Profit</span>
         </div>
 
         <div className="glass-card p-5 rounded-xl">
@@ -244,7 +244,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                           : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30'
                       }`}>
                         <Building2 className="w-3 h-3" />
-                        {exp.paidBy === 'LLC_ACCOUNT' ? 'LLC Account' : 'Owner Personal'}
+                        {exp.paidBy === 'LLC_ACCOUNT' ? 'Company Account' : 'Owner Personal'}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">
@@ -374,7 +374,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                       onChange={(e) => setPaidBy(e.target.value as 'OWNER_PERSONAL' | 'LLC_ACCOUNT')}
                       className="w-full glass-input p-2.5 rounded-lg text-sm text-slate-800 dark:text-slate-200 cursor-pointer"
                     >
-                      <option value="LLC_ACCOUNT">LLC Business Account</option>
+                      <option value="LLC_ACCOUNT">Company Account</option>
                       <option value="OWNER_PERSONAL">Owner Personal (Reimbursable)</option>
                     </select>
                   </div>

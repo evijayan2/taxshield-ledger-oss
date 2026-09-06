@@ -51,13 +51,16 @@ export function useAppState() {
     checkAndSyncPostgres();
   }, []);
 
-  // Save to backend on change
+  // Save to backend on change (debounced 800ms to batch rapid mutations)
   useEffect(() => {
     if (!isInitialLoading && dbStatus?.connected) {
-      saveServerAppData(data).catch((err) => {
-        console.error('Error auto-saving state to PostgreSQL:', err);
-        setDbError(`Failed to save state to PostgreSQL: ${err.message}`);
-      });
+      const timer = setTimeout(() => {
+        saveServerAppData(data).catch((err) => {
+          console.error('Error auto-saving state to PostgreSQL:', err);
+          setDbError(`Failed to save state to PostgreSQL: ${err.message}`);
+        });
+      }, 800);
+      return () => clearTimeout(timer);
     }
   }, [data, dbStatus?.connected, isInitialLoading]);
 

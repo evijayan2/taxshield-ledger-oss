@@ -10,6 +10,7 @@ export interface TimesheetTableProps {
   selectedStatus: string;
   onStatusChange: (id: string, status: TimesheetStatus) => void;
   onDelete: (id: string) => void;
+  isReadOnly?: boolean;
 }
 
 /**
@@ -22,6 +23,7 @@ export function TimesheetTable({
   selectedStatus,
   onStatusChange,
   onDelete,
+  isReadOnly = false,
 }: TimesheetTableProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -102,28 +104,28 @@ export function TimesheetTable({
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
-      {/* Bulk Action Toolbar */}
-      {selectedIds.length > 0 && (
-        <div className="bg-indigo-50 dark:bg-indigo-950/60 border-b border-indigo-200 dark:border-indigo-800 px-4 py-2.5 flex items-center justify-between text-xs animate-in fade-in">
+      {/* Bulk Action Controls */}
+      {selectedIds.length > 0 && !isReadOnly && (
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in">
           <span className="font-semibold text-indigo-900 dark:text-indigo-200">
-            {selectedIds.length} item(s) selected
+            {selectedIds.length} {selectedIds.length === 1 ? 'entry' : 'entries'} selected
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleBulkStatusChange('APPROVED')}
-              className="px-3 py-1 font-semibold rounded bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-xs"
             >
               <CheckCircle className="w-3.5 h-3.5" /> Bulk Approve
             </button>
             <button
               onClick={() => handleBulkStatusChange('REJECTED')}
-              className="px-3 py-1 font-semibold rounded bg-rose-600 hover:bg-rose-500 text-white transition flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-xs"
             >
               <XCircle className="w-3.5 h-3.5" /> Bulk Reject
             </button>
             <button
               onClick={handleBulkDelete}
-              className="px-3 py-1 font-semibold rounded bg-slate-700 hover:bg-slate-600 text-white transition flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-950 dark:hover:text-rose-300 text-slate-700 dark:text-slate-300 font-semibold transition cursor-pointer flex items-center gap-1.5"
             >
               <Trash2 className="w-3.5 h-3.5" /> Bulk Delete
             </button>
@@ -150,7 +152,7 @@ export function TimesheetTable({
                 </button>
               </th>
               <th className="px-4 py-3">Work Date</th>
-              <th className="px-4 py-3">LLC Staff / Member</th>
+              <th className="px-4 py-3">Staff / Member</th>
               <th className="px-4 py-3">Shift Hours</th>
               <th className="px-4 py-3 text-right">Regular</th>
               <th className="px-4 py-3 text-right">Overtime</th>
@@ -207,33 +209,37 @@ export function TimesheetTable({
                     {renderBadge(entry.status)}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
-                      {entry.status !== 'APPROVED' && (
+                    {isReadOnly ? (
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">—</span>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        {entry.status !== 'APPROVED' && (
+                          <button
+                            onClick={() => onStatusChange(entry.id, 'APPROVED')}
+                            title="Approve Timesheet"
+                            className="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition cursor-pointer"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        {entry.status !== 'REJECTED' && (
+                          <button
+                            onClick={() => onStatusChange(entry.id, 'REJECTED')}
+                            title="Reject Timesheet"
+                            className="p-1 rounded hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition cursor-pointer"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => onStatusChange(entry.id, 'APPROVED')}
-                          title="Approve Timesheet"
-                          className="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition cursor-pointer"
+                          onClick={() => onDelete(entry.id)}
+                          title="Delete Entry"
+                          className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
-                      )}
-                      {entry.status !== 'REJECTED' && (
-                        <button
-                          onClick={() => onStatusChange(entry.id, 'REJECTED')}
-                          title="Reject Timesheet"
-                          className="p-1 rounded hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition cursor-pointer"
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => onDelete(entry.id)}
-                        title="Delete Entry"
-                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </td>
                 </tr>
               );

@@ -234,7 +234,7 @@ export function TaxPaymentInstructionsDrawer({
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 cursor-pointer'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                 }`}
-                title={isAlreadyPaid ? 'Tax return is already paid & filed' : org?.mercuryApiKey ? `Pay ${guide.formIdentifier} via Mercury ACH API` : 'Configure Mercury API key in LLC Setup first'}
+                title={isAlreadyPaid ? 'Tax return is already paid & filed' : org?.mercuryApiKey ? `Pay ${guide.formIdentifier} via Mercury ACH API` : 'Configure Mercury API key in Company Setup first'}
               >
                 {isAlreadyPaid ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <CreditCard className="w-4 h-4" />}
                 <span>{isAlreadyPaid ? 'Already Disbursed & Paid' : isPayingMercury ? 'Transmitting ACH...' : `Pay ${guide.formIdentifier.replace('_', ' ')} via Mercury ACH (${org?.mercuryEnvironment || 'SANDBOX'})`}</span>

@@ -297,7 +297,7 @@ export function AssistedPayrollView({
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">ACH Direct Deposit Payout Matrix</h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Execute ACH transfers from your LLC bank account and record trace confirmation numbers</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Execute ACH transfers from your company bank account and record trace confirmation numbers</p>
             </div>
           </div>
           <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold">
@@ -438,7 +438,7 @@ export function AssistedPayrollView({
                     <span className="font-mono font-bold text-rose-600 dark:text-rose-400">-${run.totalEmployeeTaxes.toFixed(2)}</span>
                   </div>
                   <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">LLC Total Cost</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Total Company Cost</span>
                     <span className="font-mono font-bold text-amber-600 dark:amber-400">${run.totalCompanyCost.toFixed(2)}</span>
                   </div>
                 </div>
@@ -604,7 +604,7 @@ export function AssistedPayrollView({
               </div>
               <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between px-1">
                 <span>
-                  Auto-detected from LLC setup for <strong className="text-slate-700 dark:text-slate-300">{calculatedPeriod.payFrequency.replace('_', '-')}</strong> schedule based on {
+                  Auto-detected from company setup for <strong className="text-slate-700 dark:text-slate-300">{calculatedPeriod.payFrequency.replace('_', '-')}</strong> schedule based on {
                     calculatedPeriod.source === 'LAST_RUN_ROLLOVER'
                       ? 'previous locked payroll run'
                       : calculatedPeriod.source === 'APPROVED_TIMESHEETS'

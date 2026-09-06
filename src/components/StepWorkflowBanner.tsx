@@ -49,7 +49,7 @@ export function StepWorkflowBanner({
     {
       id: 'STEP_ORG',
       stepNumber: 1,
-      title: 'LLC Entity & Tax Setup',
+      title: 'Company & Tax Setup',
       shortDesc: 'EIN & PA Account ID',
       icon: Building2,
       isComplete: Boolean(org.ein && org.stateTaxId && org.name),
@@ -133,7 +133,7 @@ export function StepWorkflowBanner({
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Seamless end-to-end execution for Pennsylvania Micro-LLC compliance and zero-cost tax filing.
+            Seamless end-to-end execution for business tax compliance and zero-cost tax filing.
           </p>
         </div>
 

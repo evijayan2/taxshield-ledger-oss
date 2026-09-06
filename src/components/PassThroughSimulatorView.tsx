@@ -94,7 +94,7 @@ export function PassThroughSimulatorView({
       {/* Hero Pass-Through Savings Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
-          <span className="text-xs text-slate-500 dark:text-slate-400">Total Accumulated LLC Expenses</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Total Business Expenses</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
             ${savings.totalBusinessLossExpenses.toFixed(2)}
           </p>

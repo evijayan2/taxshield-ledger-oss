@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Building2, User, Landmark, Sparkles, CheckCircle2, ArrowRight, ArrowLeft, Calendar, X } from 'lucide-react';
-import { Organization } from '../types';
+import { ShieldCheck, Building2, User, Landmark, Sparkles, CheckCircle2, ArrowRight, ArrowLeft, Calendar, X, Clock } from 'lucide-react';
+import { Organization, PayrollFrequency, TaxFilingFrequency } from '../types';
+import { SUPPORTED_STATES, getSupportedStateByCode } from '../utils/supportedStates';
+import { isValidEin, formatEin, isValidEmail, isValidZipCode } from '../utils/validators';
 
 interface LLCOnboardingModalProps {
   isOpen: boolean;
@@ -30,18 +32,19 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
   const [ownerName, setOwnerName] = useState(initialOrg?.ownerName || '');
   const [ownerEmail, setOwnerEmail] = useState(initialOrg?.ownerEmail || '');
   const [ownerTaxBracket, setOwnerTaxBracket] = useState(initialOrg?.ownerTaxBracket ?? 24);
-  const [filingFrequencyPA, setFilingFrequencyPA] = useState<'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY'>(
-    initialOrg?.filingFrequencyPA || 'MONTHLY'
+  const [payFrequency, setPayFrequency] = useState<PayrollFrequency>(initialOrg?.payFrequency || 'BI_WEEKLY');
+  const [stateFilingFrequency, setStateFilingFrequency] = useState<TaxFilingFrequency>(
+    initialOrg?.stateFilingFrequency || initialOrg?.filingFrequencyPA || 'MONTHLY'
   );
   const [standardMileageRate, setStandardMileageRate] = useState(initialOrg?.standardMileageRate ?? 0.67);
 
   // Step 2 Fields (Tax Year Setup)
-  const [taxYear, setTaxYear] = useState<number>(2026);
+  const [taxYear, setTaxYear] = useState<number>(new Date().getFullYear());
   const [taxClassification, setTaxClassification] = useState<string>('DISREGARDED_SINGLE_MEMBER');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialOrg && isOpen) {
+    if (initialOrg) {
       setName(initialOrg.name || '');
       setEin(initialOrg.ein || '');
       setStateTaxId(initialOrg.stateTaxId || '');
@@ -52,9 +55,9 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
       setOwnerName(initialOrg.ownerName || '');
       setOwnerEmail(initialOrg.ownerEmail || '');
       setOwnerTaxBracket(initialOrg.ownerTaxBracket ?? 24);
-      setFilingFrequencyPA(initialOrg.filingFrequencyPA || 'MONTHLY');
+      setPayFrequency(initialOrg.payFrequency || 'BI_WEEKLY');
+      setStateFilingFrequency(initialOrg.stateFilingFrequency || initialOrg.filingFrequencyPA || 'MONTHLY');
       setStandardMileageRate(initialOrg.standardMileageRate ?? 0.67);
-      setStep(1);
     }
   }, [initialOrg, isOpen]);
 
@@ -63,15 +66,27 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('Please enter your official LLC Legal Entity Name.');
+      setError('Please enter your official Legal Entity Name.');
       return;
     }
-    if (!ein.trim()) {
-      setError('Please enter your Federal EIN (Employer Identification Number).');
+    if (!isValidEin(ein)) {
+      setError('Please enter a valid 9-digit Federal EIN (e.g. 12-3456789).');
       return;
     }
     if (!ownerName.trim()) {
       setError('Please enter the Managing Member / Owner Name.');
+      return;
+    }
+    if (ownerEmail.trim() && !isValidEmail(ownerEmail)) {
+      setError('Please enter a valid Owner Email address (e.g. owner@example.com).');
+      return;
+    }
+    if (!address.trim() || !zip.trim()) {
+      setError('Please enter your company street address and ZIP code.');
+      return;
+    }
+    if (!isValidZipCode(zip)) {
+      setError('Please enter a valid 5-digit US ZIP code.');
       return;
     }
 
@@ -83,11 +98,12 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
     e.preventDefault();
     setError(null);
 
+    const formattedEin = formatEin(ein);
     const updatedOrg: Organization = {
       id: initialOrg?.id || 'org_main',
       name: name.trim(),
-      ein: ein.trim(),
-      stateTaxId: stateTaxId.trim() || `PA-${ein.trim().replace(/\D/g, '')}`,
+      ein: formattedEin,
+      stateTaxId: stateTaxId.trim() || `${state.trim().toUpperCase()}-${formattedEin.replace(/\D/g, '')}`,
       address: address.trim() || 'Business Address Pending',
       city: city.trim() || 'Philadelphia',
       state: state.trim() || 'PA',
@@ -95,8 +111,9 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
       ownerName: ownerName.trim(),
       ownerEmail: ownerEmail.trim() || 'owner@example.com',
       ownerTaxBracket: Number(ownerTaxBracket) || 24,
-      stateFilingFrequency: filingFrequencyPA,
-      filingFrequencyPA,
+      stateFilingFrequency,
+      filingFrequencyPA: stateFilingFrequency,
+      payFrequency,
       standardMileageRate: Number(standardMileageRate) || 0.67,
     };
 
@@ -123,11 +140,11 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
-                Configure Your Micro-LLC Ledger
+                Configure Your Company Ledger
                 <Sparkles className="w-4 h-4 text-emerald-300" />
               </h2>
               <p className="text-xs text-emerald-100">
-                Step {step} of 2: {step === 1 ? 'LLC Identity & Owner Defaults' : 'Tax Year Creation & Rule Setup'}
+                Step {step} of 2: {step === 1 ? 'Company Identity & Owner Defaults' : 'Tax Year Creation & Rule Setup'}
               </p>
             </div>
           </div>
@@ -145,7 +162,7 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
         <div className="px-6 py-3 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-semibold">
           <div className={`flex items-center gap-2 ${step === 1 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}`}>
             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>1</span>
-            <span>1. LLC Identity Profile</span>
+            <span>1. Company Identity Profile</span>
           </div>
           <div className="w-12 h-0.5 bg-slate-300 dark:bg-slate-800" />
           <div className={`flex items-center gap-2 ${step === 2 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}`}>
@@ -167,18 +184,18 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 <Building2 className="w-4 h-4" />
-                <span>1. LLC Legal & Tax Identity</span>
+                <span>1. Company Legal & Tax Identity</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1 md:col-span-2">
                   <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    LLC Legal Entity Name <span className="text-rose-500">*</span>
+                    Company Legal Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Acme Tech Solutions LLC"
+                    placeholder="e.g. Your Business Name LLC"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white font-medium"
@@ -245,14 +262,18 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">State</label>
-                  <input
-                    type="text"
-                    placeholder="PA"
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">Supported State</label>
+                  <select
                     value={state}
                     onChange={e => setState(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white uppercase"
-                  />
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white font-medium"
+                  >
+                    {SUPPORTED_STATES.map((st) => (
+                      <option key={st.code} value={st.code}>
+                        {st.code} — {st.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1">
@@ -265,6 +286,17 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
                   />
                 </div>
+
+                {/* State Tax Rules Context */}
+                {(() => {
+                  const stateMeta = getSupportedStateByCode(state);
+                  return stateMeta ? (
+                    <div className="md:col-span-3 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">✓ Verified Tax Rules:</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{stateMeta.taxDescription}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
 
@@ -302,6 +334,34 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
                 </div>
 
                 <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">Payroll Schedule (Pay Frequency)</label>
+                  <select
+                    value={payFrequency}
+                    onChange={e => setPayFrequency(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white font-medium"
+                  >
+                    <option value="BI_WEEKLY">Bi-Weekly (26 Pay Periods/yr)</option>
+                    <option value="WEEKLY">Weekly (52 Pay Periods/yr)</option>
+                    <option value="SEMI_MONTHLY">Semi-Monthly (24 Pay Periods/yr)</option>
+                    <option value="MONTHLY">Monthly (12 Pay Periods/yr)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">State Tax Filing Schedule</label>
+                  <select
+                    value={stateFilingFrequency}
+                    onChange={e => setStateFilingFrequency(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white font-medium"
+                  >
+                    <option value="MONTHLY">Monthly Remittance</option>
+                    <option value="QUARTERLY">Quarterly Remittance</option>
+                    <option value="SEMI_MONTHLY">Semi-Monthly High Volume</option>
+                    <option value="ANNUALLY">Annual Reconciliation</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
                   <label className="font-semibold text-slate-700 dark:text-slate-300">Marginal Federal Tax Bracket (%)</label>
                   <input
                     type="number"
@@ -315,19 +375,6 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">PA Employer Filing Frequency</label>
-                  <select
-                    value={filingFrequencyPA}
-                    onChange={e => setFilingFrequencyPA(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
-                  >
-                    <option value="MONTHLY">Monthly Remittance (REV-1667)</option>
-                    <option value="QUARTERLY">Quarterly Remittance</option>
-                    <option value="SEMI_MONTHLY">Semi-Monthly High Volume</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1 md:col-span-2">
                   <label className="font-semibold text-slate-700 dark:text-slate-300">Standard IRS Mileage Rate ($/mile)</label>
                   <input
                     type="number"
@@ -410,7 +457,7 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
 
               <div className="space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  LLC Tax Classification
+                  Tax Classification
                 </label>
                 <select
                   value={taxClassification}
@@ -455,7 +502,7 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
                 className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to LLC Profile
+                Back to Company Profile
               </button>
               <button
                 type="submit"

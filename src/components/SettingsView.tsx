@@ -12,34 +12,45 @@ import {
   ShieldCheck,
   Calendar,
   MapPin,
-  User
+  User,
+  Clock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Organization, Employee } from '../types';
 import { AllAppData, isCompanyConfigured } from '../utils/storage';
+import { SUPPORTED_STATES, getSupportedStateByCode } from '../utils/supportedStates';
+import { useAuth } from '../context/AuthContext';
+import { AccountSecuritySection } from './AccountSecuritySection';
+import { EmployeeSecurityRoster } from './EmployeeSecurityRoster';
 
 interface SettingsViewProps {
   org: Organization;
-  employees: Employee[];
+  employees?: Employee[];
   allData?: AllAppData;
   onSaveOrg: (org: Organization) => void;
-  onSaveEmployees: (employees: Employee[]) => void;
+  onSaveEmployees?: (employees: Employee[]) => void;
   onResetAllData: () => void;
   onClearToFreshSlate?: () => void;
   onExportJSON: () => void;
   onImportJSON: (jsonData: any) => void;
   onSyncToPostgres?: () => Promise<void>;
   onPullFromPostgres?: () => Promise<void>;
+  isOwner?: boolean;
+  isEmployee?: boolean;
 }
 
 export function SettingsView({
   org,
+  employees = [],
   onSaveOrg,
   onResetAllData,
   onClearToFreshSlate,
   onExportJSON,
   onImportJSON,
+  isOwner = true,
+  isEmployee = false,
 }: SettingsViewProps) {
+  const { user } = useAuth();
   const [orgForm, setOrgForm] = useState<Organization>({ ...org });
   const [isEditing, setIsEditing] = useState<boolean>(!isCompanyConfigured(org));
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -127,6 +138,39 @@ export function SettingsView({
     MONTHLY: 'Monthly (12 Pay Periods/yr)',
   };
 
+  const filingFrequencyLabelMap: Record<string, string> = {
+    MONTHLY: 'Monthly Remittance',
+    QUARTERLY: 'Quarterly Remittance',
+    SEMI_MONTHLY: 'Semi-Monthly High Volume',
+    ANNUALLY: 'Annual Reconciliation',
+  };
+
+  if (isEmployee) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        {/* Employee Settings Top Banner */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Account & Security Settings</h2>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Manage your personal employee portal authentication password and view your assigned user identity.
+            </p>
+          </div>
+        </div>
+
+        {/* Account Security Card for Employee */}
+        <AccountSecuritySection
+          userEmail={user?.email}
+          isOwner={false}
+          isEmployee={true}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Top Banner */}
@@ -134,10 +178,10 @@ export function SettingsView({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">LLC Setup & System Parameters</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Company Setup & System Parameters</h2>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Official legal entity parameters, Pennsylvania tax registration, mileage rates, and data backup controls.
+            Official legal entity parameters, Pennsylvania tax registration, owner credentials, and data backup controls.
           </p>
         </div>
 
@@ -148,7 +192,17 @@ export function SettingsView({
         )}
       </div>
 
-      {/* LLC Legal Entity Section */}
+      {/* Owner Account & Security Credentials Section */}
+      <AccountSecuritySection
+        userEmail={user?.email || org.ownerEmail}
+        isOwner={true}
+        isEmployee={false}
+      />
+
+      {/* Staff Portal Access & Password Reset Roster */}
+      <EmployeeSecurityRoster employees={employees} />
+
+      {/* Company Legal Entity Section */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-2.5">
@@ -156,7 +210,7 @@ export function SettingsView({
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">LLC Legal Information</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Company Legal Information</h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">Entity details registered with IRS & PA Department of Revenue</p>
             </div>
           </div>
@@ -179,7 +233,7 @@ export function SettingsView({
             <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="text-lg font-extrabold text-slate-900 dark:text-white">{org.name || 'Unnamed LLC'}</h4>
+                  <h4 className="text-lg font-extrabold text-slate-900 dark:text-white">{org.name || 'Unnamed Company'}</h4>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> {org.state || 'PA'} Single-Member LLC
                   </span>
@@ -201,12 +255,21 @@ export function SettingsView({
             </div>
 
             {/* Key Data Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800/60 space-y-1">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
                   <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Managing Member
                 </span>
                 <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{org.ownerName || 'Not Set'}</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800/60 space-y-1">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Tax Filing Schedule
+                </span>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  {filingFrequencyLabelMap[org.stateFilingFrequency || org.filingFrequencyPA || 'MONTHLY']}
+                </p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800/60 space-y-1">
@@ -255,12 +318,12 @@ export function SettingsView({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">PA State Tax ID *</label>
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">State Tax ID / Account ID</label>
                   <input
                     type="text"
-                    required
                     value={orgForm.stateTaxId}
                     onChange={(e) => setOrgForm({ ...orgForm, stateTaxId: e.target.value })}
+                    placeholder="e.g. 12345678"
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -277,7 +340,7 @@ export function SettingsView({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">City</label>
                   <input
@@ -288,16 +351,21 @@ export function SettingsView({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">State</label>
-                  <input
-                    type="text"
-                    value={orgForm.state}
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Supported State</label>
+                  <select
+                    value={orgForm.state || 'PA'}
                     onChange={(e) => setOrgForm({ ...orgForm, state: e.target.value })}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
-                  />
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+                  >
+                    {SUPPORTED_STATES.map((st) => (
+                      <option key={st.code} value={st.code}>
+                        {st.code} — {st.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">ZIP</label>
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">ZIP Code</label>
                   <input
                     type="text"
                     value={orgForm.zip}
@@ -305,6 +373,17 @@ export function SettingsView({
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
+
+                {/* State Tax Rules Context Banner */}
+                {(() => {
+                  const stateMeta = getSupportedStateByCode(orgForm.state || 'PA');
+                  return stateMeta ? (
+                    <div className="sm:col-span-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">✓ Verified Tax Rules:</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{stateMeta.taxDescription}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -329,18 +408,33 @@ export function SettingsView({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Payroll Schedule (Pay Frequency)</label>
-                <select
-                  value={orgForm.payFrequency || 'BI_WEEKLY'}
-                  onChange={(e) => setOrgForm({ ...orgForm, payFrequency: e.target.value as any })}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
-                >
-                  <option value="BI_WEEKLY">Bi-Weekly (26 Pay Periods/yr)</option>
-                  <option value="WEEKLY">Weekly (52 Pay Periods/yr)</option>
-                  <option value="SEMI_MONTHLY">Semi-Monthly (24 Pay Periods/yr)</option>
-                  <option value="MONTHLY">Monthly (12 Pay Periods/yr)</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div>
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Payroll Schedule (Pay Frequency)</label>
+                  <select
+                    value={orgForm.payFrequency || 'BI_WEEKLY'}
+                    onChange={(e) => setOrgForm({ ...orgForm, payFrequency: e.target.value as any })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="BI_WEEKLY">Bi-Weekly (26 Pay Periods/yr)</option>
+                    <option value="WEEKLY">Weekly (52 Pay Periods/yr)</option>
+                    <option value="SEMI_MONTHLY">Semi-Monthly (24 Pay Periods/yr)</option>
+                    <option value="MONTHLY">Monthly (12 Pay Periods/yr)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">State Tax Filing Schedule</label>
+                  <select
+                    value={orgForm.stateFilingFrequency || orgForm.filingFrequencyPA || 'MONTHLY'}
+                    onChange={(e) => setOrgForm({ ...orgForm, stateFilingFrequency: e.target.value as any, filingFrequencyPA: e.target.value as any })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="MONTHLY">Monthly Remittance</option>
+                    <option value="QUARTERLY">Quarterly Remittance</option>
+                    <option value="SEMI_MONTHLY">Semi-Monthly High Volume</option>
+                    <option value="ANNUALLY">Annual Reconciliation</option>
+                  </select>
+                </div>
               </div>
 
               {/* Mercury Bank API Integration Section */}
@@ -469,7 +563,7 @@ export function SettingsView({
                 className="px-5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-700/20"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>Save LLC Details</span>
+                <span>Save Company Details</span>
               </button>
             </div>
           </form>

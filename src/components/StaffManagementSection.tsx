@@ -1,30 +1,43 @@
 import React, { useState } from 'react';
-import { Users, Plus, UserCheck, DollarSign, Building2 } from 'lucide-react';
+import { Users, Plus, UserCheck, DollarSign, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Employee } from '../types';
 import { StaffCard } from './StaffCard';
 import { StaffFormModal } from './StaffFormModal';
+import { useAuth } from '../context/AuthContext';
 
 interface StaffManagementSectionProps {
   employees: Employee[];
+  companyState?: string;
+  org?: { state?: string };
   onSaveEmployees: (employees: Employee[]) => void;
 }
 
 /**
  * Staff management component with stats banner, modal-based creation,
- * and single-employee edit mode enforcement.
+ * automated portal invitation dispatch, and inactive read-only mode enforcement.
  */
 export function StaffManagementSection({
   employees,
+  companyState,
+  org,
   onSaveEmployees,
 }: StaffManagementSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const { inviteEmployee } = useAuth();
 
   const activeCount = employees.filter((e) => e.isActive).length;
   const avgPayRate =
     employees.length > 0
       ? (employees.reduce((acc, curr) => acc + (curr.payRate || 0), 0) / employees.length).toFixed(2)
       : '0.00';
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
 
   const handleOpenAddModal = () => {
     setEditingEmployee(null);
@@ -41,10 +54,12 @@ export function StaffManagementSection({
     setEditingEmployee(null);
   };
 
-  const handleSaveEmployee = (updatedEmp: Employee) => {
+  const handleSaveEmployee = async (updatedEmp: Employee, sendInvite?: boolean) => {
     const existingIndex = employees.findIndex((e) => e.id === updatedEmp.id);
     let newList: Employee[];
-    if (existingIndex >= 0) {
+    const isNew = existingIndex < 0;
+
+    if (!isNew) {
       newList = [...employees];
       newList[existingIndex] = updatedEmp;
     } else {
@@ -52,6 +67,28 @@ export function StaffManagementSection({
     }
     onSaveEmployees(newList);
     handleCloseModal();
+
+    if (sendInvite && updatedEmp.email) {
+      try {
+        await inviteEmployee(updatedEmp.email, `${updatedEmp.firstName} ${updatedEmp.lastName}`);
+        showNotification('success', `Staff member added and portal invitation email sent to ${updatedEmp.email}.`);
+      } catch (err: any) {
+        showNotification('error', `Staff saved, but failed to send invite: ${err.message}`);
+      }
+    }
+  };
+
+  const handleInviteStaff = async (emp: Employee) => {
+    if (!emp.email) return;
+    setInvitingId(emp.id);
+    try {
+      await inviteEmployee(emp.email, `${emp.firstName} ${emp.lastName}`);
+      showNotification('success', `Portal invitation email successfully sent to ${emp.email}.`);
+    } catch (err: any) {
+      showNotification('error', `Failed to send invitation to ${emp.email}: ${err.message}`);
+    } finally {
+      setInvitingId(null);
+    }
   };
 
   const handleToggleActive = (id: string) => {
@@ -126,6 +163,21 @@ export function StaffManagementSection({
         </div>
       </div>
 
+      {/* Notification Toast/Banner */}
+      {notification && (
+        <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-2 transition animate-in fade-in ${
+          notification.type === 'success'
+            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800'
+            : 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />}
+            <span className="font-medium text-xs">{notification.message}</span>
+          </div>
+          <button onClick={() => setNotification(null)} className="text-xs opacity-60 hover:opacity-100 font-bold px-1.5 py-0.5 cursor-pointer">✕</button>
+        </div>
+      )}
+
       {/* Roster Cards List */}
       <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
         {employees.length === 0 ? (
@@ -149,6 +201,8 @@ export function StaffManagementSection({
               onEdit={() => handleOpenEditModal(emp)}
               onToggleActive={() => handleToggleActive(emp.id)}
               onDelete={() => handleDeleteEmployee(emp.id)}
+              onInvite={() => handleInviteStaff(emp)}
+              inviting={invitingId === emp.id}
               canDelete={employees.length > 1}
             />
           ))
@@ -159,6 +213,7 @@ export function StaffManagementSection({
       <StaffFormModal
         isOpen={isModalOpen}
         employee={editingEmployee}
+        companyState={companyState || org?.state || 'DE'}
         onSave={handleSaveEmployee}
         onClose={handleCloseModal}
       />

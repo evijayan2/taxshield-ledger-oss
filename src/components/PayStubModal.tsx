@@ -239,7 +239,7 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
           {/* Employer Tax Contributions (Informational) */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap justify-between gap-2">
             <span>Employer Match: FICA SS ${stub.employerSocialSecurity.toFixed(2)} | Medicare ${stub.employerMedicare.toFixed(2)} | SUTA ({stub.stateCode || employee.state || org.state || 'PA'}) ${(stub.employerStateUnemployment ?? stub.employerPaUc ?? 0).toFixed(2)}</span>
-            <span className="text-slate-700 dark:text-slate-300 font-medium">Total LLC Cost for Employee: ${stub.totalCompanyCost.toFixed(2)}</span>
+            <span className="text-slate-700 dark:text-slate-300 font-medium">Total Company Cost for Employee: ${stub.totalCompanyCost.toFixed(2)}</span>
           </div>
         </div>
 

@@ -117,7 +117,7 @@ export function BulkTimesheetForm({
           <div className="p-6 text-center space-y-3">
             <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              No active LLC employees or staff members found.
+              No active employees or staff members found.
             </p>
             <button
               onClick={onClose}
@@ -130,7 +130,7 @@ export function BulkTimesheetForm({
           <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Select LLC Staff Member / Member
+                Select Staff Member / Member
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />

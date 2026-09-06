@@ -23,6 +23,7 @@ export interface TimesheetsViewProps {
   timesheets?: TimesheetEntry[];
   employees?: Employee[];
   activeTaxYear?: number;
+  isReadOnly?: boolean;
   onAddTimesheet: (newEntry: Omit<TimesheetEntry, 'id' | 'createdAt'>) => void;
   onBulkAddTimesheets?: (entries: Omit<TimesheetEntry, 'id' | 'createdAt'>[]) => void;
   onUpdateTimesheetStatus: (id: string, status: TimesheetStatus) => void;
@@ -32,12 +33,13 @@ export interface TimesheetsViewProps {
 
 /**
  * Main Timesheet Management View component for tracking, approving, and auditing LLC staff and member hours.
- * Supports theme switching (Light/Dark mode) and bulk range timesheet generation.
+ * Supports theme switching (Light/Dark mode), bulk range timesheet generation, and inactive read-only enforcement.
  */
 export function TimesheetsView({
   timesheets = [],
   employees = [],
   activeTaxYear = 2026,
+  isReadOnly = false,
   onAddTimesheet,
   onBulkAddTimesheets,
   onUpdateTimesheetStatus,
@@ -85,58 +87,75 @@ export function TimesheetsView({
         </div>
       )}
 
+      {/* Inactive Read-Only Warning Banner */}
+      {isReadOnly && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 text-xs shadow-sm flex items-start gap-3.5">
+          <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-bold text-sm block text-amber-950 dark:text-amber-100">
+              Timesheet Logging Disabled (Read-Only Account)
+            </span>
+            <p className="text-amber-800 dark:text-amber-300 leading-relaxed">
+              Your staff account is currently inactive. You can review and inspect your historical attendance records below, but new timesheet submissions and modifications are disabled.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold text-xs uppercase tracking-wider mb-1">
-            <Clock className="w-4 h-4" /> LLC Labor & Attendance Compliance
+            <Clock className="w-4 h-4" /> Labor & Attendance Compliance
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            LLC Staff & Member Timesheet Ledger
+            Staff & Member Timesheet Ledger
           </h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
-            Track daily work hours for LLC staff employees and active working members for labor compliance and payroll accuracy.
+            Track daily work hours for staff employees and active working members for labor compliance and payroll accuracy.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => {
-              if (onNavigateToPayroll) {
-                onNavigateToPayroll();
-              }
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl shadow-lg shadow-emerald-600/30 transition text-xs cursor-pointer"
-          >
-            <Calculator className="w-4 h-4" /> Run Paycheck
-          </button>
-          <button
-            onClick={() => !isFutureActiveYear && setIsBulkModalOpen(true)}
-            disabled={isFutureActiveYear}
-            title={isFutureActiveYear ? `Bulk logging timesheets for future tax year (${activeTaxYear}) is locked` : 'Bulk Log Range'}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 border font-medium rounded-xl transition text-xs ${
-              isFutureActiveYear
-                ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 cursor-pointer'
-            }`}
-          >
-            {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
-            Bulk Log Range
-          </button>
-          <button
-            onClick={() => !isFutureActiveYear && setIsSingleModalOpen(true)}
-            disabled={isFutureActiveYear}
-            title={isFutureActiveYear ? `Logging timesheets for future tax year (${activeTaxYear}) is locked` : 'Log Single Entry'}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 font-medium rounded-xl transition text-xs ${
-              isFutureActiveYear
-                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 cursor-pointer'
-            }`}
-          >
-            {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Plus className="w-4 h-4" />}
-            Log Single Entry
-          </button>
-        </div>
+        {!isReadOnly && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                if (onNavigateToPayroll) {
+                  onNavigateToPayroll();
+                }
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl shadow-lg shadow-emerald-600/30 transition text-xs cursor-pointer"
+            >
+              <Calculator className="w-4 h-4" /> Run Paycheck
+            </button>
+            <button
+              onClick={() => !isFutureActiveYear && setIsBulkModalOpen(true)}
+              disabled={isFutureActiveYear}
+              title={isFutureActiveYear ? `Bulk logging timesheets for future tax year (${activeTaxYear}) is locked` : 'Bulk Log Range'}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 border font-medium rounded-xl transition text-xs ${
+                isFutureActiveYear
+                  ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                  : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 cursor-pointer'
+              }`}
+            >
+              {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+              Bulk Log Range
+            </button>
+            <button
+              onClick={() => !isFutureActiveYear && setIsSingleModalOpen(true)}
+              disabled={isFutureActiveYear}
+              title={isFutureActiveYear ? `Logging timesheets for future tax year (${activeTaxYear}) is locked` : 'Log Single Entry'}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 font-medium rounded-xl transition text-xs ${
+                isFutureActiveYear
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 cursor-pointer'
+              }`}
+            >
+              {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Plus className="w-4 h-4" />}
+              Log Single Entry
+            </button>
+          </div>
+        )}
       </div>
 
       {/* LLC & FLSA Regulatory Callout Banner */}
@@ -144,9 +163,9 @@ export function TimesheetsView({
         <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
         <div>
           <strong className="text-amber-950 dark:text-amber-300 font-semibold block mb-0.5">
-            LLC Labor & FLSA Compliance Note:
+            Labor & FLSA Compliance Note:
           </strong>
-          Maintain consistent daily timesheet records for all hourly W-2 staff and active LLC team members. Under Fair Labor Standards Act (FLSA) regulations, non-exempt hourly employees must be paid 1.5x overtime for hours worked over 40 per workweek.
+          Maintain consistent daily timesheet records for all hourly W-2 staff and active team members. Under Fair Labor Standards Act (FLSA) regulations, non-exempt hourly employees must be paid 1.5x overtime for hours worked over 40 per workweek.
         </div>
       </div>
 
@@ -154,7 +173,7 @@ export function TimesheetsView({
         <div className="bg-amber-50 dark:bg-slate-900 border border-amber-300 dark:border-amber-500/40 p-4 rounded-xl flex items-center justify-between gap-4 text-xs text-amber-900 dark:text-amber-200">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>No LLC staff members found. Add employees under the <strong>Staff &amp; Onboarding</strong> module menu to start logging timesheets.</span>
+            <span>No staff members found. Add employees under the <strong>Staff &amp; Onboarding</strong> module menu to start logging timesheets.</span>
           </div>
         </div>
       )}
@@ -210,7 +229,7 @@ export function TimesheetsView({
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
               className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="ALL">All LLC Staff & Members</option>
+              <option value="ALL">All Staff & Members</option>
               {safeEmployees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.firstName} {emp.lastName}
@@ -249,6 +268,7 @@ export function TimesheetsView({
         selectedStatus={selectedStatus}
         onStatusChange={onUpdateTimesheetStatus}
         onDelete={onDeleteTimesheet}
+        isReadOnly={isReadOnly}
       />
 
       {/* Single Entry Modal Form */}

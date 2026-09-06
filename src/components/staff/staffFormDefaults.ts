@@ -1,0 +1,144 @@
+import { Employee } from '../../types';
+import { findDistrictByPsdCode } from '../../utils/paSchoolDistricts';
+import { getLocalJurisdictionsByState } from '../../utils/localTaxDistricts';
+
+/**
+ * Creates default employee form values tailored to the active company state.
+ */
+export function createDefaultEmployeeForm(companyState: string = 'DE'): Omit<Employee, 'id'> {
+  const cleanCompState = (companyState || 'DE').trim().toUpperCase();
+  const isPA = cleanCompState === 'PA';
+  const isDE = cleanCompState === 'DE';
+
+  let localCode = '';
+  let localName = 'None / Out of Area';
+  let localRate = 0;
+
+  if (isPA) {
+    localCode = 'PA-PSD-460401';
+    localName = 'Lower Merion School District';
+    localRate = 0.01;
+  } else if (isDE) {
+    localCode = 'DE-LOCAL-WILMINGTON';
+    localName = 'City of Wilmington';
+    localRate = 0.0125;
+  }
+
+  return {
+    firstName: '',
+    lastName: '',
+    age: 30,
+    relationshipToOwner: 'NONE',
+    email: '',
+    phone: '',
+    ssnLastFour: '',
+    streetAddress: '',
+    city: '',
+    state: cleanCompState,
+    zip: '',
+    workState: cleanCompState,
+    employmentType: 'W2_HOURLY',
+    payRate: 25.0,
+    payFrequency: 'BI_WEEKLY',
+    w4FilingStatus: 'SINGLE',
+    w4MultipleJobs: false,
+    w4DependentCredit: 0,
+    w4OtherIncome: 0,
+    w4Deductions: 0,
+    w4ExtraWithholding: 0,
+    localTaxJurisdictionCode: localCode,
+    localTaxJurisdictionName: localName,
+    localTaxRate: localRate,
+    localFlatTaxAnnual: isPA ? 52.0 : 0,
+    localFlatTaxExempt: !isPA,
+    paPsdCode: isPA ? '460401' : undefined,
+    paPsdName: isPA ? 'Lower Merion School District' : undefined,
+    paResidentEitRate: isPA ? 0.01 : undefined,
+    paWorkPsdCode: isPA ? '460401' : undefined,
+    paWorkEitRate: isPA ? 0.01 : undefined,
+    paLstAnnual: isPA ? 52.0 : undefined,
+    paLstExempt: !isPA,
+    bankName: '',
+    accountType: 'CHECKING',
+    routingNumber: '',
+    accountNumber: '',
+    bankAccountMasked: '',
+    isActive: true,
+  };
+}
+
+/**
+ * Returns updated tax jurisdiction fields when an employee's residence state changes.
+ */
+export function getTaxDefaultsForResidenceState(
+  newResidenceState: string,
+  currentWorkState?: string
+): Partial<Employee> {
+  const cleanResState = (newResidenceState || '').trim().toUpperCase();
+  const isPA = cleanResState === 'PA';
+  const isDE = cleanResState === 'DE';
+
+  if (isPA) {
+    const defaultDistrict = findDistrictByPsdCode('460401');
+    return {
+      state: 'PA',
+      localTaxJurisdictionCode: 'PA-PSD-460401',
+      localTaxJurisdictionName: defaultDistrict?.name || 'Lower Merion School District',
+      localTaxRate: defaultDistrict?.defaultEitRate || 0.01,
+      localFlatTaxAnnual: 52.0,
+      localFlatTaxExempt: false,
+      paPsdCode: '460401',
+      paPsdName: defaultDistrict?.name || 'Lower Merion School District',
+      paResidentEitRate: defaultDistrict?.defaultEitRate || 0.01,
+      paLstAnnual: 52.0,
+      paLstExempt: false,
+    };
+  }
+
+  if (isDE) {
+    return {
+      state: 'DE',
+      localTaxJurisdictionCode: 'DE-LOCAL-WILMINGTON',
+      localTaxJurisdictionName: 'City of Wilmington',
+      localTaxRate: 0.0125,
+      localFlatTaxAnnual: 0,
+      localFlatTaxExempt: true,
+      paPsdCode: undefined,
+      paPsdName: undefined,
+      paResidentEitRate: undefined,
+      paLstAnnual: undefined,
+    };
+  }
+
+  // Check if state has any registered local tax districts
+  const districts = getLocalJurisdictionsByState(cleanResState);
+  if (districts.length > 0) {
+    const first = districts[0];
+    return {
+      state: cleanResState,
+      localTaxJurisdictionCode: first.code,
+      localTaxJurisdictionName: first.name,
+      localTaxRate: first.defaultRate,
+      localFlatTaxAnnual: 0,
+      localFlatTaxExempt: true,
+      paPsdCode: undefined,
+      paPsdName: undefined,
+      paResidentEitRate: undefined,
+      paLstAnnual: undefined,
+    };
+  }
+
+  return {
+    state: cleanResState,
+    localTaxJurisdictionCode: '',
+    localTaxJurisdictionName: 'None / Out of Area',
+    localTaxRate: 0,
+    localFlatTaxAnnual: 0,
+    localFlatTaxExempt: true,
+    paPsdCode: undefined,
+    paPsdName: undefined,
+    paResidentEitRate: undefined,
+    paLstAnnual: undefined,
+  };
+}
+

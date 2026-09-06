@@ -9,11 +9,12 @@ import {
   DollarSign,
   AlertCircle
 } from 'lucide-react';
-import { Employee } from '../types';
+import { Employee, Organization } from '../types';
 import { StaffManagementSection } from './StaffManagementSection';
 
 interface StaffOnboardingViewProps {
   employees: Employee[];
+  org?: Organization;
   onSaveEmployees: (employees: Employee[]) => void;
   onNavigateToTimesheets?: () => void;
   onNavigateToPayroll?: () => void;
@@ -22,10 +23,11 @@ interface StaffOnboardingViewProps {
 /**
  * Dedicated Staff Onboarding & Roster Management Module for TaxShield Ledger.
  * Provides a clean interface for onboarding W-2 employees and 1099 contractors,
- * configuring IRS W-4 withholdings, PA PSD local tax codes, and managing staff status.
+ * configuring IRS W-4 withholdings, state/local tax codes, and managing staff status.
  */
 export function StaffOnboardingView({
   employees,
+  org,
   onSaveEmployees,
   onNavigateToTimesheets,
   onNavigateToPayroll,
@@ -47,13 +49,13 @@ export function StaffOnboardingView({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-xs uppercase tracking-wider mb-1">
-            <UserPlus className="w-4 h-4" /> LLC Human Resources & Tax Compliance
+            <UserPlus className="w-4 h-4" /> Human Resources & Tax Compliance
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Staff Onboarding & W-4 Tax Roster
           </h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
-            Onboard LLC staff, configure Form W-4 federal withholdings, set PA local PSD tax rates, and manage 1099 contractor classifications.
+            Onboard staff, configure Form W-4 federal withholdings, set PA local PSD tax rates, and manage 1099 contractor classifications.
           </p>
         </div>
 
@@ -132,6 +134,8 @@ export function StaffOnboardingView({
       {/* Main Staff Management Section Component */}
       <StaffManagementSection
         employees={safeEmployees}
+        org={org}
+        companyState={org?.state || 'DE'}
         onSaveEmployees={onSaveEmployees}
       />
     </div>

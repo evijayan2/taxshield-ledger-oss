@@ -6,18 +6,14 @@ import {
   Receipt, 
   ShieldCheck, 
   TrendingUp, 
-  FileText, 
   Plus, 
   ArrowUpRight, 
   CheckCircle2, 
-  AlertCircle,
-  Landmark,
-  Clock,
-  ArrowRight,
-  Calendar,
-  AlertTriangle,
-  CreditCard,
-  BellRing
+  Landmark, 
+  Clock, 
+  ArrowRight, 
+  Calendar, 
+  AlertCircle 
 } from 'lucide-react';
 import { AllAppData } from '../types';
 import { getRecordYear, getTaskTaxYear } from '../utils/taxEngine';
@@ -28,7 +24,8 @@ interface DashboardOverviewViewProps {
 }
 
 /**
- * Modern Executive Financial Dashboard component for TaxShield Ledger.
+ * Production-Grade Executive Financial Dashboard component for TaxShield Ledger.
+ * Unified under a strict Emerald + Slate corporate accounting palette.
  */
 export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverviewViewProps) {
   const activeYear = data.activeTaxYear || 2026;
@@ -76,7 +73,6 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
   const isStateFiled = stateTask?.status === 'FILED';
   const isLocalFiled = localTask?.status === 'FILED';
 
-  // Pending Unpaid Remittances & Urgent Deadline Calculation
   const unpaidTasks = complianceTasks.filter(t => t.status !== 'FILED');
   const unpaidTaxCount = unpaidTasks.length;
   const sortedUnpaid = [...unpaidTasks].sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
@@ -89,37 +85,36 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="glass-panel p-6 rounded-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-indigo-500/20">
-        <div className="ambient-glow-indigo top-0 left-0" />
-        <div className="space-y-2 relative z-10">
+      <div className="glass-panel p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-200 dark:border-slate-800">
+        <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-semibold">
+            <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold">
               Tax Year {data.activeTaxYear} Active
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-mono font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Audit Logged
+            <span className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-mono font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Audit Logged
             </span>
           </div>
           <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            {data.org.name || 'Micro-LLC Financial Ledger'}
+            {data.org.name || 'Company Financial Ledger'}
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-sm max-w-xl">
-            Audit-ready expense tracking, 5-point IRS mileage log, PA state & local payroll engine, and Schedule C tax deduction analytics.
+            Audit-ready expense tracking, IRS mileage log, PA state & local payroll engine, and Schedule C tax deduction analytics.
           </p>
         </div>
 
         {/* Quick Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3 relative z-10">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => onNavigateTab('EXPENSES')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-indigo-600/25 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4" />
             New Expense
           </button>
           <button
             onClick={() => onNavigateTab('MILEAGE')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium text-sm rounded-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
           >
             <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             Log Mileage
@@ -127,41 +122,35 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
         </div>
       </div>
 
-      {/* High-Visibility Tax Payment Deadline Alert Banner */}
+      {/* Clean Statutory Deadline Alert Banner */}
       {unpaidTaxCount > 0 && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-rose-500/15 border-2 border-amber-500/50 dark:border-amber-500/70 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5 z-10">
-            <div className="w-11 h-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black flex-shrink-0 shadow-lg shadow-amber-500/30 animate-bounce">
-              <AlertTriangle className="w-6 h-6 text-slate-950" />
+        <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 flex items-center justify-center font-bold flex-shrink-0 border border-amber-300 dark:border-amber-700">
+              <AlertCircle className="w-5 h-5 text-amber-700 dark:text-amber-400" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-xs animate-pulse flex items-center gap-1">
-                  <BellRing className="w-3 h-3" />
-                  TAX REMITTANCE ALERT
-                </span>
-                <span className="text-xs font-mono font-extrabold text-amber-900 dark:text-amber-200">
-                  {unpaidTaxCount} Filing{unpaidTaxCount === 1 ? '' : 's'} Pending
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                  REMITTANCE PENDING ({unpaidTaxCount})
                 </span>
               </div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
-                Upcoming Tax Deadline: <span className="text-amber-700 dark:text-amber-400 font-mono underline decoration-amber-500">{nextDueTitle}</span> (Due {nextDueDate})
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Next Deadline: <span className="text-amber-800 dark:text-amber-300 font-mono">{nextDueTitle}</span> (Due {nextDueDate})
               </h3>
-              <p className="text-xs text-slate-700 dark:text-slate-300 max-w-xl">
-                Total Unpaid Tax Liabilities: <strong className="text-slate-950 dark:text-white font-mono text-sm">{fmt(totalTaxLiabilityAll)}</strong>. Remit before statutory due dates to maintain zero-penalty status.
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Total Unpaid Tax Obligations: <strong className="text-slate-900 dark:text-white font-mono">{fmt(totalTaxLiabilityAll)}</strong>.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 z-10 self-end md:self-center">
-            <button
-              onClick={() => onNavigateTab('COMPLIANCE')}
-              className="px-4 py-2.5 text-xs font-black rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 transition flex items-center gap-2 cursor-pointer shadow-md shadow-amber-500/25"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Disburse ACH / Record Payout</span>
-            </button>
-          </div>
+          <button
+            onClick={() => onNavigateTab('COMPLIANCE')}
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 transition flex items-center gap-2 cursor-pointer shadow-xs"
+          >
+            <span>Open Remittance Hub</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
@@ -172,46 +161,46 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
             <span>Total YTD Deductions</span>
             <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3">
+          <p className="text-3xl font-black text-slate-900 dark:text-white font-mono mt-3">
             ${totalDeductions.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 mt-2 font-medium">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Reduces Schedule C Taxable Income</span>
+            <span>Reduces Taxable Income</span>
           </div>
         </div>
 
         <div className="glass-card p-5 rounded-2xl">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">
             <span>Operating Expenses</span>
-            <Receipt className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <Receipt className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3">
+          <p className="text-3xl font-black text-slate-900 dark:text-white font-mono mt-3">
             ${totalGeneralExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
-          <span className="text-xs text-slate-500 dark:text-slate-400 mt-2 block">{data.generalExpenses.length} receipt entries</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 mt-2 block font-medium">{data.generalExpenses.length} receipt entries</span>
         </div>
 
         <div className="glass-card p-5 rounded-2xl">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">
             <span>IRS Mileage Allowance</span>
-            <Car className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <Car className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-3">
+          <p className="text-3xl font-black text-slate-900 dark:text-white font-mono mt-3">
             ${totalMileageDeduction.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
-          <span className="text-xs text-slate-500 dark:text-slate-400 mt-2 block">{data.mileageLogs.length} verified trips</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 mt-2 block font-medium">{data.mileageLogs.length} verified trips</span>
         </div>
 
         <div className="glass-card p-5 rounded-2xl">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">
             <span>Gross Payroll Paid</span>
-            <Calculator className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+            <Calculator className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3">
+          <p className="text-3xl font-black text-slate-900 dark:text-white font-mono mt-3">
             ${totalPayrollGross.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
-          <span className="text-xs text-slate-500 dark:text-slate-400 mt-2 block">{data.payStubs.length} issued paystubs</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 mt-2 block font-medium">{data.payStubs.length} issued paystubs</span>
         </div>
       </div>
 
@@ -232,7 +221,7 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
           <button
             onClick={() => onNavigateTab('COMPLIANCE')}
-            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm shadow-emerald-600/20"
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <span>Compliance Hub & ACH Payouts</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -243,18 +232,18 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           
           {/* Federal Taxes Card */}
-          <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700">
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
                   FEDERAL (IRS 941)
                 </span>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
                   isFedFiled
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                 }`}>
-                  {isFedFiled ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Clock className="w-3 h-3" />}
+                  {isFedFiled ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <Clock className="w-3 h-3 text-slate-400" />}
                   <span>{isFedFiled ? 'PAID & FILED' : 'REMITTANCE DUE'}</span>
                 </span>
               </div>
@@ -264,14 +253,14 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">IRS EFTPS • Form 941 Return</p>
               </div>
 
-              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
-                <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Federal Due</span>
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block">Total Federal Due</span>
                 <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">
                   {fmt(totalFedLiability)}
                 </span>
               </div>
 
-              <div className="space-y-1 pt-1 text-xs divide-y divide-slate-100 dark:divide-slate-800/60">
+              <div className="space-y-1 pt-1 text-xs divide-y divide-slate-200/60 dark:divide-slate-800/60">
                 <div className="flex justify-between text-[11px] pt-1">
                   <span className="text-slate-600 dark:text-slate-400">Federal Income Tax (FIT):</span>
                   <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{fmt(totalFIT)}</span>
@@ -286,10 +275,10 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
                 </div>
                 <div className="flex items-center justify-between text-[11px] pt-2 font-medium">
                   <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>Payment Due Date:</span>
                   </span>
-                  <span className={`font-mono font-bold ${isFedFiled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                  <span className={`font-mono font-bold ${isFedFiled ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
                     {isFedFiled ? `Paid (${fedTask?.filedDate || 'Filed'})` : (fedTask?.dueDate || '2026-10-31')}
                   </span>
                 </div>
@@ -298,26 +287,26 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
             <button
               onClick={() => onNavigateTab('COMPLIANCE')}
-              className="w-full py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-2 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1 cursor-pointer"
             >
               <span>{isFedFiled ? 'View Paid Filing' : 'Pay Federal Tax (EFTPS)'}</span>
-              <ArrowRight className="w-3.5 h-3.5 text-indigo-500" />
+              <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             </button>
           </div>
 
           {/* Pennsylvania State Taxes Card */}
-          <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
                   STATE (PA REV-1667 & UC)
                 </span>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
                   isStateFiled
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                 }`}>
-                  {isStateFiled ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Clock className="w-3 h-3" />}
+                  {isStateFiled ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <Clock className="w-3 h-3 text-slate-400" />}
                   <span>{isStateFiled ? 'PAID & FILED' : 'REMITTANCE DUE'}</span>
                 </span>
               </div>
@@ -327,14 +316,14 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">PA Dept of Revenue • myPATH Portal</p>
               </div>
 
-              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
-                <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total State Due</span>
-                <span className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block">Total State Due</span>
+                <span className="text-2xl font-black font-mono text-emerald-700 dark:text-emerald-400">
                   {fmt(totalStateLiability)}
                 </span>
               </div>
 
-              <div className="space-y-1 pt-1 text-xs divide-y divide-slate-100 dark:divide-slate-800/60">
+              <div className="space-y-1 pt-1 text-xs divide-y divide-slate-200/60 dark:divide-slate-800/60">
                 <div className="flex justify-between text-[11px] pt-1">
                   <span className="text-slate-600 dark:text-slate-400">PA State Income Tax (3.07%):</span>
                   <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{fmt(totalPATax)}</span>
@@ -345,10 +334,10 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
                 </div>
                 <div className="flex items-center justify-between text-[11px] pt-2 font-medium">
                   <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>Payment Due Date:</span>
                   </span>
-                  <span className={`font-mono font-bold ${isStateFiled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                  <span className={`font-mono font-bold ${isStateFiled ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
                     {isStateFiled ? `Paid (${stateTask?.filedDate || 'Filed'})` : (stateTask?.dueDate || '2026-09-15')}
                   </span>
                 </div>
@@ -357,26 +346,26 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
             <button
               onClick={() => onNavigateTab('COMPLIANCE')}
-              className="w-full py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-2 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1 cursor-pointer"
             >
               <span>{isStateFiled ? 'View Paid Filing' : 'Pay PA Tax (myPATH)'}</span>
-              <ArrowRight className="w-3.5 h-3.5 text-emerald-500" />
+              <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             </button>
           </div>
 
           {/* Local PA Taxes Card */}
-          <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700">
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
                   LOCAL (PA ACT 32 EIT)
                 </span>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
                   isLocalFiled
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                 }`}>
-                  {isLocalFiled ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Clock className="w-3 h-3" />}
+                  {isLocalFiled ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <Clock className="w-3 h-3 text-slate-400" />}
                   <span>{isLocalFiled ? 'PAID & FILED' : 'REMITTANCE DUE'}</span>
                 </span>
               </div>
@@ -386,14 +375,14 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Local Collector • Act 32 PSD Return</p>
               </div>
 
-              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
-                <span className="text-[10px] text-slate-400 font-semibold uppercase block">Total Local Due</span>
-                <span className="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase block">Total Local Due</span>
+                <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">
                   {fmt(totalLocalLiability)}
                 </span>
               </div>
 
-              <div className="space-y-1 pt-1 text-xs divide-y divide-slate-100 dark:divide-slate-800/60">
+              <div className="space-y-1 pt-1 text-xs divide-y divide-slate-200/60 dark:divide-slate-800/60">
                 <div className="flex justify-between text-[11px] pt-1">
                   <span className="text-slate-600 dark:text-slate-400">Local EIT Withheld:</span>
                   <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{fmt(totalLocalEIT)}</span>
@@ -404,10 +393,10 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
                 </div>
                 <div className="flex items-center justify-between text-[11px] pt-2 font-medium">
                   <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-purple-500" />
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>Payment Due Date:</span>
                   </span>
-                  <span className={`font-mono font-bold ${isLocalFiled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                  <span className={`font-mono font-bold ${isLocalFiled ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
                     {isLocalFiled ? `Paid (${localTask?.filedDate || 'Filed'})` : (localTask?.dueDate || '2026-10-31')}
                   </span>
                 </div>
@@ -416,33 +405,33 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
             <button
               onClick={() => onNavigateTab('COMPLIANCE')}
-              className="w-full py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-2 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1 cursor-pointer"
             >
               <span>{isLocalFiled ? 'View Paid Filing' : 'Pay Local Collector'}</span>
-              <ArrowRight className="w-3.5 h-3.5 text-purple-500" />
+              <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             </button>
           </div>
 
         </div>
 
         {/* Overall Tax Liability Summary Banner */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-indigo-900/50">
+        <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-emerald-200 dark:border-slate-800 shadow-xs">
           <div>
-            <span className="text-[10px] text-indigo-300 uppercase font-bold tracking-wider block">Combined Total Tax Liability Due (Federal + State + Local)</span>
-            <span className="text-2xl font-black font-mono text-emerald-400">
+            <span className="text-[10px] text-emerald-800 dark:text-emerald-400 uppercase font-bold tracking-wider block">Combined Total Tax Liability Due (Federal + State + Local)</span>
+            <span className="text-2xl font-black font-mono text-emerald-700 dark:text-emerald-400">
               {fmt(totalTaxLiabilityAll)}
             </span>
-            <p className="text-[11px] text-slate-300 mt-0.5">
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
               Live breakdown computed from issued employee paystubs in Tax Year {data.activeTaxYear}.
             </p>
           </div>
 
           <button
             onClick={() => onNavigateTab('COMPLIANCE')}
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-md shadow-emerald-900/30 flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-2 cursor-pointer shadow-xs"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Open Tax Remittance Hub</span>
+            <span>Open Remittance Hub</span>
           </button>
         </div>
       </div>
@@ -451,11 +440,11 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div 
           onClick={() => onNavigateTab('EXPENSES')}
-          className="glass-card p-6 rounded-2xl cursor-pointer hover:border-indigo-500/50 group transition-all"
+          className="glass-card p-6 rounded-2xl cursor-pointer hover:border-emerald-500/40 group transition-all"
         >
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Expenses & Receipts</h3>
-            <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">Expenses & Receipts</h3>
+            <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400">
             Log vendor receipts, map expenses to Schedule C lines, and maintain audit-proof documentation.
@@ -464,11 +453,11 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
         <div 
           onClick={() => onNavigateTab('PAYROLL')}
-          className="glass-card p-6 rounded-2xl cursor-pointer hover:border-indigo-500/50 group transition-all"
+          className="glass-card p-6 rounded-2xl cursor-pointer hover:border-emerald-500/40 group transition-all"
         >
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Payroll & Taxes</h3>
-            <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">Payroll & Taxes</h3>
+            <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400">
             Run PA state (3.07%), local EIT/LST, and W-4 federal tax withholding with immutable calculation snapshots.
@@ -477,11 +466,11 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
         <div 
           onClick={() => onNavigateTab('EXPORT')}
-          className="glass-card p-6 rounded-2xl cursor-pointer hover:border-indigo-500/50 group transition-all"
+          className="glass-card p-6 rounded-2xl cursor-pointer hover:border-emerald-500/40 group transition-all"
         >
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Accountant Export</h3>
-            <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">Accountant Export</h3>
+            <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400">
             Generate CSV, Excel spreadsheets, and year-end packages for your CPA tax return.

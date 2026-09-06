@@ -99,7 +99,7 @@ export function TimesheetForm({
             <div className="p-6 space-y-4 text-center">
               <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
               <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                No active LLC employees or staff found in your organization.
+                No active employees or staff found in your organization.
               </p>
               <p className="text-xs text-slate-500">
                 Please add staff members under <strong>Settings &gt; Manage Employees</strong> before logging timesheets.
@@ -115,7 +115,7 @@ export function TimesheetForm({
             <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
               <div>
                 <label className="block font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Select LLC Staff Member / Owner
+                  Select Staff Member / Owner
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />

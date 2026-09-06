@@ -9,6 +9,8 @@ interface StaffCardProps {
   onEdit: () => void;
   onToggleActive: () => void;
   onDelete: () => void;
+  onInvite?: () => void;
+  inviting?: boolean;
   canDelete: boolean;
 }
 
@@ -56,6 +58,8 @@ export function StaffCard({
   onEdit,
   onToggleActive,
   onDelete,
+  onInvite,
+  inviting = false,
   canDelete,
 }: StaffCardProps) {
   const relBadge = getRelationshipBadge(employee.relationshipToOwner);
@@ -79,10 +83,10 @@ export function StaffCard({
               className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
                 employee.isActive
                   ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
               }`}
             >
-              {employee.isActive ? 'Active' : 'Inactive'}
+              {employee.isActive ? 'Active' : 'Inactive (Read-Only)'}
             </span>
             <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               {getEmploymentTypeLabel(employee.employmentType)}
@@ -110,6 +114,19 @@ export function StaffCard({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {onInvite && employee.email && (
+            <button
+              type="button"
+              onClick={onInvite}
+              disabled={inviting}
+              className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 transition flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-xs"
+              title={`Send portal invitation email to ${employee.email}`}
+            >
+              <Mail className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span>{inviting ? 'Inviting...' : 'Invite to Portal'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onEdit}
@@ -126,10 +143,10 @@ export function StaffCard({
           <button
             type="button"
             onClick={onToggleActive}
-            title={employee.isActive ? 'Deactivate staff' : 'Activate staff'}
+            title={employee.isActive ? 'Deactivate staff (Sets account to Read-Only)' : 'Activate staff'}
             className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer"
           >
-            {employee.isActive ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <XCircle className="w-3.5 h-3.5 text-slate-400" />}
+            {employee.isActive ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <XCircle className="w-3.5 h-3.5 text-amber-500" />}
           </button>
 
           {canDelete && (

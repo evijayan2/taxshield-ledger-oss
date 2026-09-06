@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { 
   Database, 
   UserCheck, 
@@ -10,17 +10,6 @@ import { AuthGate } from './components/AuthGate';
 import { LLCOnboardingModal } from './components/LLCOnboardingModal';
 import { TaxYearSetupModal } from './components/TaxYearSetupModal';
 import { NavigationSidebar, NavigationTab } from './components/NavigationSidebar';
-import { DashboardOverviewView } from './components/DashboardOverviewView';
-import { ExpenseTrackerView } from './components/ExpenseTrackerView';
-import { AuditTrailView } from './components/AuditTrailView';
-import { YearEndExportView } from './components/YearEndExportView';
-import { MileageAndTravelView } from './components/MileageAndTravelView';
-import { AssistedPayrollView } from './components/AssistedPayrollView';
-import { ComplianceFilingsView } from './components/ComplianceFilingsView';
-import { TaxRuleAdminView } from './components/TaxRuleAdminView';
-import { SettingsView } from './components/SettingsView';
-import { TimesheetsView } from './components/TimesheetsView';
-import { StaffOnboardingView } from './components/StaffOnboardingView';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { FontSizeControl } from './components/FontSizeControl';
 import { FontSizeProvider } from './context/FontSizeContext';
@@ -29,6 +18,58 @@ import { isOrgConfigured } from './utils/storage';
 import { useAppState } from './hooks/useAppState';
 import { getTaskTaxYear, isFutureYear, isFutureDateString } from './utils/taxEngine';
 import { PayrollRun, PayStub } from './types';
+
+// Lazy-loaded tab views for optimized bundle size and fast initial load
+const DashboardOverviewView = React.lazy(() =>
+  import('./components/DashboardOverviewView').then(m => ({ default: m.DashboardOverviewView }))
+);
+const ExpenseTrackerView = React.lazy(() =>
+  import('./components/ExpenseTrackerView').then(m => ({ default: m.ExpenseTrackerView }))
+);
+const MileageAndTravelView = React.lazy(() =>
+  import('./components/MileageAndTravelView').then(m => ({ default: m.MileageAndTravelView }))
+);
+const TimesheetsView = React.lazy(() =>
+  import('./components/TimesheetsView').then(m => ({ default: m.TimesheetsView }))
+);
+const StaffOnboardingView = React.lazy(() =>
+  import('./components/StaffOnboardingView').then(m => ({ default: m.StaffOnboardingView }))
+);
+const AssistedPayrollView = React.lazy(() =>
+  import('./components/AssistedPayrollView').then(m => ({ default: m.AssistedPayrollView }))
+);
+const ComplianceFilingsView = React.lazy(() =>
+  import('./components/ComplianceFilingsView').then(m => ({ default: m.ComplianceFilingsView }))
+);
+const TaxRuleAdminView = React.lazy(() =>
+  import('./components/TaxRuleAdminView').then(m => ({ default: m.TaxRuleAdminView }))
+);
+const AuditTrailView = React.lazy(() =>
+  import('./components/AuditTrailView').then(m => ({ default: m.AuditTrailView }))
+);
+const YearEndExportView = React.lazy(() =>
+  import('./components/YearEndExportView').then(m => ({ default: m.YearEndExportView }))
+);
+const SettingsView = React.lazy(() =>
+  import('./components/SettingsView').then(m => ({ default: m.SettingsView }))
+);
+const EmployeePortalDocumentsView = React.lazy(() =>
+  import('./components/EmployeePortalDocumentsView').then(m => ({ default: m.EmployeePortalDocumentsView }))
+);
+
+function ViewLoadingSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse p-2">
+      <div className="glass-panel p-6 rounded-2xl h-28 flex items-center justify-between" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-card p-6 rounded-2xl h-32" />
+        <div className="glass-card p-6 rounded-2xl h-32" />
+        <div className="glass-card p-6 rounded-2xl h-32" />
+      </div>
+      <div className="glass-panel p-6 rounded-2xl h-64" />
+    </div>
+  );
+}
 
 function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
   const {
@@ -53,19 +94,35 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
     handleSaveOrg,
   } = state;
 
-  const [activeTab, setActiveTab] = useState<NavigationTab>('DASHBOARD');
+  const { user, membership, isOwner, isEmployee, isReadOnly, employeeProfile, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<NavigationTab>(() => (isEmployee ? 'MY_DOCUMENTS' : 'DASHBOARD'));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTaxYearModal, setShowTaxYearModal] = useState(false);
-  const { user, signOut, devBypass } = useAuth();
-  const displayUserEmail = user?.email || data?.company?.ownerEmail || data?.org?.ownerEmail || (devBypass ? 'Sandbox Mode' : 'Owner');
+  
+  const displayUserEmail = user?.email || data?.company?.ownerEmail || data?.org?.ownerEmail || 'User';
+
+  // Match linked employee profile from ledger state
+  const currentEmployee = data.employees?.find((e) => 
+    (user?.email && e.email && e.email.toLowerCase() === user.email.toLowerCase()) ||
+    (employeeProfile?.id && e.id === employeeProfile.id)
+  ) || null;
 
   const isConfigured = isOrgConfigured(data.org);
   // Prompt for company setup automatically when no company is configured and initial data fetch is finished
-  const shouldShowOnboardingModal = showOnboarding || (!isConfigured && !isInitialLoading && dbStatus?.connected);
+  const shouldShowOnboardingModal = showOnboarding || (!isConfigured && !isInitialLoading && dbStatus?.connected && isOwner);
 
   const isDbOffline = !isInitialLoading && Boolean(dbStatus && !dbStatus.connected);
   const currentActiveTaxYear = data.activeTaxYear || 2026;
+
+  React.useEffect(() => {
+    const compName = data?.company?.name || data?.org?.name;
+    if (compName) {
+      document.title = `${compName} | TaxShield Ledger`;
+    } else {
+      document.title = 'TaxShield Ledger - Micro-LLC Tax & Payroll';
+    }
+  }, [data?.company?.name, data?.org?.name]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 flex transition-colors duration-200">
@@ -90,6 +147,8 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         pendingTaxCount={(data.complianceTasks || []).filter(t => getTaskTaxYear(t) === currentActiveTaxYear && t.status !== 'FILED').length}
+        isEmployee={isEmployee}
+        isReadOnly={isReadOnly}
       />
 
       {/* Main Content Area */}
@@ -124,7 +183,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
             <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-3">
               <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
                 <UserCheck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                <span className="hidden sm:inline" title={devBypass ? 'Sandbox Mode' : 'Logged In User'}>
+                <span className="hidden sm:inline" title={user?.email || 'Logged In User'}>
                   {displayUserEmail}
                 </span>
               </div>
@@ -158,147 +217,162 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
           </div>
         )}
 
-        {/* Dynamic Content Views */}
+        {/* Dynamic Content Views with Suspense */}
         <main className="p-6">
-          {activeTab === 'DASHBOARD' && (
-            <DashboardOverviewView data={data} onNavigateTab={setActiveTab} />
-          )}
+          <Suspense fallback={<ViewLoadingSkeleton />}>
+            {activeTab === 'DASHBOARD' && (
+              <DashboardOverviewView data={data} onNavigateTab={setActiveTab} />
+            )}
 
-          {activeTab === 'EXPENSES' && (
-            <ExpenseTrackerView
-              expenses={data.generalExpenses}
-              activeTaxYear={currentActiveTaxYear}
-              onAddExpense={handleAddGeneralExpense}
-              onDeleteExpense={handleDeleteGeneralExpense}
-            />
-          )}
+            {activeTab === 'EXPENSES' && (
+              <ExpenseTrackerView
+                expenses={data.generalExpenses}
+                activeTaxYear={currentActiveTaxYear}
+                onAddExpense={handleAddGeneralExpense}
+                onDeleteExpense={handleDeleteGeneralExpense}
+              />
+            )}
 
-          {activeTab === 'MILEAGE' && (
-            <MileageAndTravelView
-              employees={data.employees}
-              mileageLogs={data.mileageLogs}
-              travelExpenses={data.travelExpenses}
-              org={data.org}
-              activeTaxYear={currentActiveTaxYear}
-              onAddMileage={handleAddMileage}
-              onDeleteMileage={handleDeleteMileage}
-              onAddTravelExpense={handleAddTravelExpense}
-              onDeleteTravelExpense={handleDeleteTravelExpense}
-            />
-          )}
+            {activeTab === 'MILEAGE' && (
+              <MileageAndTravelView
+                employees={data.employees}
+                mileageLogs={data.mileageLogs}
+                travelExpenses={data.travelExpenses}
+                org={data.org}
+                activeTaxYear={currentActiveTaxYear}
+                onAddMileage={handleAddMileage}
+                onDeleteMileage={handleDeleteMileage}
+                onAddTravelExpense={handleAddTravelExpense}
+                onDeleteTravelExpense={handleDeleteTravelExpense}
+              />
+            )}
 
-          {activeTab === 'TIMESHEETS' && (
-            <TimesheetsView
-              timesheets={data.timesheets}
-              employees={data.employees}
-              activeTaxYear={currentActiveTaxYear}
-              onAddTimesheet={handleAddTimesheet}
-              onBulkAddTimesheets={handleBulkAddTimesheets}
-              onUpdateTimesheetStatus={handleUpdateTimesheetStatus}
-              onDeleteTimesheet={handleDeleteTimesheet}
-              onNavigateToPayroll={() => setActiveTab('PAYROLL')}
-            />
-          )}
+            {activeTab === 'MY_DOCUMENTS' && (
+              <EmployeePortalDocumentsView
+                user={user}
+                employee={currentEmployee}
+                org={data.org}
+                payStubs={data.payStubs || []}
+                activeTaxYear={currentActiveTaxYear}
+                isReadOnly={isReadOnly}
+              />
+            )}
 
-          {activeTab === 'STAFF' && (
-            <StaffOnboardingView
-              employees={data.employees}
-              onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
-              onNavigateToTimesheets={() => setActiveTab('TIMESHEETS')}
-              onNavigateToPayroll={() => setActiveTab('PAYROLL')}
-            />
-          )}
+            {activeTab === 'TIMESHEETS' && (
+              <TimesheetsView
+                timesheets={data.timesheets}
+                employees={data.employees}
+                activeTaxYear={currentActiveTaxYear}
+                isReadOnly={isReadOnly}
+                onAddTimesheet={handleAddTimesheet}
+                onBulkAddTimesheets={handleBulkAddTimesheets}
+                onUpdateTimesheetStatus={handleUpdateTimesheetStatus}
+                onDeleteTimesheet={handleDeleteTimesheet}
+                onNavigateToPayroll={() => setActiveTab('PAYROLL')}
+              />
+            )}
 
-          {activeTab === 'PAYROLL' && (
-            <AssistedPayrollView
-              employees={data.employees}
-              org={data.org}
-              mileageLogs={data.mileageLogs}
-              travelExpenses={data.travelExpenses}
-              payrollRuns={data.payrollRuns}
-              payStubs={data.payStubs}
-              timesheets={data.timesheets}
-              activeTaxYear={currentActiveTaxYear}
-              onCreatePayrollRun={(runData, stubsData) => {
-                if (isFutureYear(currentActiveTaxYear) || isFutureDateString(runData.periodEnd) || isFutureDateString(runData.payDate)) {
-                  console.warn(`Cannot create payroll run for future tax year (${currentActiveTaxYear})`);
-                  return;
-                }
-                const runId = `run_${Date.now()}`;
-                const newRun: PayrollRun = {
-                  ...runData,
-                  id: runId,
-                  createdAt: new Date().toISOString(),
-                };
-                const newStubs: PayStub[] = stubsData.map((s, idx) => ({
-                  ...s,
-                  id: `stub_${Date.now()}_${idx}`,
-                  payrollRunId: runId,
-                  createdAt: new Date().toISOString(),
-                }));
-                setData(prev => ({
-                  ...prev,
-                  payrollRuns: [newRun, ...prev.payrollRuns],
-                  payStubs: [...newStubs, ...prev.payStubs]
-                }));
-              }}
-              onUpdateStubDisbursement={(stubId, zelleRef) => {
-                setData(prev => ({
-                  ...prev,
-                  payStubs: prev.payStubs.map(s => s.id === stubId ? { ...s, disbursementStatus: 'PAID', zelleConfirmationRef: zelleRef, paidAt: new Date() } : s)
-                }));
-              }}
-            />
-          )}
+            {activeTab === 'STAFF' && (
+              <StaffOnboardingView
+                employees={data.employees}
+                org={data.org}
+                onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
+                onNavigateToTimesheets={() => setActiveTab('TIMESHEETS')}
+                onNavigateToPayroll={() => setActiveTab('PAYROLL')}
+              />
+            )}
 
-          {activeTab === 'COMPLIANCE' && (
-            <ComplianceFilingsView
-              complianceTasks={data.complianceTasks}
-              org={data.org}
-              employees={data.employees}
-              payrollRuns={data.payrollRuns}
-              payStubs={data.payStubs}
-              activeTaxYear={currentActiveTaxYear}
-              onMarkTaskFiled={state.handleMarkTaskFiled}
-              onNavigateToAuditTrail={() => setActiveTab('AUDIT_LOGS')}
-            />
-          )}
+            {activeTab === 'PAYROLL' && (
+              <AssistedPayrollView
+                employees={data.employees}
+                org={data.org}
+                mileageLogs={data.mileageLogs}
+                travelExpenses={data.travelExpenses}
+                payrollRuns={data.payrollRuns}
+                payStubs={data.payStubs}
+                timesheets={data.timesheets}
+                activeTaxYear={currentActiveTaxYear}
+                onCreatePayrollRun={(runData, stubsData) => {
+                  if (isFutureYear(currentActiveTaxYear) || isFutureDateString(runData.periodEnd) || isFutureDateString(runData.payDate)) {
+                    console.warn(`Cannot create payroll run for future tax year (${currentActiveTaxYear})`);
+                    return;
+                  }
+                  const runId = `run_${Date.now()}`;
+                  const newRun: PayrollRun = {
+                    ...runData,
+                    id: runId,
+                    createdAt: new Date().toISOString(),
+                  };
+                  const newStubs: PayStub[] = stubsData.map((s, idx) => ({
+                    ...s,
+                    id: `stub_${Date.now()}_${idx}`,
+                    payrollRunId: runId,
+                    createdAt: new Date().toISOString(),
+                  }));
+                  setData(prev => ({
+                    ...prev,
+                    payrollRuns: [newRun, ...prev.payrollRuns],
+                    payStubs: [...newStubs, ...prev.payStubs]
+                  }));
+                }}
+                onUpdateStubDisbursement={(stubId, zelleRef) => {
+                  setData(prev => ({
+                    ...prev,
+                    payStubs: prev.payStubs.map(s => s.id === stubId ? { ...s, disbursementStatus: 'PAID', zelleConfirmationRef: zelleRef, paidAt: new Date() } : s)
+                  }));
+                }}
+              />
+            )}
 
-          {activeTab === 'TAX_RULES' && (
-            <TaxRuleAdminView employees={data.employees} />
-          )}
+            {activeTab === 'COMPLIANCE' && (
+              <ComplianceFilingsView
+                complianceTasks={data.complianceTasks}
+                org={data.org}
+                employees={data.employees}
+                payrollRuns={data.payrollRuns}
+                payStubs={data.payStubs}
+                activeTaxYear={currentActiveTaxYear}
+                onMarkTaskFiled={state.handleMarkTaskFiled}
+                onNavigateToAuditTrail={() => setActiveTab('AUDIT_LOGS')}
+              />
+            )}
 
-          {activeTab === 'AUDIT_LOGS' && (
-            <AuditTrailView logs={data.auditLogs || []} />
-          )}
+            {activeTab === 'TAX_RULES' && (
+              <TaxRuleAdminView employees={data.employees} />
+            )}
 
-          {activeTab === 'EXPORT' && (
-            <YearEndExportView data={data} />
-          )}
+            {activeTab === 'AUDIT_LOGS' && (
+              <AuditTrailView logs={data.auditLogs || []} />
+            )}
 
-          {activeTab === 'SETTINGS' && (
-            <SettingsView
-              org={data.org}
-              employees={data.employees}
-              allData={data}
-              onSaveOrg={handleSaveOrg}
-              onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
-              onResetAllData={() => setData(prev => ({ ...prev, generalExpenses: [], mileageLogs: [], travelExpenses: [], payrollRuns: [], payStubs: [], timesheets: [], auditLogs: [] }))}
-              onExportJSON={() => {
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `taxshield_backup_${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-              }}
-              onImportJSON={(jsonData) => {
-                if (jsonData && typeof jsonData === 'object') {
-                  setData(jsonData);
-                }
-              }}
-            />
-          )}
+            {activeTab === 'EXPORT' && (
+              <YearEndExportView data={data} />
+            )}
+
+            {activeTab === 'SETTINGS' && (
+              <SettingsView
+                org={data.org}
+                employees={data.employees}
+                allData={data}
+                onSaveOrg={handleSaveOrg}
+                onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
+                onResetAllData={() => setData(prev => ({ ...prev, generalExpenses: [], mileageLogs: [], travelExpenses: [], payrollRuns: [], payStubs: [], timesheets: [], auditLogs: [] }))}
+                onExportJSON={() => {
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `taxshield_backup_${new Date().toISOString().split('T')[0]}.json`;
+                  a.click();
+                }}
+                onImportJSON={(jsonData) => {
+                  if (jsonData && typeof jsonData === 'object') {
+                    setData(jsonData);
+                  }
+                }}
+              />
+            )}
+          </Suspense>
         </main>
       </div>
 
@@ -331,15 +405,17 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
   );
 }
 
-export default function App() {
+function AuthenticatedApp() {
   const appState = useAppState();
-  const ownerEmail = appState.data?.company?.ownerEmail || appState.data?.org?.ownerEmail || '';
+  return <MainAppContent state={appState} />;
+}
 
+export default function App() {
   return (
     <FontSizeProvider>
-      <AuthProvider ownerEmail={ownerEmail}>
+      <AuthProvider>
         <AuthGate>
-          <MainAppContent state={appState} />
+          <AuthenticatedApp />
         </AuthGate>
       </AuthProvider>
     </FontSizeProvider>

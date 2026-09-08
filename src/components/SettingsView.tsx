@@ -283,10 +283,10 @@ export function SettingsView({
 
               <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800/60 space-y-1">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Standard IRS Mileage
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> IRS Mileage
                 </span>
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 font-mono">
-                  ${(org.standardMileageRate || 0.67).toFixed(2)} / mile
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Resolved from the active TaxRuleVersion per trip date
                 </p>
               </div>
             </div>
@@ -394,16 +394,6 @@ export function SettingsView({
                     value={orgForm.ownerName}
                     onChange={(e) => setOrgForm({ ...orgForm, ownerName: e.target.value })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">IRS Mileage Rate ($/mi)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={orgForm.standardMileageRate}
-                    onChange={(e) => setOrgForm({ ...orgForm, standardMileageRate: parseFloat(e.target.value) || 0.67 })}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>

@@ -499,7 +499,7 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
     sourcePublisher: 'PA Department of Revenue',
     statuteReference: '',
     citationTier: 'TIER_1_OFFICIAL',
-    rateValue: '0.0307',
+    rateValue: '',
   });
 
   // Extract unique PSD codes

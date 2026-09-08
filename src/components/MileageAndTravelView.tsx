@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { MileageLog, TravelExpense, Employee, Organization } from '../types';
 import { validateIrs5PointMileage, getRecordYear, isFutureYear, isFutureDateString } from '../utils/taxEngine';
+import { resolveActiveRuleSync } from '../server/rules-engine/taxRulesEngine';
 
 interface MileageAndTravelViewProps {
   mileageLogs: MileageLog[];
@@ -50,6 +51,12 @@ export function MileageAndTravelView({
     ? new Date().toISOString().split('T')[0]
     : `${activeTaxYear}-01-15`;
 
+  const activeMileageRule = resolveActiveRuleSync('US-FED', 'IRS_MILEAGE');
+  const activeMileageRate = activeMileageRule.payload.ratePerMile ?? activeMileageRule.payload.rate;
+  if (typeof activeMileageRate !== 'number') {
+    throw new Error('The active IRS mileage TaxRuleVersion does not contain a per-mile rate.');
+  }
+
   // New Trip State
   const [tripForm, setTripForm] = useState({
     employeeId: employees[0]?.id || '',
@@ -59,7 +66,7 @@ export function MileageAndTravelView({
     businessPurpose: '',
     startOdometer: '',
     endOdometer: '',
-    rateApplied: org.standardMileageRate || 0.67,
+    rateApplied: activeMileageRate,
     isReimbursableAccountablePlan: true,
     status: 'APPROVED' as MileageLog['status'],
     notes: '',
@@ -83,6 +90,10 @@ export function MileageAndTravelView({
   const parsedEnd = parseFloat(tripForm.endOdometer) || 0;
   const calculatedMiles = Math.max(0, parsedEnd - parsedStart);
   const calculatedAllowance = Math.round(calculatedMiles * tripForm.rateApplied * 100) / 100;
+
+  React.useEffect(() => {
+    setTripForm((current) => ({ ...current, rateApplied: activeMileageRate }));
+  }, [activeMileageRate]);
 
   const tripValidation = validateIrs5PointMileage({
     tripDate: tripForm.tripDate,
@@ -215,7 +226,7 @@ export function MileageAndTravelView({
             <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{totalMiles.toFixed(1)} <span className="text-xs font-normal text-slate-500">mi</span></p>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">IRS Standard Rate @ ${org.standardMileageRate}/mi</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Active IRS mileage TaxRuleVersion @ ${activeMileageRate}/mi</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">

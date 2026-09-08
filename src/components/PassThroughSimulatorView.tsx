@@ -26,7 +26,7 @@ export function PassThroughSimulatorView({
   generalExpenses,
   onUpdateTaxBracket
 }: PassThroughSimulatorViewProps) {
-  const [ownerBracket, setOwnerBracket] = useState<number>(org.ownerTaxBracket || 24);
+  const [ownerBracket, setOwnerBracket] = useState<number | ''>(org.ownerTaxBracket ?? '');
 
   // Calculate totals
   const totalGrossWages = payStubs.reduce((sum, s) => sum + s.grossEarnings, 0);
@@ -35,14 +35,13 @@ export function PassThroughSimulatorView({
   const totalTravelDollars = travelExpenses.reduce((sum, t) => sum + t.amount, 0);
   const totalGeneralDollars = generalExpenses.reduce((sum, g) => sum + g.amount, 0);
 
-  const savings = calculatePassThroughSavings(
+  const savings = ownerBracket === '' ? null : calculatePassThroughSavings(
     totalGrossWages,
     totalEmployerTaxes,
     totalMileageDollars,
     totalTravelDollars,
     totalGeneralDollars,
     ownerBracket,
-    0.0307 // PA SIT
   );
 
   // Audit Vulnerability Checks
@@ -54,9 +53,9 @@ export function PassThroughSimulatorView({
   const perfectTripsCount = auditChecks.filter(c => c.validation.isValid && c.validation.score >= 80).length;
   const auditHealthScore = mileageLogs.length > 0 ? Math.round((perfectTripsCount / mileageLogs.length) * 100) : 100;
 
-  const handleBracketChange = (bracket: number) => {
+  const handleBracketChange = (bracket: number | '') => {
     setOwnerBracket(bracket);
-    onUpdateTaxBracket(bracket);
+    if (bracket !== '') onUpdateTaxBracket(bracket);
   };
 
   return (
@@ -75,19 +74,16 @@ export function PassThroughSimulatorView({
 
         <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800">
           <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Owner Bracket:</span>
-          <select
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
             value={ownerBracket}
-            onChange={(e) => handleBracketChange(Number(e.target.value))}
+            placeholder="Enter your marginal rate"
+            onChange={(e) => handleBracketChange(e.target.value === '' ? '' : Number(e.target.value))}
             className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-lg px-2.5 py-1 focus:outline-none focus:border-emerald-500 cursor-pointer"
-          >
-            <option value={10}>10% Bracket</option>
-            <option value={12}>12% Bracket</option>
-            <option value={22}>22% Bracket</option>
-            <option value={24}>24% Bracket</option>
-            <option value={32}>32% Bracket</option>
-            <option value={35}>35% Bracket</option>
-            <option value={37}>37% Bracket</option>
-          </select>
+          />
         </div>
       </div>
 
@@ -96,7 +92,7 @@ export function PassThroughSimulatorView({
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
           <span className="text-xs text-slate-500 dark:text-slate-400">Total Business Expenses</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
-            ${savings.totalBusinessLossExpenses.toFixed(2)}
+            ${savings?.totalBusinessLossExpenses.toFixed(2) ?? '—'}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">Ordinary & Necessary Deductions</p>
         </div>
@@ -104,23 +100,23 @@ export function PassThroughSimulatorView({
         <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/40 shadow-sm space-y-1">
           <span className="text-xs text-emerald-800 dark:text-emerald-300 font-medium">Federal Tax Offset (Form 1040)</span>
           <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 tracking-tight font-mono">
-            ${savings.federalTaxSavings.toFixed(2)}
+            ${savings?.federalTaxSavings.toFixed(2) ?? '—'}
           </p>
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-400/80">Saved at {ownerBracket}% Marginal Rate</p>
+          <p className="text-[11px] text-emerald-600 dark:text-emerald-400/80">Enter an explicit marginal-rate assumption to calculate.</p>
         </div>
 
         <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-500/40 shadow-sm space-y-1">
           <span className="text-xs text-blue-800 dark:text-blue-300 font-medium">PA State Tax Offset (myPATH)</span>
           <p className="text-2xl font-black text-blue-700 dark:text-blue-400 tracking-tight font-mono">
-            ${savings.paStateTaxSavings.toFixed(2)}
+            ${savings?.paStateTaxSavings.toFixed(2) ?? '—'}
           </p>
-          <p className="text-[11px] text-blue-600 dark:text-blue-400/80">Saved at 3.07% PA Rate</p>
+          <p className="text-[11px] text-blue-600 dark:text-blue-400/80">Resolved from the active PA TaxRuleVersion</p>
         </div>
 
         <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/40 shadow-sm space-y-1">
           <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">Total Personal Tax Cash Saved</span>
           <p className="text-2xl font-black text-amber-700 dark:text-amber-400 tracking-tight font-mono">
-            ${savings.totalEstimatedTaxSavings.toFixed(2)}
+            ${savings?.totalEstimatedTaxSavings.toFixed(2) ?? '—'}
           </p>
           <p className="text-[11px] text-amber-600 dark:text-amber-400/80">Net Cash Flow Preserved</p>
         </div>
@@ -148,7 +144,7 @@ export function PassThroughSimulatorView({
             </div>
 
             <div className="flex justify-between items-center p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-              <span className="text-slate-700 dark:text-slate-300">Car and Truck Expenses (5-Point Mileage @ ${org.standardMileageRate}/mi)</span>
+              <span className="text-slate-700 dark:text-slate-300">Car and Truck Expenses (rate preserved on each mileage record)</span>
               <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">${totalMileageDollars.toFixed(2)}</span>
             </div>
 
@@ -165,7 +161,7 @@ export function PassThroughSimulatorView({
             <div className="flex justify-between items-center p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold">
               <span className="text-slate-900 dark:text-white">Total Business Deductions:</span>
               <span className="font-mono text-emerald-700 dark:text-emerald-400 text-sm font-bold">
-                ${savings.totalBusinessLossExpenses.toFixed(2)}
+                ${savings?.totalBusinessLossExpenses.toFixed(2) ?? '—'}
               </span>
             </div>
           </div>

@@ -12,16 +12,13 @@ export function createDefaultEmployeeForm(companyState: string = 'DE'): Omit<Emp
 
   let localCode = '';
   let localName = 'None / Out of Area';
-  let localRate = 0;
 
   if (isPA) {
     localCode = 'PA-PSD-460401';
     localName = 'Lower Merion School District';
-    localRate = 0.01;
   } else if (isDE) {
     localCode = 'DE-LOCAL-WILMINGTON';
     localName = 'City of Wilmington';
-    localRate = 0.0125;
   }
 
   return {
@@ -48,15 +45,11 @@ export function createDefaultEmployeeForm(companyState: string = 'DE'): Omit<Emp
     w4ExtraWithholding: 0,
     localTaxJurisdictionCode: localCode,
     localTaxJurisdictionName: localName,
-    localTaxRate: localRate,
-    localFlatTaxAnnual: isPA ? 52.0 : 0,
+    // Jurisdiction is an employee fact; statutory values resolve from tax rules.
     localFlatTaxExempt: !isPA,
     paPsdCode: isPA ? '460401' : undefined,
     paPsdName: isPA ? 'Lower Merion School District' : undefined,
-    paResidentEitRate: isPA ? 0.01 : undefined,
     paWorkPsdCode: isPA ? '460401' : undefined,
-    paWorkEitRate: isPA ? 0.01 : undefined,
-    paLstAnnual: isPA ? 52.0 : undefined,
     paLstExempt: !isPA,
     bankName: '',
     accountType: 'CHECKING',
@@ -84,13 +77,9 @@ export function getTaxDefaultsForResidenceState(
       state: 'PA',
       localTaxJurisdictionCode: 'PA-PSD-460401',
       localTaxJurisdictionName: defaultDistrict?.name || 'Lower Merion School District',
-      localTaxRate: defaultDistrict?.defaultEitRate || 0.01,
-      localFlatTaxAnnual: 52.0,
       localFlatTaxExempt: false,
       paPsdCode: '460401',
       paPsdName: defaultDistrict?.name || 'Lower Merion School District',
-      paResidentEitRate: defaultDistrict?.defaultEitRate || 0.01,
-      paLstAnnual: 52.0,
       paLstExempt: false,
     };
   }
@@ -100,8 +89,6 @@ export function getTaxDefaultsForResidenceState(
       state: 'DE',
       localTaxJurisdictionCode: 'DE-LOCAL-WILMINGTON',
       localTaxJurisdictionName: 'City of Wilmington',
-      localTaxRate: 0.0125,
-      localFlatTaxAnnual: 0,
       localFlatTaxExempt: true,
       paPsdCode: undefined,
       paPsdName: undefined,
@@ -118,8 +105,6 @@ export function getTaxDefaultsForResidenceState(
       state: cleanResState,
       localTaxJurisdictionCode: first.code,
       localTaxJurisdictionName: first.name,
-      localTaxRate: first.defaultRate,
-      localFlatTaxAnnual: 0,
       localFlatTaxExempt: true,
       paPsdCode: undefined,
       paPsdName: undefined,
@@ -132,8 +117,6 @@ export function getTaxDefaultsForResidenceState(
     state: cleanResState,
     localTaxJurisdictionCode: '',
     localTaxJurisdictionName: 'None / Out of Area',
-    localTaxRate: 0,
-    localFlatTaxAnnual: 0,
     localFlatTaxExempt: true,
     paPsdCode: undefined,
     paPsdName: undefined,
@@ -141,4 +124,3 @@ export function getTaxDefaultsForResidenceState(
     paLstAnnual: undefined,
   };
 }
-

@@ -175,7 +175,7 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-semibold">Required</span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Pub 15-T Federal Withholding, FICA Social Security (6.2%), Medicare (1.45%), IRS Mileage Rate ($0.67/mi).
+                      Federal withholding, FICA, Medicare, and mileage rules are resolved from active, cited TaxRuleVersions.
                     </p>
                   </div>
                 </label>

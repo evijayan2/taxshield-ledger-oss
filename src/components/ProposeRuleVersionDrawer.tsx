@@ -81,7 +81,7 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
                 required
                 value={formData.rateValue}
                 onChange={(e) => setFormData({ ...formData, rateValue: e.target.value })}
-                placeholder="e.g. 0.0307 (3.07%)"
+                placeholder="Enter the cited rate"
                 className="w-full glass-input p-2.5 rounded-lg text-sm"
               />
             </div>
@@ -107,4 +107,3 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
     </div>
   );
 };
-

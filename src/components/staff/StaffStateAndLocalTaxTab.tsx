@@ -33,52 +33,36 @@ export function StaffStateAndLocalTaxTab({
 
   const handleDistrictChange = (psdCode: string) => {
     if (psdCode === 'CUSTOM') {
-      onChange({
-        paPsdName: 'Custom School District',
-        localTaxJurisdictionName: 'Custom School District',
-      } as any);
+      onChange('paPsdName', 'Custom School District');
+      onChange('localTaxJurisdictionName', 'Custom School District');
       return;
     }
     const district = findDistrictByPsdCode(psdCode);
     if (district) {
-      onChange({
-        paPsdCode: district.psdCode,
-        paPsdName: district.name,
-        paResidentEitRate: district.defaultEitRate,
-        localTaxJurisdictionCode: `PA-PSD-${district.psdCode}`,
-        localTaxJurisdictionName: district.name,
-        localTaxRate: district.defaultEitRate,
-      } as any);
+      onChange('paPsdCode', district.psdCode);
+      onChange('paPsdName', district.name);
+      onChange('localTaxJurisdictionCode', `PA-PSD-${district.psdCode}`);
+      onChange('localTaxJurisdictionName', district.name);
     }
   };
 
   const handleLocalSelectChange = (val: string, availableList: any[]) => {
     if (val === 'CUSTOM' || val === 'NONE') {
-      onChange({
-        localTaxJurisdictionCode: '',
-        localTaxJurisdictionName: 'None / Out of Area',
-        localTaxRate: 0,
-        paPsdCode: '',
-        paPsdName: '',
-        paResidentEitRate: 0,
-      } as any);
+      onChange('localTaxJurisdictionCode', '');
+      onChange('localTaxJurisdictionName', 'None / Out of Area');
+      onChange('paPsdCode', '');
+      onChange('paPsdName', '');
       return;
     }
     const match = availableList.find((d) => d.code === val || d.code.endsWith(val));
     if (match) {
       const cleanPsd = match.code.replace('PA-PSD-', '');
-      onChange({
-        localTaxJurisdictionCode: match.code,
-        localTaxJurisdictionName: match.name,
-        localTaxRate: match.defaultRate,
-        ...(match.state === 'PA'
-          ? {
-              paPsdCode: cleanPsd,
-              paPsdName: match.name,
-              paResidentEitRate: match.defaultRate,
-            }
-          : {}),
-      } as any);
+      onChange('localTaxJurisdictionCode', match.code);
+      onChange('localTaxJurisdictionName', match.name);
+      if (match.state === 'PA') {
+        onChange('paPsdCode', cleanPsd);
+        onChange('paPsdName', match.name);
+      }
     } else {
       handleDistrictChange(val);
     }
@@ -191,7 +175,7 @@ export function StaffStateAndLocalTaxTab({
             <optgroup label={`${isPaResident ? 'Pennsylvania' : workState} Local Tax Jurisdictions`}>
               {availableLocalDistricts.map((district) => (
                 <option key={district.code} value={district.code}>
-                  {district.name} — {district.code} ({parseFloat((district.defaultRate * 100).toFixed(3))}% Rate)
+                  {district.name} — {district.code}
                 </option>
               ))}
             </optgroup>
@@ -202,8 +186,8 @@ export function StaffStateAndLocalTaxTab({
         </select>
       </div>
 
-      {/* Jurisdiction Code & Rate Inputs */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Jurisdiction identifier only — statutory values are never editable here. */}
+      <div className="grid grid-cols-1 gap-3">
         <div>
           <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Jurisdiction Code / PSD</label>
           <input
@@ -212,38 +196,14 @@ export function StaffStateAndLocalTaxTab({
             onChange={(e) => {
               const val = e.target.value;
               const cleanPsd = val.replace('PA-PSD-', '');
-              onChange({
-                localTaxJurisdictionCode: val,
-                ...(isPaResident ? { paPsdCode: cleanPsd } : {}),
-              } as any);
+              onChange('localTaxJurisdictionCode', val);
+              if (isPaResident) {
+                onChange('paPsdCode', cleanPsd);
+              }
             }}
             className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-mono font-bold"
             placeholder="e.g. 460401 or DE-LOCAL-WILMINGTON"
           />
-        </div>
-        <div>
-          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Local Tax Rate (Decimal)</label>
-          <input
-            type="number"
-            step="0.00001"
-            value={formData.localTaxRate ?? formData.paResidentEitRate ?? 0}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value) || 0;
-              onChange({
-                localTaxRate: val,
-                ...(isPaResident ? { paResidentEitRate: val } : {}),
-              } as any);
-            }}
-            onBlur={() => onBlur(isPaResident ? 'paResidentEitRate' : 'localTaxRate')}
-            className={getInputClass(isPaResident ? 'paResidentEitRate' : 'localTaxRate', 'font-mono')}
-          />
-          {renderInlineError(isPaResident ? 'paResidentEitRate' : 'localTaxRate')}
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-mono">
-            Equivalent Rate:{' '}
-            <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
-              {parseFloat(((formData.localTaxRate ?? formData.paResidentEitRate ?? 0) * 100).toFixed(3))}%
-            </strong>
-          </span>
         </div>
       </div>
 
@@ -252,7 +212,7 @@ export function StaffStateAndLocalTaxTab({
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              PA Local Services Tax (LST — Standard $52.00 / year)
+              PA Local Services Tax (LST)
             </span>
             <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
               <input
@@ -267,21 +227,9 @@ export function StaffStateAndLocalTaxTab({
               <span>LST Exempt (&lt; $12k income / multiple jobs)</span>
             </label>
           </div>
-          <input
-            type="number"
-            step="1.00"
-            disabled={formData.paLstExempt}
-            value={formData.paLstAnnual ?? 52.0}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value) || 0;
-              onChange('paLstAnnual', val);
-              onChange('localFlatTaxAnnual', val);
-            }}
-            onBlur={() => onBlur('paLstAnnual')}
-            className={getInputClass('paLstAnnual', 'font-mono disabled:opacity-50')}
-            placeholder="52.00"
-          />
-          {renderInlineError('paLstAnnual')}
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            The active local TaxRuleVersion determines the amount and payroll-period allocation.
+          </p>
         </div>
       )}
     </div>

@@ -31,12 +31,11 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
   const [zip, setZip] = useState(initialOrg?.zip || '');
   const [ownerName, setOwnerName] = useState(initialOrg?.ownerName || '');
   const [ownerEmail, setOwnerEmail] = useState(initialOrg?.ownerEmail || '');
-  const [ownerTaxBracket, setOwnerTaxBracket] = useState(initialOrg?.ownerTaxBracket ?? 24);
+  const [ownerTaxBracket, setOwnerTaxBracket] = useState<number | ''>(initialOrg?.ownerTaxBracket ?? '');
   const [payFrequency, setPayFrequency] = useState<PayrollFrequency>(initialOrg?.payFrequency || 'BI_WEEKLY');
   const [stateFilingFrequency, setStateFilingFrequency] = useState<TaxFilingFrequency>(
     initialOrg?.stateFilingFrequency || initialOrg?.filingFrequencyPA || 'MONTHLY'
   );
-  const [standardMileageRate, setStandardMileageRate] = useState(initialOrg?.standardMileageRate ?? 0.67);
 
   // Step 2 Fields (Tax Year Setup)
   const [taxYear, setTaxYear] = useState<number>(new Date().getFullYear());
@@ -54,10 +53,9 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
       setZip(initialOrg.zip || '');
       setOwnerName(initialOrg.ownerName || '');
       setOwnerEmail(initialOrg.ownerEmail || '');
-      setOwnerTaxBracket(initialOrg.ownerTaxBracket ?? 24);
+      setOwnerTaxBracket(initialOrg.ownerTaxBracket ?? '');
       setPayFrequency(initialOrg.payFrequency || 'BI_WEEKLY');
       setStateFilingFrequency(initialOrg.stateFilingFrequency || initialOrg.filingFrequencyPA || 'MONTHLY');
-      setStandardMileageRate(initialOrg.standardMileageRate ?? 0.67);
     }
   }, [initialOrg, isOpen]);
 
@@ -110,11 +108,10 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
       zip: zip.trim() || '19102',
       ownerName: ownerName.trim(),
       ownerEmail: ownerEmail.trim() || 'owner@example.com',
-      ownerTaxBracket: Number(ownerTaxBracket) || 24,
+      ownerTaxBracket: ownerTaxBracket === '' ? undefined : ownerTaxBracket,
       stateFilingFrequency,
       filingFrequencyPA: stateFilingFrequency,
       payFrequency,
-      standardMileageRate: Number(standardMileageRate) || 0.67,
     };
 
     onSave(updatedOrg, taxYear);
@@ -369,23 +366,11 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
                     max="37"
                     step="1"
                     value={ownerTaxBracket}
-                    onChange={e => setOwnerTaxBracket(Number(e.target.value))}
+                    onChange={e => setOwnerTaxBracket(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">Standard IRS Mileage Rate ($/mile)</label>
-                  <input
-                    type="number"
-                    step="0.005"
-                    min="0.5"
-                    max="1.0"
-                    value={standardMileageRate}
-                    onChange={e => setStandardMileageRate(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-slate-900 dark:text-white"
-                  />
-                </div>
               </div>
             </div>
 

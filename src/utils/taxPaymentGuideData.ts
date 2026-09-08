@@ -127,7 +127,7 @@ export const TAX_REMITTANCE_GUIDES: Record<string, TaxRemittanceInfo> = {
     paymentMethods: ['Collector Portal ACH Debit', 'Electronic Check', 'Paper Remittance Form'],
     componentsIncluded: [
       { name: 'Local Earned Income Tax (EIT)', rateOrCalculation: 'Resident vs Work PSD rate (typically 1.0% to 2.0% of gross wages)', paidBy: 'EMPLOYEE' },
-      { name: 'Local Services Tax (LST)', rateOrCalculation: '$52.00 annual rate ($1.00/week or $2.00/bi-weekly)', paidBy: 'EMPLOYEE' }
+      { name: 'Local Services Tax (LST)', rateOrCalculation: 'Resolved from the active local TaxRuleVersion and payroll frequency', paidBy: 'EMPLOYEE' }
     ],
     stepByStepInstructions: [
       'Identify the assigned tax collector for your work location PSD code (e.g. Keystone Collections Group or Berkheimer).',

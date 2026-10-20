@@ -54,24 +54,24 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
         <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col h-full animate-in slide-in-from-right duration-300">
           
           {/* Drawer Header */}
-          <div className="px-6 py-5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white flex items-center justify-between shrink-0">
+          <div className="px-6 py-5 bg-slate-50/70 dark:bg-slate-900/50 text-slate-900 dark:text-white flex items-center justify-between shrink-0 border-b border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur border border-white/20">
-                <Calendar className="w-6 h-6 text-indigo-200" />
+              <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                <Calendar className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold flex items-center gap-2">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                   Tax Year Setup & Configuration
-                  <Sparkles className="w-4 h-4 text-indigo-300" />
+                  <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </h2>
-                <p className="text-xs text-indigo-100">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Initialize first-class tax rules, filing cycles, & jurisdiction models
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-indigo-100 hover:text-white transition cursor-pointer"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -98,7 +98,7 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
                   max={2035}
                   value={selectedYear}
                   onChange={e => setSelectedYear(parseInt(e.target.value, 10) || 2026)}
-                  className="w-36 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-36 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                 />
                 <div className="flex gap-2">
                   {[2025, 2026, 2027].map(yr => (
@@ -106,9 +106,9 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
                       key={yr}
                       type="button"
                       onClick={() => setSelectedYear(yr)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                         selectedYear === yr
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                          ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs font-bold'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }`}
                     >
@@ -141,7 +141,7 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
               <select
                 value={taxClassification}
                 onChange={e => setTaxClassification(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
               >
                 <option value="DISREGARDED_SINGLE_MEMBER">Single-Member Disregarded LLC (Schedule C Pass-Through)</option>
                 <option value="S_CORP_ELECTION">S-Corporation Election (Form 1120-S + W-2 Officer Salary)</option>
@@ -153,7 +153,7 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <Landmark className="w-4 h-4 text-indigo-500" />
+                  <Landmark className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Attached Tax Jurisdictions ({selectedYear})
                 </label>
                 <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 font-semibold">
@@ -162,17 +162,17 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700 transition">
+                <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition">
                   <input
                     type="checkbox"
                     checked={jurisdictionFederal}
                     onChange={e => setJurisdictionFederal(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
                   />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">US-FEDERAL (Internal Revenue Service)</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-semibold">Required</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-semibold">Required</span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Federal withholding, FICA, Medicare, and mileage rules are resolved from active, cited TaxRuleVersions.
@@ -180,17 +180,17 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700 transition">
+                <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition">
                   <input
                     type="checkbox"
                     checked={jurisdictionPA}
                     onChange={e => setJurisdictionPA(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
                   />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">PA-STATE (Pennsylvania Dept. of Revenue & L&I)</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-semibold">State SIT / UC</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-semibold">State SIT / UC</span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       PA State Income Tax (3.07% flat rate), Employer UC Tax (3.822% base rate), Form REV-1667 & UC-2 filing calendars.
@@ -198,12 +198,12 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700 transition">
+                <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition">
                   <input
                     type="checkbox"
                     checked={jurisdictionLocalPA}
                     onChange={e => setJurisdictionLocalPA(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
                   />
                   <div>
                     <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export const TaxYearSetupModal: React.FC<TaxYearSetupModalProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 cursor-pointer transition-all"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-all"
               >
                 <ShieldCheck className="w-4 h-4" />
                 Initialize Tax Year {selectedYear}

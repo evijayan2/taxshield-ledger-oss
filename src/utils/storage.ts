@@ -176,6 +176,14 @@ export function loadAllAppData(): {
   auditLogs: import('../types').AuditLogEntry[];
   taxYears: TaxYear[];
   activeTaxYear: number;
+  payScheduleConfigs?: import('../types').PayScheduleConfig[];
+  calendarPeriods?: import('../types').PayrollCalendarPeriod[];
+  invoices?: import('../types').Invoice[];
+  customers?: import('../types').Customer[];
+  contractorPayments?: import('../types').ContractorPayment[];
+  w9Records?: import('../types').FormW9Record[];
+  bankBatches?: import('../types').BankImportBatch[];
+  bankTransactions?: import('../types').BankTransaction[];
 } {
   const defaultTaxYear: TaxYear = {
     id: 'ty_2026',
@@ -184,6 +192,10 @@ export function loadAllAppData(): {
     status: 'ACTIVE',
     createdAt: new Date().toISOString(),
   };
+
+  const defaultCalendarPeriods = import.meta.env.SSR
+    ? []
+    : (window as any)._cachedCal || [];
 
   return {
     company: REAL_DEFAULT_COMPANY,
@@ -199,6 +211,27 @@ export function loadAllAppData(): {
     auditLogs: [],
     taxYears: [defaultTaxYear],
     activeTaxYear: 2026,
+    payScheduleConfigs: [
+      {
+        companyId: 'comp_main',
+        taxYearId: 'ty_2026',
+        payFrequency: 'BI_WEEKLY',
+        paydayDayOfWeek: 5,
+        periodLagDays: 5,
+        semiMonthlyDay1: 15,
+        semiMonthlyDay2: 0,
+        monthlyPayDay: 0,
+        timesheetCutoffDays: 2,
+        weekendRollRule: 'PREVIOUS_BUSINESS_DAY',
+      },
+    ],
+    calendarPeriods: defaultCalendarPeriods,
+    invoices: [],
+    customers: [],
+    contractorPayments: [],
+    w9Records: [],
+    bankBatches: [],
+    bankTransactions: [],
   };
 }
 
@@ -235,6 +268,12 @@ export function clearToFreshRealApp(ownerEmail: string = '') {
     auditLogs: [],
     taxYears: [defaultTaxYear],
     activeTaxYear: 2026,
+    payScheduleConfigs: [],
+    calendarPeriods: [],
+    invoices: [],
+    customers: [],
+    contractorPayments: [],
+    w9Records: [],
   };
 }
 

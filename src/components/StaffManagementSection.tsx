@@ -187,7 +187,7 @@ export function StaffManagementSection({
             <button
               type="button"
               onClick={handleOpenAddModal}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition inline-flex items-center gap-1.5"
+              className="px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 text-slate-900 dark:text-white hover:bg-emerald-700 transition inline-flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" /> Add First Staff Member
             </button>

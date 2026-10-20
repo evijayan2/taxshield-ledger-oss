@@ -130,40 +130,40 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
         <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col h-full animate-in slide-in-from-right duration-300">
           
           {/* Drawer Header */}
-          <div className="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur border border-white/20">
-              <ShieldCheck className="w-6 h-6 text-emerald-300" />
+          <div className="px-6 py-5 bg-slate-50/70 dark:bg-slate-900/50 text-slate-900 dark:text-white flex items-center justify-between shrink-0 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                  Configure Your Company Ledger
+                  <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Step {step} of 2: {step === 1 ? 'Company Identity & Owner Defaults' : 'Tax Year Creation & Rule Setup'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                Configure Your Company Ledger
-                <Sparkles className="w-4 h-4 text-emerald-300" />
-              </h2>
-              <p className="text-xs text-emerald-100">
-                Step {step} of 2: {step === 1 ? 'Company Identity & Owner Defaults' : 'Tax Year Creation & Rule Setup'}
-              </p>
-            </div>
+            {isDismissable && onClose && (
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
-          {isDismissable && onClose && (
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-emerald-100 hover:text-white transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
 
         {/* Step Navigation Bar */}
         <div className="px-6 py-3 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-semibold">
           <div className={`flex items-center gap-2 ${step === 1 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>1</span>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step === 1 ? 'bg-emerald-600 text-slate-900 dark:text-white' : 'bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>1</span>
             <span>1. Company Identity Profile</span>
           </div>
           <div className="w-12 h-0.5 bg-slate-300 dark:bg-slate-800" />
           <div className={`flex items-center gap-2 ${step === 2 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step === 2 ? 'bg-emerald-600 text-white' : 'bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>2</span>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step === 2 ? 'bg-emerald-600 text-slate-900 dark:text-white' : 'bg-slate-300 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>2</span>
             <span>2. Tax Year Setup ({taxYear})</span>
           </div>
         </div>
@@ -429,7 +429,7 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
                         onClick={() => setTaxYear(yr)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                           taxYear === yr
-                            ? 'bg-emerald-600 text-white shadow'
+                            ? 'bg-emerald-600 text-slate-900 dark:text-white shadow'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >

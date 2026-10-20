@@ -47,9 +47,9 @@ export function createDefaultEmployeeForm(companyState: string = 'DE'): Omit<Emp
     localTaxJurisdictionName: localName,
     // Jurisdiction is an employee fact; statutory values resolve from tax rules.
     localFlatTaxExempt: !isPA,
-    paPsdCode: isPA ? '460401' : undefined,
-    paPsdName: isPA ? 'Lower Merion School District' : undefined,
-    paWorkPsdCode: isPA ? '460401' : undefined,
+    paPsdCode: undefined,
+    paPsdName: undefined,
+    paWorkPsdCode: undefined,
     paLstExempt: !isPA,
     bankName: '',
     accountType: 'CHECKING',
@@ -72,14 +72,13 @@ export function getTaxDefaultsForResidenceState(
   const isDE = cleanResState === 'DE';
 
   if (isPA) {
-    const defaultDistrict = findDistrictByPsdCode('460401');
     return {
       state: 'PA',
-      localTaxJurisdictionCode: 'PA-PSD-460401',
-      localTaxJurisdictionName: defaultDistrict?.name || 'Lower Merion School District',
-      localFlatTaxExempt: false,
-      paPsdCode: '460401',
-      paPsdName: defaultDistrict?.name || 'Lower Merion School District',
+      localTaxJurisdictionCode: '',
+      localTaxJurisdictionName: 'None / Out of Area',
+      localFlatTaxExempt: true,
+      paPsdCode: undefined,
+      paPsdName: undefined,
       paLstExempt: false,
     };
   }

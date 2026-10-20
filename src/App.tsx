@@ -14,10 +14,13 @@ import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { FontSizeControl } from './components/FontSizeControl';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { DatabaseOfflineBanner } from './components/DatabaseOfflineBanner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { isOrgConfigured } from './utils/storage';
 import { useAppState } from './hooks/useAppState';
 import { getTaskTaxYear, isFutureYear, isFutureDateString } from './utils/taxEngine';
-import { PayrollRun, PayStub } from './types';
+import { resolve1099NecThreshold } from 'taxshield-ledger-core';
+import { PublicW9OnboardingView } from './components/contractors/PublicW9OnboardingView';
+import { PayrollRun, PayStub, Employee, FormW9Record } from './types';
 
 // Lazy-loaded tab views for optimized bundle size and fast initial load
 const DashboardOverviewView = React.lazy(() =>
@@ -56,6 +59,42 @@ const SettingsView = React.lazy(() =>
 const EmployeePortalDocumentsView = React.lazy(() =>
   import('./components/EmployeePortalDocumentsView').then(m => ({ default: m.EmployeePortalDocumentsView }))
 );
+const PayrollCalendarView = React.lazy(() =>
+  import('./components/PayrollCalendarView').then(m => ({ default: m.PayrollCalendarView }))
+);
+const TaxRuleCoverageMatrixView = React.lazy(() =>
+  import('./components/TaxRuleCoverageMatrixView').then(m => ({ default: m.TaxRuleCoverageMatrixView }))
+);
+const AssetDepreciationView = React.lazy(() =>
+  import('./components/AssetDepreciationView').then(m => ({ default: m.AssetDepreciationView }))
+);
+const HomeOfficeView = React.lazy(() =>
+  import('./components/HomeOfficeView').then(m => ({ default: m.HomeOfficeView }))
+);
+const TaxImpactSimulatorView = React.lazy(() =>
+  import('./components/TaxImpactSimulatorView').then(m => ({ default: m.TaxImpactSimulatorView }))
+);
+const EmployeeReimbursementsView = React.lazy(() =>
+  import('./components/EmployeeReimbursementsView').then(m => ({ default: m.EmployeeReimbursementsView }))
+);
+const EmployeePtoView = React.lazy(() =>
+  import('./components/EmployeePtoView').then(m => ({ default: m.EmployeePtoView }))
+);
+const EmployeeProfileView = React.lazy(() =>
+  import('./components/EmployeeProfileView').then(m => ({ default: m.EmployeeProfileView }))
+);
+const InvoicingView = React.lazy(() =>
+  import('./components/invoicing/InvoicingView').then(m => ({ default: m.InvoicingView }))
+);
+const Contractor1099HubView = React.lazy(() =>
+  import('./components/contractors/Contractor1099HubView').then(m => ({ default: m.Contractor1099HubView }))
+);
+const ReconciliationView = React.lazy(() =>
+  import('./components/reconciliation/ReconciliationView').then(m => ({ default: m.ReconciliationView }))
+);
+const AuditReadinessDashboardView = React.lazy(() =>
+  import('./components/audit/AuditReadinessDashboardView').then(m => ({ default: m.AuditReadinessDashboardView }))
+);
 
 function ViewLoadingSkeleton() {
   return (
@@ -92,6 +131,10 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
     handleSetTaxYear,
     handleCreateTaxYear,
     handleSaveOrg,
+    handleCreateInvoice,
+    handleCreateCustomer,
+    handleUpdateInvoiceStatus,
+    handleDeleteInvoice,
   } = state;
 
   const { user, membership, isOwner, isEmployee, isReadOnly, employeeProfile, signOut } = useAuth();
@@ -200,17 +243,17 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
 
         {/* Onboarding Banner if not configured */}
         {!isConfigured && !isInitialLoading && (
-          <div className="mx-6 mt-6 p-4 rounded-xl bg-gradient-to-r from-indigo-900/90 to-violet-900/90 border border-indigo-500/40 text-white flex items-center justify-between shadow-lg">
+          <div className="mx-6 mt-6 p-4 rounded-2xl bg-emerald-950/90 dark:bg-slate-900 border border-emerald-500/30 text-white flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
-              <Building2 className="w-6 h-6 text-indigo-300" />
+              <Building2 className="w-6 h-6 text-emerald-400" />
               <div>
                 <h4 className="font-bold text-sm">LLC & Tax Year Configuration Required</h4>
-                <p className="text-xs text-indigo-200">Set up your Pennsylvania LLC EIN, owner classification, and active Tax Year to start automated payroll & filings.</p>
+                <p className="text-xs text-slate-300">Set up your Pennsylvania LLC EIN, owner classification, and active Tax Year to start automated payroll & filings.</p>
               </div>
             </div>
             <button
               onClick={() => setShowOnboarding(true)}
-              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-600/30 cursor-pointer transition-all"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all"
             >
               Configure LLC & Tax Year
             </button>
@@ -219,9 +262,19 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
 
         {/* Dynamic Content Views with Suspense */}
         <main className="p-6">
-          <Suspense fallback={<ViewLoadingSkeleton />}>
+          <ErrorBoundary>
+            <Suspense fallback={<ViewLoadingSkeleton />}>
             {activeTab === 'DASHBOARD' && (
               <DashboardOverviewView data={data} onNavigateTab={setActiveTab} />
+            )}
+
+            {activeTab === 'AUDIT_READINESS' && (
+              <AuditReadinessDashboardView
+                data={data}
+                onNavigateTab={setActiveTab}
+                onDeleteExpense={handleDeleteGeneralExpense}
+                onDeleteTravelExpense={handleDeleteTravelExpense}
+              />
             )}
 
             {activeTab === 'EXPENSES' && (
@@ -230,6 +283,59 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
                 activeTaxYear={currentActiveTaxYear}
                 onAddExpense={handleAddGeneralExpense}
                 onDeleteExpense={handleDeleteGeneralExpense}
+              />
+            )}
+
+            {activeTab === 'INVOICING' && (
+              <InvoicingView
+                invoices={data.invoices || []}
+                customers={data.customers || []}
+                company={{
+                  name: data.company?.name || data.org?.name || 'My Micro-LLC',
+                  ein: data.company?.ein || data.org?.ein || '',
+                  address: data.company?.address || data.org?.address || '',
+                  city: data.company?.city || data.org?.city || '',
+                  state: data.company?.state || data.org?.state || 'PA',
+                  zip: data.company?.zip || data.org?.zip || '',
+                  ownerEmail: data.company?.ownerEmail || data.org?.ownerEmail,
+                }}
+                activeTaxYear={currentActiveTaxYear}
+                onCreateInvoice={handleCreateInvoice}
+                onCreateCustomer={handleCreateCustomer}
+                onUpdateInvoiceStatus={handleUpdateInvoiceStatus}
+                onDeleteInvoice={handleDeleteInvoice}
+              />
+            )}
+
+            {activeTab === 'RECONCILIATION' && (
+              <ReconciliationView
+                companyId={data.company?.id || data.org?.id || 'comp_main'}
+                activeTaxYear={currentActiveTaxYear}
+                generalExpenses={data.generalExpenses || []}
+                travelExpenses={data.travelExpenses || []}
+                invoices={data.invoices || []}
+                payrollRuns={data.payrollRuns || []}
+                contractorPayments={data.contractorPayments || []}
+                bankBatches={data.bankBatches || []}
+                bankTransactions={data.bankTransactions || []}
+                onImportBatch={(batch, transactions) => {
+                  setData((prev) => ({
+                    ...prev,
+                    bankBatches: [batch, ...(prev.bankBatches || [])],
+                    bankTransactions: [...transactions, ...(prev.bankTransactions || [])],
+                  }));
+                }}
+                onUpdateTransaction={(updatedTx) => {
+                  setData((prev) => ({
+                    ...prev,
+                    bankTransactions: (prev.bankTransactions || []).map((t) =>
+                      t.id === updatedTx.id ? updatedTx : t
+                    ),
+                  }));
+                }}
+                onCreateExpenseFromBankTx={(bankTxId, newExpense) => {
+                  handleAddGeneralExpense(newExpense);
+                }}
               />
             )}
 
@@ -258,17 +364,97 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
               />
             )}
 
+            {activeTab === 'EMPLOYEE_REIMBURSEMENTS' && (
+              <EmployeeReimbursementsView
+                user={user}
+                employee={currentEmployee}
+                expenses={data.generalExpenses}
+                mileageLogs={data.mileageLogs}
+                activeTaxYear={currentActiveTaxYear}
+                isReadOnly={isReadOnly}
+                onAddExpense={handleAddGeneralExpense}
+                onAddMileage={handleAddMileage}
+              />
+            )}
+
+            {activeTab === 'EMPLOYEE_PTO' && (
+              <EmployeePtoView
+                user={user}
+                employee={currentEmployee}
+                activeTaxYear={currentActiveTaxYear}
+                isOwner={isOwner}
+                isReadOnly={isReadOnly}
+              />
+            )}
+
+            {activeTab === 'EMPLOYEE_PROFILE' && (
+              <EmployeeProfileView
+                user={user}
+                employee={currentEmployee}
+                org={data.org}
+                isReadOnly={isReadOnly}
+                onSaveProfile={(updatedProfile) => {
+                  setData((prev) => ({
+                    ...prev,
+                    employees: (prev.employees || []).map((e) =>
+                      e.id === updatedProfile.id || (e.email && updatedProfile.email && e.email.toLowerCase() === updatedProfile.email.toLowerCase())
+                        ? { ...e, ...updatedProfile }
+                        : e
+                    ),
+                  }));
+                }}
+              />
+            )}
+
             {activeTab === 'TIMESHEETS' && (
               <TimesheetsView
                 timesheets={data.timesheets}
                 employees={data.employees}
                 activeTaxYear={currentActiveTaxYear}
+                calendarPeriods={data.calendarPeriods}
                 isReadOnly={isReadOnly}
                 onAddTimesheet={handleAddTimesheet}
                 onBulkAddTimesheets={handleBulkAddTimesheets}
                 onUpdateTimesheetStatus={handleUpdateTimesheetStatus}
                 onDeleteTimesheet={handleDeleteTimesheet}
                 onNavigateToPayroll={() => setActiveTab('PAYROLL')}
+              />
+            )}
+
+            {activeTab === 'PAYROLL_CALENDAR' && (
+              <PayrollCalendarView
+                company={data.company || data.org}
+                activeTaxYear={currentActiveTaxYear}
+                taxYears={data.taxYears}
+                calendarPeriods={data.calendarPeriods}
+                payScheduleConfigs={data.payScheduleConfigs}
+                isOwner={isOwner}
+                onPublishCalendar={(year, periods, config) => {
+                  setData((prev) => ({
+                    ...prev,
+                    company: prev.company ? { ...prev.company, payFrequency: config.payFrequency } : prev.company,
+                    org: prev.org ? { ...prev.org, payFrequency: config.payFrequency } : prev.org,
+                    calendarPeriods: [
+                      ...(prev.calendarPeriods || []).filter((p) => !p.periodStart.startsWith(String(year))),
+                      ...periods,
+                    ],
+                    payScheduleConfigs: [
+                      ...(prev.payScheduleConfigs || []).filter((c) => c.taxYearId !== `ty_${year}`),
+                      config,
+                    ],
+                  }));
+                }}
+                onUpdateScheduleConfig={(config) => {
+                  setData((prev) => ({
+                    ...prev,
+                    company: prev.company ? { ...prev.company, payFrequency: config.payFrequency } : prev.company,
+                    org: prev.org ? { ...prev.org, payFrequency: config.payFrequency } : prev.org,
+                    payScheduleConfigs: [
+                      ...(prev.payScheduleConfigs || []).filter((c) => c.taxYearId !== config.taxYearId),
+                      config,
+                    ],
+                  }));
+                }}
               />
             )}
 
@@ -279,6 +465,101 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
                 onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
                 onNavigateToTimesheets={() => setActiveTab('TIMESHEETS')}
                 onNavigateToPayroll={() => setActiveTab('PAYROLL')}
+              />
+            )}
+
+            {activeTab === 'CONTRACTORS' && (
+              <Contractor1099HubView
+                contractors={(data.employees || [])
+                  .filter((e) => e.employmentType === '1099_CONTRACTOR')
+                  .map((e) => ({
+                    id: e.id,
+                    name: `${e.firstName} ${e.lastName}`,
+                    email: e.email,
+                    phone: e.phone,
+                    workerClassification: '1099_CONTRACTOR',
+                    w9Record: (data.w9Records || []).find((w) => w.employeeId === e.id) || null,
+                    payments: (data.contractorPayments || []).filter((p) => p.employeeId === e.id),
+                  }))}
+                payerProfile={{
+                  name: data.company?.name || data.org?.name || 'Company',
+                  tin: data.company?.ein || data.org?.ein || '',
+                  address: data.company?.address || data.org?.address || '',
+                  city: data.company?.city || data.org?.city || '',
+                  state: data.company?.state || data.org?.state || 'PA',
+                  zip: data.company?.zip || data.org?.zip || '',
+                }}
+                activeTaxYear={currentActiveTaxYear}
+                statutoryThreshold={resolve1099NecThreshold()}
+                onRecordPayment={(payment) => {
+                  setData((prev) => ({
+                    ...prev,
+                    contractorPayments: [...(prev.contractorPayments || []), payment],
+                    generalExpenses: payment.generalExpenseId ? [
+                      ...prev.generalExpenses,
+                      {
+                        id: payment.generalExpenseId,
+                        expenseDate: payment.paymentDate,
+                        payee: 'Contractor Payment',
+                        category: 'OTHER',
+                        amount: payment.amount,
+                        paidBy: 'LLC_ACCOUNT',
+                        description: payment.description || 'Nonemployee compensation',
+                        isTaxDeductible: true,
+                        createdAt: new Date().toISOString(),
+                      }
+                    ] : prev.generalExpenses,
+                  }));
+                }}
+                onInviteGenerated={(contractorId, tokenHash) => {
+                  // Structured audit/console tracking
+                  void tokenHash;
+                  void contractorId;
+                }}
+                onAddContractor={(newC) => {
+                  const newId = `contractor_${Date.now()}`;
+                  const newEmp: Employee = {
+                    id: newId,
+                    firstName: newC.firstName,
+                    lastName: newC.lastName,
+                    email: newC.email,
+                    phone: newC.phone || '',
+                    ssnLastFour: '',
+                    employmentType: '1099_CONTRACTOR',
+                    payRate: 0,
+                    payFrequency: (data.company?.payFrequency || data.org?.payFrequency || 'BI_WEEKLY') as any,
+                    w4FilingStatus: 'SINGLE',
+                    w4MultipleJobs: false,
+                    w4DependentCredit: 0,
+                    w4OtherIncome: 0,
+                    w4Deductions: 0,
+                    w4ExtraWithholding: 0,
+                    isActive: true,
+                  };
+                  const newW9Record: FormW9Record | null = newC.businessName ? {
+                    id: `w9_${newId}`,
+                    companyId: data.company?.id || data.org?.id || 'comp_main',
+                    employeeId: newId,
+                    businessName: newC.businessName,
+                    taxClassification: 'INDIVIDUAL_SOLE_PROPRIETOR',
+                    tinType: 'SSN',
+                    tinMasked: '',
+                    address: '',
+                    city: '',
+                    state: 'PA',
+                    zipCode: '',
+                    certifiedSignature: '',
+                    certifiedAt: '',
+                    is1099Eligible: true,
+                  } : null;
+
+                  setData((prev) => ({
+                    ...prev,
+                    employees: [...(prev.employees || []), newEmp],
+                    w9Records: newW9Record ? [...(prev.w9Records || []), newW9Record] : (prev.w9Records || []),
+                  }));
+                  return newId;
+                }}
               />
             )}
 
@@ -318,7 +599,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
                 onUpdateStubDisbursement={(stubId, zelleRef) => {
                   setData(prev => ({
                     ...prev,
-                    payStubs: prev.payStubs.map(s => s.id === stubId ? { ...s, disbursementStatus: 'PAID', zelleConfirmationRef: zelleRef, paidAt: new Date() } : s)
+                    payStubs: prev.payStubs.map(s => s.id === stubId ? { ...s, disbursementStatus: 'PAID', zelleConfirmationRef: zelleRef, paidAt: new Date().toISOString() } : s)
                   }));
                 }}
               />
@@ -339,6 +620,22 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
 
             {activeTab === 'TAX_RULES' && (
               <TaxRuleAdminView employees={data.employees} />
+            )}
+
+            {activeTab === 'TAX_COVERAGE' && (
+              <TaxRuleCoverageMatrixView company={data.org || data.company} employees={data.employees} />
+            )}
+
+            {activeTab === 'ASSETS' && (
+              <AssetDepreciationView company={data.org || data.company} />
+            )}
+
+            {activeTab === 'HOME_OFFICE' && (
+              <HomeOfficeView company={data.org || data.company} />
+            )}
+
+            {activeTab === 'TAX_SIMULATOR' && (
+              <TaxImpactSimulatorView company={data.org || data.company} />
             )}
 
             {activeTab === 'AUDIT_LOGS' && (
@@ -373,6 +670,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
               />
             )}
           </Suspense>
+        </ErrorBoundary>
         </main>
       </div>
 
@@ -411,6 +709,15 @@ function AuthenticatedApp() {
 }
 
 export default function App() {
+  const isW9Onboarding = typeof window !== 'undefined' && window.location.pathname.startsWith('/onboard/w9');
+  if (isW9Onboarding) {
+    return (
+      <FontSizeProvider>
+        <PublicW9OnboardingView />
+      </FontSizeProvider>
+    );
+  }
+
   return (
     <FontSizeProvider>
       <AuthProvider>

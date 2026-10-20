@@ -114,7 +114,7 @@ export function StaffFormModal({
       setErrors(allErrors);
       setTopError('Please correct the highlighted fields before saving.');
       const firstTab = getTabForField(errorKeys[0]);
-      setActiveTab(firstTab);
+      setActiveTab(firstTab as TabType);
       return;
     }
 

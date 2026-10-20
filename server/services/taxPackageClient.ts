@@ -22,4 +22,4 @@ export {
   type IBatchIngestionResult,
   type IIngestionOptions,
   type ISchedulerStatus,
-} from 'taxshield-ledger-core';
+} from 'taxshield-ledger-core/server';

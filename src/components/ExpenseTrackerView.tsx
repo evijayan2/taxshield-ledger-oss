@@ -13,10 +13,18 @@ import {
   Upload, 
   CheckCircle2, 
   AlertCircle,
-  Lock
+  Lock,
+  ShieldCheck,
+  Check,
+  X,
+  Sparkles,
+  ShieldAlert
 } from 'lucide-react';
 import { GeneralExpense } from '../types';
 import { getRecordYear, isFutureYear, isFutureDateString } from '../utils/taxEngine';
+import { evaluateExpenseAudit, detectDuplicateExpenses } from 'taxshield-ledger-core';
+import { ReceiptOcrScannerDrawer } from './ReceiptOcrScannerDrawer';
+import { PerExpenseAuditBadge } from './audit/PerExpenseAuditBadge';
 
 interface ExpenseTrackerViewProps {
   expenses: GeneralExpense[];
@@ -41,9 +49,44 @@ const SCHEDULE_C_CATEGORIES = [
  */
 export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpense, onDeleteExpense }: ExpenseTrackerViewProps) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOcrDrawer, setShowOcrDrawer] = useState(false);
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
+
+  interface PendingClaim {
+    id: string;
+    employeeName: string;
+    date: string;
+    merchant: string;
+    category: GeneralExpense['category'];
+    scheduleCLine: string;
+    amount: number;
+    purpose: string;
+    receiptUrl?: string;
+  }
+
+  // Pending Employee Accountable Plan Reimbursement Claims (starts fresh with 0 initial claims)
+  const [pendingEmployeeClaims, setPendingEmployeeClaims] = useState<PendingClaim[]>([]);
+
+  const handleApproveEmployeeClaim = (claim: typeof pendingEmployeeClaims[0]) => {
+    onAddExpense({
+      expenseDate: claim.date,
+      payee: `${claim.merchant} (Reimbursed to ${claim.employeeName})`,
+      category: claim.category,
+      scheduleCLine: claim.scheduleCLine,
+      description: `[Accountable Plan Reimbursement] Employee: ${claim.employeeName}. Purpose: ${claim.purpose}`,
+      amount: claim.amount,
+      paidBy: 'LLC_ACCOUNT',
+      isTaxDeductible: true,
+      receiptUrl: claim.receiptUrl,
+    });
+    setPendingEmployeeClaims(prev => prev.filter(c => c.id !== claim.id));
+  };
+
+  const handleRejectEmployeeClaim = (id: string) => {
+    setPendingEmployeeClaims(prev => prev.filter(c => c.id !== id));
+  };
 
   // Form State with year-aware default date
   const defaultDate = new Date().getFullYear() === activeTaxYear
@@ -96,6 +139,19 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
     return matchesSearch && matchesCat;
   });
 
+  const duplicateMatches = React.useMemo(() => {
+    return detectDuplicateExpenses({ generalExpenses: yearExpenses });
+  }, [yearExpenses]);
+
+  const duplicateExpenseIds = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const d of duplicateMatches) {
+      set.add(d.primary.id);
+      set.add(d.duplicate.id);
+    }
+    return set;
+  }, [duplicateMatches]);
+
   const totalDeductible = yearExpenses
     .filter(e => e.isTaxDeductible !== false)
     .reduce((sum, e) => sum + e.amount, 0);
@@ -106,26 +162,41 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Receipt className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+            <Receipt className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
             General Expenses & Receipts
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             Track business operating expenses mapped directly to IRS Schedule C lines.
           </p>
         </div>
-        <button
-          onClick={() => !isFutureActiveYear && setShowAddModal(true)}
-          disabled={isFutureActiveYear}
-          title={isFutureActiveYear ? `Adding expenses for future tax year (${activeTaxYear}) is locked` : 'Add Expense'}
-          className={`flex items-center gap-2 px-5 py-2.5 font-medium rounded-xl transition-all ${
-            isFutureActiveYear
-              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-              : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25 cursor-pointer'
-          }`}
-        >
-          {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Plus className="w-4 h-4" />}
-          Add Expense
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => !isFutureActiveYear && setShowOcrDrawer(true)}
+            disabled={isFutureActiveYear}
+            title={isFutureActiveYear ? `Scanning receipts for future tax year (${activeTaxYear}) is locked` : 'Scan Receipt (OCR)'}
+            className={`flex items-center gap-2 px-4 py-2.5 font-medium rounded-xl transition-all ${
+              isFutureActiveYear
+                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs cursor-pointer'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            Scan Receipt (OCR)
+          </button>
+          <button
+            onClick={() => !isFutureActiveYear && setShowAddModal(true)}
+            disabled={isFutureActiveYear}
+            title={isFutureActiveYear ? `Adding expenses for future tax year (${activeTaxYear}) is locked` : 'Add Expense'}
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium rounded-xl transition-all ${
+              isFutureActiveYear
+                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer'
+            }`}
+          >
+            {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Plus className="w-4 h-4" />}
+            Add Expense
+          </button>
+        </div>
       </div>
 
       {/* Future Tax Year Warning Banner */}
@@ -139,6 +210,57 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
         </div>
       )}
 
+      {/* Pending Employee Accountable Plan Reimbursement Claims Banner */}
+      {pendingEmployeeClaims.length > 0 && !isFutureActiveYear && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-teal-950/80 to-slate-900/90 border border-emerald-500/40 text-slate-200 dark:text-slate-400 space-y-3 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                Pending Employee Reimbursement Claims ({pendingEmployeeClaims.length})
+              </h3>
+              <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                IRS Accountable Plan
+              </span>
+            </div>
+            <span className="text-xs text-emerald-300/80 font-mono">Requires Owner Approval</span>
+          </div>
+
+          <div className="space-y-2">
+            {pendingEmployeeClaims.map((claim) => (
+              <div key={claim.id} className="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/30 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                    <span>{claim.employeeName}</span>
+                    <span className="text-slate-500">•</span>
+                    <span className="text-emerald-300 font-mono">${claim.amount.toFixed(2)}</span>
+                    <span className="text-slate-500">•</span>
+                    <span className="font-normal text-slate-300">{claim.merchant}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5 truncate">{claim.purpose}</p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleApproveEmployeeClaim(claim)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Approve Claim
+                  </button>
+                  <button
+                    onClick={() => handleRejectEmployeeClaim(claim.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg cursor-pointer transition-colors"
+                    title="Decline Claim"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="glass-card p-5 rounded-xl">
@@ -146,7 +268,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
             <span>Total Logged Expenses</span>
             <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
+          <p className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight mt-2">
             ${expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
           <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">{expenses.length} transaction entries</span>
@@ -155,9 +277,9 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
         <div className="glass-card p-5 rounded-xl">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-sm font-medium">
             <span>Schedule C Tax Deductible</span>
-            <FileCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <FileCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
+          <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight mt-2">
             ${totalDeductible.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
           <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1 block font-medium">Reduces Taxable Business Profit</span>
@@ -166,12 +288,12 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
         <div className="glass-card p-5 rounded-xl">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-sm font-medium">
             <span>Receipt Attachment Rate</span>
-            <Tag className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
+          <p className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight mt-2">
             {expenses.length > 0 ? Math.round((expenses.filter(e => e.receiptUrl).length / expenses.length) * 100) : 0}%
           </p>
-          <span className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-1 block font-medium">Audit Proof Documentation</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block font-medium">Audit Proof Documentation</span>
         </div>
       </div>
 
@@ -213,7 +335,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                 <th className="px-6 py-4">Schedule C Line</th>
                 <th className="px-6 py-4">Paid By</th>
                 <th className="px-6 py-4">Amount</th>
-                <th className="px-6 py-4">Receipt</th>
+                <th className="px-6 py-4">Audit Status & Receipt</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -233,7 +355,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                       <div className="text-xs text-slate-500 dark:text-slate-400">{exp.description}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {exp.scheduleCLine || 'Line 18 - Office Expense'}
                       </span>
                     </td>
@@ -247,21 +369,30 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                         {exp.paidBy === 'LLC_ACCOUNT' ? 'Company Account' : 'Owner Personal'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white font-mono">
                       ${exp.amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
-                      {exp.receiptUrl ? (
-                        <button
-                          onClick={() => setSelectedReceiptUrl(exp.receiptUrl!)}
-                          className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          View Receipt
-                        </button>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">No receipt</span>
-                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <PerExpenseAuditBadge
+                          auditDetail={evaluateExpenseAudit(exp, false, duplicateExpenseIds.has(exp.id))}
+                          isDuplicate={duplicateExpenseIds.has(exp.id)}
+                        />
+                        {exp.receiptUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceiptUrl(exp.receiptUrl!)}
+                            className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            View
+                          </button>
+                        ) : (
+                          <span className={`text-[11px] font-mono ${exp.amount >= 75 ? 'text-rose-500 font-semibold' : 'text-slate-400 italic'}`}>
+                            {exp.amount >= 75 ? 'Receipt Req.' : 'No receipt'}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
@@ -280,7 +411,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
         </div>
       </div>
 
-      {/* Add Expense Modal */}
+      {/* Add Expense Slide-Over Drawer */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
@@ -288,11 +419,20 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
             onClick={() => setShowAddModal(false)}
           />
           <div className="fixed inset-y-0 right-0 max-w-lg w-full flex">
-            <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-5">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Plus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                Log New Business Expense
-              </h3>
+            <div className="w-full glass-panel bg-white/95 dark:bg-slate-900/95 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-5">
+              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  Log New Business Expense
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 flex-1">
                 <div className="grid grid-cols-2 gap-4">
@@ -320,7 +460,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                       placeholder="0.00"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full glass-input p-2.5 rounded-lg text-sm"
+                      className="w-full glass-input p-2.5 rounded-lg text-sm font-mono"
                     />
                   </div>
                 </div>
@@ -397,7 +537,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                     id="deductibleCheck"
                     checked={isDeductible}
                     onChange={(e) => setIsDeductible(e.target.checked)}
-                    className="rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    className="rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                   />
                   <label htmlFor="deductibleCheck" className="text-sm text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
                     Tax Deductible Business Expense
@@ -418,7 +558,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
                     className={`px-5 py-2 text-sm font-medium rounded-lg shadow ${
                       isFutureActiveYear || isSelectedDateFuture
                         ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
                     }`}
                   >
                     Save Expense
@@ -429,6 +569,14 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
           </div>
         </div>
       )}
+
+      {/* Receipt OCR Scanner Slide-Over Drawer */}
+      <ReceiptOcrScannerDrawer
+        isOpen={showOcrDrawer}
+        onClose={() => setShowOcrDrawer(false)}
+        onConfirmExpense={onAddExpense}
+        activeTaxYear={activeTaxYear}
+      />
 
       {/* Receipt Image Modal */}
       {selectedReceiptUrl && (

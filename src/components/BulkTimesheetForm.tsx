@@ -121,7 +121,7 @@ export function BulkTimesheetForm({
             </p>
             <button
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold bg-slate-800 text-white rounded-lg"
+              className="px-4 py-2 text-xs font-semibold bg-slate-800 text-slate-900 dark:text-white rounded-lg"
             >
               Close
             </button>
@@ -196,7 +196,7 @@ export function BulkTimesheetForm({
                       onClick={() => toggleDay(day.value)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
                         isSelected
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                          ? 'bg-indigo-600 text-white dark:text-white border-indigo-600 shadow-xs'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }`}
                     >
@@ -292,7 +292,7 @@ export function BulkTimesheetForm({
                 className={`px-4 py-2 font-semibold rounded-lg shadow-lg transition ${
                   generatedEntries.length === 0 || isFutureRange
                     ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-60'
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 cursor-pointer'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white shadow-indigo-600/30 cursor-pointer'
                 }`}
               >
                 Generate {generatedEntries.length} Timesheets

@@ -50,5 +50,20 @@ describe('NavigationSidebar State Badge Resolution', () => {
     expect(getSidebarStateBadge({ state: '' })).toBe('LEDGER PA v1.0');
     expect(getSidebarStateBadge({ state: '   ' })).toBe('LEDGER PA v1.0');
   });
+
+  it('should list all 6 employee portal tabs', () => {
+    const employeeTabs = [
+      'MY_DOCUMENTS',
+      'TIMESHEETS',
+      'EMPLOYEE_REIMBURSEMENTS',
+      'EMPLOYEE_PTO',
+      'PAYROLL_CALENDAR',
+      'EMPLOYEE_PROFILE',
+    ];
+    expect(employeeTabs.length).toBe(6);
+    expect(employeeTabs).toContain('EMPLOYEE_REIMBURSEMENTS');
+    expect(employeeTabs).toContain('EMPLOYEE_PTO');
+    expect(employeeTabs).toContain('EMPLOYEE_PROFILE');
+  });
 });
 

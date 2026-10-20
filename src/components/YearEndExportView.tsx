@@ -54,19 +54,21 @@ export function YearEndExportView({ data }: YearEndExportViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <FileSpreadsheet className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> CPA Financial Package & Tax Prep
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Year-End Accountant Export Package ({activeYear})
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          </h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             Export structured financial data packages (CSV & Excel format) formatted specifically for CPA tax filing for Tax Year {activeYear}.
           </p>
         </div>
         <button
           onClick={handleExportFullPackage}
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-600/25 cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
         >
           <Download className="w-4 h-4" />
           Export Complete Bundle ({activeYear})
@@ -76,30 +78,30 @@ export function YearEndExportView({ data }: YearEndExportViewProps) {
       {/* Alert Banner */}
       {downloadSuccess && (
         <div className="glass-panel p-4 rounded-xl border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-sm font-medium">{downloadSuccess}</span>
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="text-xs font-bold">{downloadSuccess}</span>
         </div>
       )}
 
       {/* Export Options Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card 1: Schedule C Expenses */}
-        <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+        <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Schedule C Operating Expenses</h3>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Schedule C Operating Expenses</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               Categorized line-by-line operating expenses mapped directly to IRS Form 1040 Schedule C lines (Advertising, Legal, Office, Rent, Utilities).
             </p>
-            <div className="text-xs font-mono text-indigo-700 dark:text-indigo-300 bg-indigo-50/50 dark:bg-slate-900/60 p-2.5 rounded-lg border border-indigo-100 dark:border-slate-800">
+            <div className="text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
               {yearExpenses.length} records ready to export for {activeYear}
             </div>
           </div>
           <button
             onClick={handleExportScheduleC}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-indigo-600 text-slate-800 hover:text-white dark:bg-slate-800 dark:hover:bg-indigo-600 dark:text-white text-sm font-medium rounded-xl transition-colors border border-slate-200 dark:border-slate-700 hover:border-indigo-500 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
           >
             <Download className="w-4 h-4" />
             Download Schedule C CSV
@@ -107,22 +109,22 @@ export function YearEndExportView({ data }: YearEndExportViewProps) {
         </div>
 
         {/* Card 2: IRS Mileage Log */}
-        <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+        <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300">
               <Calendar className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">IRS 5-Point Mileage Ledger</h3>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">IRS 5-Point Mileage Ledger</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               Compliant vehicle mileage log detailing Date, Origin, Destination, Business Purpose, Odometer readings, and IRS standard rate calculation.
             </p>
-            <div className="text-xs font-mono text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-slate-900/60 p-2.5 rounded-lg border border-emerald-100 dark:border-slate-800">
+            <div className="text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
               {yearMileage.length} trips ready to export for {activeYear}
             </div>
           </div>
           <button
             onClick={handleExportMileage}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-emerald-600 text-slate-800 hover:text-white dark:bg-slate-800 dark:hover:bg-emerald-600 dark:text-white text-sm font-medium rounded-xl transition-colors border border-slate-200 dark:border-slate-700 hover:border-emerald-500 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
           >
             <Download className="w-4 h-4" />
             Download Mileage CSV
@@ -130,22 +132,22 @@ export function YearEndExportView({ data }: YearEndExportViewProps) {
         </div>
 
         {/* Card 3: Payroll Summary & Stubs */}
-        <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+        <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/40 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300">
               <Shield className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Payroll & Tax Withholding</h3>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Payroll & Tax Withholding</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               Detailed paystub breakdown for Form W-2 / 941 preparation including Federal Income Tax, PA State Tax (3.07%), FICA, Medicare, and Local EIT.
             </p>
-            <div className="text-xs font-mono text-amber-700 dark:text-amber-300 bg-amber-50/50 dark:bg-slate-900/60 p-2.5 rounded-lg border border-amber-100 dark:border-slate-800">
+            <div className="text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
               {yearPayStubs.length} paystubs ready to export for {activeYear}
             </div>
           </div>
           <button
             onClick={handleExportPayroll}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-amber-600 text-slate-800 hover:text-white dark:bg-slate-800 dark:hover:bg-amber-600 dark:text-white text-sm font-medium rounded-xl transition-colors border border-slate-200 dark:border-slate-700 hover:border-amber-500 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
           >
             <Download className="w-4 h-4" />
             Download Payroll CSV

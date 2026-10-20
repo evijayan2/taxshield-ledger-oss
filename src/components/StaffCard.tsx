@@ -132,7 +132,7 @@ export function StaffCard({
             onClick={onEdit}
             className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition flex items-center gap-1 cursor-pointer ${
               isEditing
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                ? 'bg-emerald-600 text-slate-900 dark:text-white border-emerald-600 shadow-sm'
                 : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
             }`}
           >

@@ -174,19 +174,19 @@ export function SettingsView({
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Top Banner */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
+      <div className="p-6 rounded-2xl glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Company Setup & System Parameters</h2>
+          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+            <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Company Profile & Infrastructure Settings
           </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Company Setup & System Parameters</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Official legal entity parameters, Pennsylvania tax registration, owner credentials, and data backup controls.
+            Official legal entity parameters, state tax registration, owner credentials, and data backup controls.
           </p>
         </div>
 
         {savedSuccess && (
-          <span className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-500/30 shadow-xs shrink-0">
+          <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-500/30 shadow-xs shrink-0">
             <CheckCircle2 className="w-4 h-4" /> Changes Saved!
           </span>
         )}
@@ -203,15 +203,15 @@ export function SettingsView({
       <EmployeeSecurityRoster employees={employees} />
 
       {/* Company Legal Entity Section */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+      <div className="p-6 rounded-2xl glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
+            <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Company Legal Information</h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Entity details registered with IRS & PA Department of Revenue</p>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Company Legal Information</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Entity details registered with IRS & state revenue departments</p>
             </div>
           </div>
 

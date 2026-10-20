@@ -112,7 +112,7 @@ export function DatabaseOfflineBanner({ dbStatus, errorMessage, onRetry }: Datab
             <button
               onClick={handleRetryClick}
               disabled={isRetrying}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
               <span>{isRetrying ? 'Checking Connection...' : 'Retry Connection Now'}</span>

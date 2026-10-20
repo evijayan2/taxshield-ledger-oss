@@ -62,7 +62,7 @@ export interface AuthContextType {
   bootstrapSystem: (payload: any) => Promise<void>;
   signInEmail: (email: string, pass: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  confirmPasswordReset: (token: string, newPassword: string, confirmPassword?: string) => Promise<void>;
+  confirmPasswordReset: (token: string, newPassword: string, confirmPassword?: string) => Promise<{ success: boolean; message: string; email?: string }>;
   acceptInvitation: (token: string, password: string, confirmPassword?: string, displayName?: string) => Promise<void>;
   getInvitationDetails: (token: string) => Promise<InvitationDetails>;
   inviteEmployee: (email: string, displayName?: string) => Promise<void>;
@@ -286,6 +286,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to reset password.');
       }
+      return data;
     } catch (err: any) {
       setAuthError(err.message);
       throw err;

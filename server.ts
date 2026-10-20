@@ -183,6 +183,465 @@ async function startServer() {
     }
   });
 
+  // Receipt OCR Extraction Endpoint (Protected)
+  // Extracts vendor, date, total, subtotal, tax, and suggested Schedule C category.
+  // ALWAYS returns with status: 'unconfirmed' for mandatory user confirmation.
+  app.post('/api/expenses/scan-receipt', requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { rawText, base64Data, fileName, fileUrl } = req.body;
+      if (!rawText && !base64Data && !fileUrl) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please provide rawText, base64Data, or a receipt file to scan.',
+        });
+      }
+
+      const { processReceiptScan } = await import('taxshield-ledger-core');
+      const scanResult = await processReceiptScan({
+        rawText,
+        base64Data,
+        fileName,
+        fileUrl,
+      });
+
+      return res.json({ success: true, result: scanResult });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message || 'Receipt scan failed.' });
+    }
+  });
+
+  // Stripe Webhook Endpoint (Receives checkout.session.completed)
+  app.post('/api/webhooks/stripe', async (req, res) => {
+    try {
+      const signature = (req.headers['stripe-signature'] as string) || '';
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+      const payloadString = JSON.stringify(req.body);
+
+      const { verifyStripeSignature, processStripeCheckoutCompleted } = await import('taxshield-ledger-core');
+
+      // Verify signature if secret configured
+      if (webhookSecret && signature) {
+        const isValid = verifyStripeSignature(payloadString, signature, webhookSecret);
+        if (!isValid) {
+          return res.status(400).json({ error: 'Invalid Stripe signature' });
+        }
+      }
+
+      const event = req.body;
+      if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
+        const session = event.data?.object || event;
+        const result = await processStripeCheckoutCompleted(event.id || `evt_${Date.now()}`, session);
+        return res.json({ received: true, result });
+      }
+
+      return res.json({ received: true, message: `Ignored event type: ${event.type}` });
+    } catch (err: any) {
+      console.error('Error in Stripe webhook:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Stateful W-9 Token Store
+  const w9Tokens = new Map<string, {
+    tokenHash: string;
+    companyId: string;
+    employeeId: string;
+    contractorName: string;
+    companyName: string;
+    expiresAt: string;
+    used: boolean;
+  }>();
+
+  // POST /api/contractors/invite-w9 — Generate single-use secure invite link (Owner only)
+  app.post('/api/contractors/invite-w9', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { employeeId, contractorName } = req.body;
+      const companyId = req.membership?.companyId || 'comp_main';
+      const companyName = req.body.companyName || 'My Company';
+
+      const { generateW9TokenPair } = await import('taxshield-ledger-core');
+      const { rawToken, tokenHash } = generateW9TokenPair();
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      w9Tokens.set(tokenHash, {
+        tokenHash,
+        companyId,
+        employeeId,
+        contractorName: contractorName || 'Contractor',
+        companyName,
+        expiresAt,
+        used: false,
+      });
+
+      const inviteUrl = `${req.protocol}://${req.get('host')}/onboard/w9?token=${rawToken}`;
+      return res.json({
+        success: true,
+        tokenHash,
+        rawToken,
+        inviteUrl,
+        expiresAt,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // GET /api/onboard/w9/verify — Public token verification endpoint
+  app.get('/api/onboard/w9/verify', async (req, res) => {
+    try {
+      const rawToken = req.query.token as string;
+      if (!rawToken) {
+        return res.status(400).json({ valid: false, error: 'Invite token is required' });
+      }
+
+      const crypto = await import('crypto');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const tokenRecord = w9Tokens.get(tokenHash);
+
+      if (!tokenRecord) {
+        return res.status(404).json({ valid: false, error: 'Invalid or unrecognized invitation token' });
+      }
+
+      if (tokenRecord.used) {
+        return res.status(410).json({ valid: false, error: 'This Form W-9 invitation link has already been used and certified' });
+      }
+
+      if (new Date(tokenRecord.expiresAt) < new Date()) {
+        return res.status(410).json({ valid: false, error: 'This Form W-9 invitation link has expired (7-day validity exceeded)' });
+      }
+
+      return res.json({
+        valid: true,
+        contractorName: tokenRecord.contractorName,
+        companyName: tokenRecord.companyName,
+        companyId: tokenRecord.companyId,
+        employeeId: tokenRecord.employeeId,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ valid: false, error: err.message });
+    }
+  });
+
+  // POST /api/onboard/w9/submit — Public Form W-9 certification submission
+  app.post('/api/onboard/w9/submit', async (req, res) => {
+    try {
+      const {
+        token,
+        businessName,
+        taxClassification,
+        tinType,
+        tin,
+        address,
+        city,
+        state,
+        zipCode,
+        certifiedSignature,
+      } = req.body;
+
+      if (!token || !tin || !certifiedSignature || !address || !city || !state || !zipCode) {
+        return res.status(400).json({ success: false, error: 'Missing required Form W-9 certification fields' });
+      }
+
+      const crypto = await import('crypto');
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const tokenRecord = w9Tokens.get(tokenHash);
+
+      if (!tokenRecord || tokenRecord.used) {
+        return res.status(400).json({ success: false, error: 'Invite token is invalid or has already been used' });
+      }
+
+      const { certifyFormW9 } = await import('taxshield-ledger-core');
+      const w9Record = await certifyFormW9({
+        companyId: tokenRecord.companyId,
+        employeeId: tokenRecord.employeeId,
+        businessName,
+        taxClassification,
+        tinType,
+        tin,
+        address,
+        city,
+        state,
+        zipCode,
+        certifiedSignature,
+        ipAddress: req.ip,
+      });
+
+      // Mark token as used
+      tokenRecord.used = true;
+      w9Tokens.set(tokenHash, tokenRecord);
+
+      return res.json({ success: true, w9Record });
+    } catch (err: any) {
+      console.error('Error submitting Form W-9:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // =========================================================================
+  // Bank Statement Reconciliation Endpoints (Owner Only)
+  // =========================================================================
+
+  // In-memory reconciliation fallback stores
+  const inMemoryBankBatches = new Map<string, any>();
+  const inMemoryBankTransactions = new Map<string, any>();
+
+  // POST /api/reconciliation/import — Ingest & reconcile bank statement CSV
+  app.post('/api/reconciliation/import', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { csvContent, fileName, accountName } = req.body;
+      const companyId = req.membership?.companyId || 'comp_main';
+      const actorId = req.user?.id || req.user?.email || 'owner';
+
+      if (!csvContent) {
+        return res.status(400).json({ success: false, error: 'Missing CSV content' });
+      }
+
+      const { parseBankCsv, reconcileBankBatch } = await import('taxshield-ledger-core');
+      const parseResult = parseBankCsv(csvContent, companyId);
+      if (!parseResult.success) {
+        return res.status(400).json({ success: false, error: parseResult.warnings[0] || 'Failed to parse CSV' });
+      }
+
+      const { prisma } = await import('./server/prisma.js');
+      let ledgerData = {
+        generalExpenses: [] as any[],
+        travelExpenses: [] as any[],
+        invoices: [] as any[],
+        payrollRuns: [] as any[],
+        contractorPayments: [] as any[],
+      };
+      const existingFingerprints = new Set<string>();
+
+      if (prisma) {
+        try {
+          const [expenses, trv, invs, runs, cp, existingTxs] = await Promise.all([
+            prisma.generalExpense.findMany({ where: { companyId } }),
+            prisma.travelExpense.findMany({ where: { companyId } }),
+            prisma.invoice.findMany({ where: { companyId } }),
+            prisma.payrollRun.findMany({ where: { companyId } }),
+            prisma.contractorPayment.findMany({ where: { companyId } }),
+            prisma.bankTransaction.findMany({ where: { companyId }, select: { fingerprint: true } }),
+          ]);
+          ledgerData = {
+            generalExpenses: expenses,
+            travelExpenses: trv,
+            invoices: invs,
+            payrollRuns: runs,
+            contractorPayments: cp,
+          };
+          for (const t of existingTxs) {
+            existingFingerprints.add(t.fingerprint);
+          }
+        } catch (dbErr) {
+          console.warn('[Reconciliation] Fallback to in-memory database queries:', dbErr);
+        }
+      }
+
+      const batchId = crypto.randomUUID();
+      const reconResult = reconcileBankBatch(
+        parseResult.rows,
+        companyId,
+        batchId,
+        ledgerData,
+        existingFingerprints
+      );
+
+      const batchRecord = {
+        id: batchId,
+        companyId,
+        fileName: fileName || 'bank_statement.csv',
+        accountName: accountName || 'Operating Account',
+        accountMask: parseResult.accountMask || null,
+        totalRows: reconResult.summary.total,
+        matchedCount: reconResult.summary.matched,
+        reviewCount: reconResult.summary.needsReview,
+        unmatchedCount: reconResult.summary.unmatched,
+        duplicateCount: reconResult.summary.duplicate,
+        netAmount: parseResult.netAmount,
+        importedAt: new Date(),
+      };
+
+      if (prisma) {
+        try {
+          await prisma.$transaction(async (tx: any) => {
+            await tx.bankImportBatch.create({ data: batchRecord });
+            for (const r of reconResult.reconciledRows) {
+              await tx.bankTransaction.create({
+                data: {
+                  id: r.transaction.id,
+                  companyId,
+                  batchId,
+                  fingerprint: r.transaction.fingerprint,
+                  postedDate: r.transaction.postedDate,
+                  rawDescription: r.transaction.rawDescription,
+                  cleanPayee: r.transaction.cleanPayee,
+                  amount: r.transaction.amount,
+                  transactionType: r.transaction.transactionType,
+                  reconciliationStatus: r.reconciliationStatus,
+                  matchedEntityType: r.matchedEntityType || null,
+                  matchedEntityId: r.matchedEntityId || null,
+                  confidenceScore: r.confidenceScore || null,
+                  matchNotes: r.matchNotes || null,
+                  reconciledAt: r.transaction.reconciledAt ? new Date(r.transaction.reconciledAt) : null,
+                  reconciledBy: r.transaction.reconciledBy || null,
+                },
+              });
+            }
+            await tx.auditLogEntry.create({
+              data: {
+                companyId,
+                entityType: 'BankImportBatch',
+                entityId: batchId,
+                action: 'IMPORT',
+                actor: actorId,
+                notes: `Imported bank statement "${batchRecord.fileName}" (${reconResult.summary.total} rows, ${reconResult.summary.matched} matched, ${reconResult.summary.needsReview} needs review)`,
+              },
+            });
+          });
+        } catch (dbSaveErr) {
+          console.warn('[Reconciliation] Could not persist batch to PostgreSQL, using memory store:', dbSaveErr);
+        }
+      }
+
+      inMemoryBankBatches.set(batchId, batchRecord);
+      for (const r of reconResult.reconciledRows) {
+        inMemoryBankTransactions.set(r.transaction.id, r.transaction);
+      }
+
+      return res.json({
+        success: true,
+        batch: batchRecord,
+        transactions: reconResult.reconciledRows.map((r) => r.transaction),
+        summary: reconResult.summary,
+      });
+    } catch (err: any) {
+      console.error('Error importing bank CSV:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/reconciliation/confirm-match — Confirm candidate match
+  app.post('/api/reconciliation/confirm-match', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { bankTxId, entityType, entityId, notes } = req.body;
+      const companyId = req.membership?.companyId || 'comp_main';
+      const actorId = req.user?.id || req.user?.email || 'owner';
+
+      const { prisma } = await import('./server/prisma.js');
+      if (prisma) {
+        try {
+          await prisma.$transaction(async (tx: any) => {
+            await tx.bankTransaction.update({
+              where: { id: bankTxId },
+              data: {
+                reconciliationStatus: 'MATCHED',
+                matchedEntityType: entityType,
+                matchedEntityId: entityId,
+                matchNotes: notes || 'Confirmed by owner',
+                reconciledAt: new Date(),
+                reconciledBy: actorId,
+              },
+            });
+            await tx.auditLogEntry.create({
+              data: {
+                companyId,
+                entityType: 'BankTransaction',
+                entityId: bankTxId,
+                action: 'RECONCILE_MATCH',
+                actor: actorId,
+                notes: `Reconciled bank transaction ${bankTxId} with ${entityType} ${entityId}`,
+              },
+            });
+          });
+        } catch (dbErr) {
+          console.warn('[Reconciliation] PostgreSQL update failed, updating memory store:', dbErr);
+        }
+      }
+
+      const existing = inMemoryBankTransactions.get(bankTxId);
+      if (existing) {
+        existing.reconciliationStatus = 'MATCHED';
+        existing.matchedEntityType = entityType;
+        existing.matchedEntityId = entityId;
+        existing.matchNotes = notes || 'Confirmed by owner';
+        existing.reconciledAt = new Date().toISOString();
+        existing.reconciledBy = actorId;
+        inMemoryBankTransactions.set(bankTxId, existing);
+      }
+
+      return res.json({ success: true, bankTxId });
+    } catch (err: any) {
+      console.error('Error confirming match:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/reconciliation/convert-expense — Convert unmatched bank transaction into a verified GeneralExpense
+  app.post('/api/reconciliation/convert-expense', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { bankTxId, expenseData } = req.body;
+      const companyId = req.membership?.companyId || 'comp_main';
+      const actorId = req.user?.id || req.user?.email || 'owner';
+
+      const { prisma } = await import('./server/prisma.js');
+      const newExpenseId = crypto.randomUUID();
+
+      if (prisma) {
+        try {
+          await prisma.$transaction(async (tx: any) => {
+            const bankTx = await tx.bankTransaction.findUnique({ where: { id: bankTxId } });
+            if (!bankTx) throw new Error(`Bank transaction not found: ${bankTxId}`);
+
+            await tx.generalExpense.create({
+              data: {
+                id: newExpenseId,
+                companyId,
+                expenseDate: bankTx.postedDate,
+                category: expenseData.category || 'OTHER',
+                payee: bankTx.cleanPayee,
+                description: expenseData.description || bankTx.rawDescription,
+                amount: bankTx.amount,
+                scheduleCLine: expenseData.scheduleCLine || '27a',
+                isTaxDeductible: expenseData.isTaxDeductible !== false,
+                notes: `Reconciled from bank transaction: ${bankTx.rawDescription}`,
+              },
+            });
+
+            await tx.bankTransaction.update({
+              where: { id: bankTxId },
+              data: {
+                reconciliationStatus: 'MATCHED',
+                matchedEntityType: 'GENERAL_EXPENSE',
+                matchedEntityId: newExpenseId,
+                matchNotes: `Converted to expense on Schedule C Line ${expenseData.scheduleCLine || '27a'}`,
+                reconciledAt: new Date(),
+                reconciledBy: actorId,
+              },
+            });
+
+            await tx.auditLogEntry.create({
+              data: {
+                companyId,
+                entityType: 'GeneralExpense',
+                entityId: newExpenseId,
+                action: 'CREATE_FROM_BANK_TX',
+                actor: actorId,
+                notes: `Created expense for $${bankTx.amount.toFixed(2)} (${bankTx.cleanPayee}) reconciled from bank statement`,
+              },
+            });
+          });
+        } catch (dbErr) {
+          console.warn('[Reconciliation] PostgreSQL convert failed, falling back:', dbErr);
+        }
+      }
+
+      return res.json({ success: true, expenseId: newExpenseId, bankTxId });
+    } catch (err: any) {
+      console.error('Error converting expense:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // Tax Package Distribution Server Sync Routes (Owner Only)
   app.get('/api/tax-packages/status', requireAuth, requireOwner, async (_req, res) => {
     try {

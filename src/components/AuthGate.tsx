@@ -146,7 +146,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <ShieldCheck className="w-7 h-7" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Verifying Identity...</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-900 dark:text-white">Verifying Identity...</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Connecting to Secure Session Store</p>
           </div>
         </div>
@@ -168,14 +168,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <AlertTriangle className="w-7 h-7" />
           </div>
 
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Access Denied</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-900 dark:text-white">Access Denied</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
             Your account ({user.email}) does not have an active membership in this company.
           </p>
 
           <button
             onClick={() => signOut()}
-            className="mt-6 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="mt-6 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-slate-900 dark:text-white dark:text-slate-900 font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out & Try Another Account</span>
@@ -320,8 +320,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     try {
       setSubmitting(true);
-      await confirmPasswordReset(urlToken || '', password, confirmPassword);
+      const result = await confirmPasswordReset(urlToken || '', password, confirmPassword);
       setSuccessMsg('Password updated successfully! You may now sign in.');
+      if (result?.email) {
+        setEmail(result.email);
+      }
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
       setCurrentView('SIGN_IN');
       setPassword('');
       setConfirmPassword('');
@@ -391,7 +397,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 mb-2">
               Multi-State Tax & Payroll
             </span>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-900 dark:text-white tracking-tight">
               TaxShield Ledger
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
@@ -420,27 +426,27 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               {/* Step indicator bar */}
               <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    bootstrapStep === 1 
-                      ? 'bg-emerald-600 text-white shadow-sm' 
-                      : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                  }`}>
+<div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+    bootstrapStep === 1
+      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+      : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+  }`}>
                     1
                   </div>
-                  <span className={`text-xs font-semibold ${bootstrapStep === 1 ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-semibold ${bootstrapStep === 1 ? 'text-slate-900 dark:text-slate-900 dark:text-white' : 'text-slate-400'}`}>
                     Company Setup
                   </span>
                 </div>
                 <div className="w-8 h-0.5 bg-slate-200 dark:bg-slate-700" />
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    bootstrapStep === 2 
-                      ? 'bg-emerald-600 text-white shadow-sm' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-                  }`}>
+<div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+    bootstrapStep === 2
+      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+      : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+  }`}>
                     2
                   </div>
-                  <span className={`text-xs font-semibold ${bootstrapStep === 2 ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-semibold ${bootstrapStep === 2 ? 'text-slate-900 dark:text-slate-900 dark:text-white' : 'text-slate-400'}`}>
                     Owner Account
                   </span>
                 </div>
@@ -467,7 +473,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       placeholder="e.g. Your Business Name LLC"
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
 
@@ -480,7 +486,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={ein}
                         onChange={(e) => setEin(e.target.value)}
                         placeholder="12-3456789"
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
                     <div>
@@ -490,7 +496,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={stateTaxId}
                         onChange={(e) => setStateTaxId(e.target.value)}
                         placeholder="e.g. 12345678"
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -506,7 +512,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         if (!email) setEmail(e.target.value);
                       }}
                       placeholder="owner@my-llc.tax"
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
 
@@ -523,7 +529,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         placeholder="100 Main Street, Suite 400"
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
 
@@ -536,7 +542,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
                           placeholder="Philadelphia"
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         />
                       </div>
                       <div>
@@ -546,7 +552,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         <select
                           value={state}
                           onChange={(e) => setState(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         >
                           {SUPPORTED_STATES.map((st) => (
                             <option key={st.code} value={st.code}>
@@ -563,7 +569,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                           value={zip}
                           onChange={(e) => setZip(e.target.value)}
                           placeholder="19102"
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -590,7 +596,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       <select
                         value={payFrequency}
                         onChange={(e) => setPayFrequency(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       >
                         <option value="BI_WEEKLY">Bi-Weekly (26 Pay Periods/yr)</option>
                         <option value="WEEKLY">Weekly (52 Pay Periods/yr)</option>
@@ -607,7 +613,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       <select
                         value={stateFilingFrequency}
                         onChange={(e) => setStateFilingFrequency(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       >
                         <option value="MONTHLY">Monthly Remittance</option>
                         <option value="QUARTERLY">Quarterly Remittance</option>
@@ -619,7 +625,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
                   <button
                     type="submit"
-                    className="w-full mt-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full mt-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>Next: Set Owner Password</span>
                     <ArrowRight className="w-4 h-4" />
@@ -650,7 +656,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={email || companyEmail}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="owner@my-llc.tax"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
                     <p className="text-[10px] text-slate-400 mt-1">
@@ -665,7 +671,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Jane Doe (Managing Member)"
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
 
@@ -679,7 +685,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -694,7 +700,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -712,7 +718,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="w-2/3 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="w-2/3 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-slate-900 dark:text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       <ShieldCheck className="w-4 h-4" />
                       <span>{submitting ? 'Creating System...' : 'Complete & Open Ledger'}</span>
@@ -748,7 +754,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="owner@micro-llc.tax"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -774,7 +780,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -782,7 +788,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-slate-900 dark:text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <span>{submitting ? 'Authenticating...' : 'Sign In with Email'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -812,7 +818,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="owner@micro-llc.tax"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -820,7 +826,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white font-semibold text-xs transition-all shadow-md cursor-pointer disabled:opacity-50"
               >
                 {submitting ? 'Dispatching Link...' : 'Send Password Reset Link'}
               </button>
@@ -855,7 +861,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
 
@@ -869,14 +875,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white font-semibold text-xs transition-all shadow-md cursor-pointer disabled:opacity-50"
               >
                 {submitting ? 'Updating...' : 'Set New Password & Return to Login'}
               </button>
@@ -920,7 +926,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   setLocalError(null);
                   setSuccessMsg(null);
                 }}
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-slate-900 dark:text-white dark:text-slate-900 font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Return to Sign In</span>
@@ -1012,7 +1018,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1031,7 +1037,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1048,7 +1054,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1058,7 +1064,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <button
                 type="submit"
                 disabled={submitting}
-                className={`w-full py-2.5 px-4 rounded-xl text-white font-semibold text-xs transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
+                className={`w-full py-2.5 px-4 rounded-xl text-slate-900 dark:text-white font-semibold text-xs transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
                   hasExistingAccount
                     ? 'bg-indigo-600 hover:bg-indigo-700'
                     : 'bg-emerald-600 hover:bg-emerald-700'

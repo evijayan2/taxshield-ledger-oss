@@ -190,7 +190,7 @@ export function StepWorkflowBanner({
               <div className="flex items-center justify-between mb-2">
                 <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
                   isActive 
-                    ? 'bg-emerald-600 text-white' 
+                    ? 'bg-emerald-600 text-slate-900 dark:text-white' 
                     : step.isComplete 
                       ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' 
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'

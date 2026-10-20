@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Trash2, CheckCircle, XCircle, Clock, CheckSquare, Square } from 'lucide-react';
-import { Employee, TimesheetEntry, TimesheetStatus } from '../types';
+import { Employee, TimesheetEntry, TimesheetStatus, PayrollCalendarPeriod } from '../types';
 import { formatHours } from '../utils/timesheetUtils';
+import { isTimesheetModificationAllowed } from 'taxshield-ledger-core';
 
 export interface TimesheetTableProps {
   timesheets: TimesheetEntry[];
   employees: Employee[];
   selectedEmployeeId: string;
   selectedStatus: string;
+  calendarPeriods?: PayrollCalendarPeriod[];
   onStatusChange: (id: string, status: TimesheetStatus) => void;
   onDelete: (id: string) => void;
   isReadOnly?: boolean;
@@ -21,6 +23,7 @@ export function TimesheetTable({
   employees = [],
   selectedEmployeeId,
   selectedStatus,
+  calendarPeriods = [],
   onStatusChange,
   onDelete,
   isReadOnly = false,
@@ -166,6 +169,8 @@ export function TimesheetTable({
               const emp = empMap.get(entry.employeeId);
               const empName = emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown';
               const isSelected = selectedIds.includes(entry.id);
+              const lockCheck = isTimesheetModificationAllowed(entry.workDate, calendarPeriods || []);
+              const isLocked = !lockCheck.allowed;
 
               return (
                 <tr
@@ -177,8 +182,9 @@ export function TimesheetTable({
                   <td className="px-4 py-3 text-center">
                     <button
                       type="button"
-                      onClick={() => toggleSelectRow(entry.id)}
-                      className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+                      disabled={isLocked}
+                      onClick={() => !isLocked && toggleSelectRow(entry.id)}
+                      className={`text-slate-400 hover:text-slate-700 dark:hover:text-white ${isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {isSelected ? (
                         <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -206,11 +212,17 @@ export function TimesheetTable({
                     {entry.notes || '—'}
                   </td>
                   <td className="px-4 py-3 text-center whitespace-nowrap">
-                    {renderBadge(entry.status)}
+                    {isLocked ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                        🔒 Locked
+                      </span>
+                    ) : (
+                      renderBadge(entry.status)
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    {isReadOnly ? (
-                      <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">—</span>
+                    {isReadOnly || isLocked ? (
+                      <span className="text-xs text-slate-400 dark:text-slate-500 font-mono" title={lockCheck.message}>🔒 Locked</span>
                     ) : (
                       <div className="flex items-center justify-end gap-1">
                         {entry.status !== 'APPROVED' && (

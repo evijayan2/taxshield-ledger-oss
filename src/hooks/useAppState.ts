@@ -4,6 +4,16 @@ import { getPostgresStatus, fetchServerAppData, saveServerAppData, PostgresStatu
 import { GeneralExpense, MileageLog, TravelExpense, TimesheetEntry, TimesheetStatus, Company, Organization, TaxYear, ComplianceTask } from '../types';
 import { createAuditLogEntry } from '../utils/auditLogger';
 import { createDefaultComplianceTasks, getTaskTaxYear, isFutureYear, isFutureDateString, getFutureYearLockMessage } from '../utils/taxEngine';
+import { 
+  generateFiscalYearCalendar, 
+  isTimesheetModificationAllowed, 
+  calculateDueDate, 
+  Invoice, 
+  Customer, 
+  InvoiceStatus, 
+  PaymentTerms, 
+  InvoiceLineItem 
+} from 'taxshield-ledger-core';
 
 /**
  * Custom hook for managing application state, cloud sync, and audit logging.
@@ -23,10 +33,27 @@ export function useAppState() {
         const serverData = await fetchServerAppData();
         if (serverData.source === 'postgres' && serverData.data) {
           const rawCompany = serverData.data.company || serverData.data.org || loadAllAppData().company;
+          const defaultPayFreq = rawCompany?.payFrequency || 'BI_WEEKLY';
+
+          const sanitizedEmployees = (serverData.data.employees || []).map((emp: any) => ({
+            ...emp,
+            payFrequency: emp.payFrequency || defaultPayFreq,
+            employmentType: emp.employmentType || '1099_CONTRACTOR',
+            payRate: emp.payRate ?? 0,
+            w4FilingStatus: emp.w4FilingStatus || 'SINGLE',
+          }));
+
+          const sanitizedAuditLogs = (serverData.data.auditLogs || []).map((log: any) => ({
+            ...log,
+            entityId: log.entityId || log.newState?.id || log.previousState?.id || log.id || 'unknown',
+          }));
+
           setData({
             ...serverData.data,
             company: rawCompany,
             org: rawCompany,
+            employees: sanitizedEmployees,
+            auditLogs: sanitizedAuditLogs,
           });
         } else if (serverData.source === 'error') {
           setDbError(serverData.error || 'Failed to load ledger data from PostgreSQL server');
@@ -117,6 +144,27 @@ export function useAppState() {
       ? currentTasks
       : [...currentTasks, ...createDefaultComplianceTasks(year)];
 
+    // Ensure published calendar periods for target year exist
+    const currentPeriods = data.calendarPeriods || [];
+    const hasPeriodsForYear = currentPeriods.some(p => p.taxYearId === `ty_${year}` || p.periodStart.startsWith(String(year)));
+    const existingCompanyConfig = (data.payScheduleConfigs || []).find(c => c.companyId === data.company?.id);
+    const activeConfig = (data.payScheduleConfigs || []).find(c => c.taxYearId === `ty_${year}`) || {
+      companyId: data.company?.id || 'comp_main',
+      taxYearId: `ty_${year}`,
+      payFrequency: (data.company?.payFrequency as import('../types').PayrollFrequency) || existingCompanyConfig?.payFrequency || 'BI_WEEKLY',
+      paydayDayOfWeek: existingCompanyConfig?.paydayDayOfWeek ?? 5,
+      anchorPayDate: existingCompanyConfig?.anchorPayDate || `${year}-01-16`,
+      periodLagDays: existingCompanyConfig?.periodLagDays ?? 5,
+      semiMonthlyDay1: existingCompanyConfig?.semiMonthlyDay1 ?? 15,
+      semiMonthlyDay2: existingCompanyConfig?.semiMonthlyDay2 ?? 0,
+      monthlyPayDay: existingCompanyConfig?.monthlyPayDay ?? 0,
+      timesheetCutoffDays: existingCompanyConfig?.timesheetCutoffDays ?? 2,
+      weekendRollRule: existingCompanyConfig?.weekendRollRule || 'PREVIOUS_BUSINESS_DAY',
+    };
+    const updatedPeriods = hasPeriodsForYear
+      ? currentPeriods
+      : [...currentPeriods, ...generateFiscalYearCalendar(data.company?.id || 'comp_main', `ty_${year}`, year, activeConfig)];
+
     const auditEntry = createAuditLogEntry(
       'TaxYear',
       newYearRecord.id,
@@ -124,7 +172,7 @@ export function useAppState() {
       getActorEmail(),
       exists as unknown as Record<string, unknown>,
       newYearRecord as unknown as Record<string, unknown>,
-      `${exists ? 'Updated' : 'Initialized'} Tax Year ${year} with US-FEDERAL and PA tax rules baseline`
+      `${exists ? 'Updated' : 'Initialized'} Tax Year ${year} with published ${activeConfig.payFrequency} payroll calendar`
     );
 
     setData(prev => ({
@@ -132,6 +180,7 @@ export function useAppState() {
       taxYears: updatedYears,
       activeTaxYear: year,
       complianceTasks: updatedTasks,
+      calendarPeriods: updatedPeriods,
       auditLogs: [auditEntry, ...(prev.auditLogs || [])],
     }));
   };
@@ -235,8 +284,16 @@ export function useAppState() {
       console.warn(getFutureYearLockMessage(data.activeTaxYear || 2026, 'Adding timesheet entry'));
       return;
     }
+    const lockCheck = isTimesheetModificationAllowed(newEntry.workDate, data.calendarPeriods || []);
+    if (!lockCheck.allowed) {
+      console.warn(lockCheck.message);
+      alert(lockCheck.message || 'Pay period is locked for timesheet submission.');
+      return;
+    }
+
     const entry: TimesheetEntry = {
       ...newEntry,
+      periodId: lockCheck.period?.id || null,
       id: `ts_${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
@@ -247,16 +304,25 @@ export function useAppState() {
   };
 
   const handleBulkAddTimesheets = (entries: Omit<TimesheetEntry, 'id' | 'createdAt'>[]) => {
-    const validEntries = entries.filter(e => !isFutureDateString(e.workDate));
+    const validEntries = entries.filter(e => {
+      if (isFutureDateString(e.workDate)) return false;
+      const check = isTimesheetModificationAllowed(e.workDate, data.calendarPeriods || []);
+      return check.allowed;
+    });
+
     if (validEntries.length === 0 || isFutureYear(data.activeTaxYear)) {
-      console.warn(getFutureYearLockMessage(data.activeTaxYear || 2026, 'Bulk adding timesheets'));
+      console.warn('All bulk timesheet entries were skipped because target pay periods are locked or in future tax years.');
       return;
     }
-    const newEntries: TimesheetEntry[] = validEntries.map((e, idx) => ({
-      ...e,
-      id: `ts_${Date.now()}_${idx}`,
-      createdAt: new Date().toISOString(),
-    }));
+    const newEntries: TimesheetEntry[] = validEntries.map((e, idx) => {
+      const check = isTimesheetModificationAllowed(e.workDate, data.calendarPeriods || []);
+      return {
+        ...e,
+        periodId: check.period?.id || null,
+        id: `ts_${Date.now()}_${idx}`,
+        createdAt: new Date().toISOString(),
+      };
+    });
     setData(prev => ({
       ...prev,
       timesheets: [...newEntries, ...(prev.timesheets || [])],
@@ -264,6 +330,16 @@ export function useAppState() {
   };
 
   const handleUpdateTimesheetStatus = (id: string, status: TimesheetStatus) => {
+    const target = (data.timesheets || []).find(t => t.id === id);
+    if (target) {
+      const lockCheck = isTimesheetModificationAllowed(target.workDate, data.calendarPeriods || []);
+      if (!lockCheck.allowed) {
+        console.warn(lockCheck.message);
+        alert(lockCheck.message || 'Cannot update status on a locked pay period timesheet.');
+        return;
+      }
+    }
+
     setData(prev => ({
       ...prev,
       timesheets: (prev.timesheets || []).map(t => (t.id === id ? { ...t, status } : t)),
@@ -271,6 +347,16 @@ export function useAppState() {
   };
 
   const handleDeleteTimesheet = (id: string) => {
+    const target = (data.timesheets || []).find(t => t.id === id);
+    if (target) {
+      const lockCheck = isTimesheetModificationAllowed(target.workDate, data.calendarPeriods || []);
+      if (!lockCheck.allowed) {
+        console.warn(lockCheck.message);
+        alert(lockCheck.message || 'Cannot delete timesheet entry for a locked pay period.');
+        return;
+      }
+    }
+
     setData(prev => ({
       ...prev,
       timesheets: (prev.timesheets || []).filter(t => t.id !== id),
@@ -373,6 +459,159 @@ export function useAppState() {
     });
   };
 
+  const handleCreateInvoice = (input: {
+    customerId: string;
+    issueDate: string;
+    paymentTerms: PaymentTerms;
+    dueDate?: string;
+    lineItems: Array<{ description: string; quantity: number; unitPrice: number }>;
+    taxAmount: number;
+    notes?: string;
+  }) => {
+    const companyId = data.company?.id || data.org?.id || 'comp_main';
+    const customer = (data.customers || []).find((c) => c.id === input.customerId);
+    const activeYear = data.activeTaxYear || new Date().getFullYear();
+    const existingInvoices = data.invoices || [];
+    const nextSeq = existingInvoices.length + 1;
+    const invoiceNumber = `INV-${activeYear}-${String(nextSeq).padStart(3, '0')}`;
+
+    const subtotal = (input.lineItems || []).reduce(
+      (acc, item) => acc + (Number(item.quantity || 0) * Number(item.unitPrice || 0)),
+      0
+    );
+    const taxAmount = Number(input.taxAmount || 0);
+    const totalAmount = subtotal + taxAmount;
+    const dueDate = input.dueDate || calculateDueDate(input.issueDate, input.paymentTerms);
+    const invoiceId = `inv_${Date.now()}`;
+
+    const fullLineItems: InvoiceLineItem[] = (input.lineItems || []).map((item, idx) => ({
+      id: `item_${Date.now()}_${idx}`,
+      invoiceId,
+      description: item.description,
+      quantity: Number(item.quantity || 0),
+      unitPrice: Number(item.unitPrice || 0),
+      amount: Number(item.quantity || 0) * Number(item.unitPrice || 0),
+    }));
+
+    const newInvoice: Invoice = {
+      id: invoiceId,
+      companyId,
+      customerId: input.customerId,
+      customerName: customer?.name || 'Client',
+      taxYearId: `ty_${activeYear}`,
+      invoiceNumber,
+      issueDate: input.issueDate,
+      dueDate,
+      status: 'DRAFT',
+      subtotal,
+      taxAmount,
+      totalAmount,
+      amountPaid: 0,
+      notes: input.notes || null,
+      lineItems: fullLineItems,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const auditEntry = createAuditLogEntry(
+      'Invoice',
+      newInvoice.id,
+      'CREATE',
+      getActorEmail(),
+      null,
+      newInvoice as unknown as Record<string, unknown>,
+      `Created invoice ${newInvoice.invoiceNumber} for ${newInvoice.customerName} - $${newInvoice.totalAmount.toFixed(2)}`
+    );
+
+    setData((prev) => ({
+      ...prev,
+      invoices: [newInvoice, ...(prev.invoices || [])],
+      auditLogs: [auditEntry, ...(prev.auditLogs || [])],
+    }));
+  };
+
+  const handleCreateCustomer = (custInput: Omit<Customer, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>) => {
+    const companyId = data.company?.id || data.org?.id || 'comp_main';
+    const newCust: Customer = {
+      ...custInput,
+      id: `cust_${Date.now()}`,
+      companyId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const auditEntry = createAuditLogEntry(
+      'Customer',
+      newCust.id,
+      'CREATE',
+      getActorEmail(),
+      null,
+      newCust as unknown as Record<string, unknown>,
+      `Added client: ${newCust.name} (${newCust.email})`
+    );
+
+    setData((prev) => ({
+      ...prev,
+      customers: [...(prev.customers || []), newCust],
+      auditLogs: [auditEntry, ...(prev.auditLogs || [])],
+    }));
+  };
+
+  const handleUpdateInvoiceStatus = (invoiceId: string, status: InvoiceStatus) => {
+    const target = (data.invoices || []).find((i) => (invoiceId ? (i.id === invoiceId || i.invoiceNumber === invoiceId) : (!i.id && !i.invoiceNumber)));
+    if (!target) return;
+
+    const resolvedId = target.id || invoiceId || (target.invoiceNumber ? `inv_${target.invoiceNumber}` : `inv_${Date.now()}`);
+    const resolvedInvoiceNumber = target.invoiceNumber || 'INV-DRAFT';
+    const amountPaid = status === 'PAID' ? (target.totalAmount ?? 0) : (target.amountPaid ?? 0);
+    const updatedInvoice: Invoice = {
+      ...target,
+      id: resolvedId,
+      invoiceNumber: resolvedInvoiceNumber,
+      status,
+      amountPaid,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const auditEntry = createAuditLogEntry(
+      'Invoice',
+      resolvedId,
+      'UPDATE',
+      getActorEmail(),
+      target as unknown as Record<string, unknown>,
+      updatedInvoice as unknown as Record<string, unknown>,
+      `Updated invoice ${resolvedInvoiceNumber} status to ${status}`
+    );
+
+    setData((prev) => ({
+      ...prev,
+      invoices: (prev.invoices || []).map((i) => (i === target || (i.id && i.id === resolvedId) ? updatedInvoice : i)),
+      auditLogs: [auditEntry, ...(prev.auditLogs || [])],
+    }));
+  };
+
+  const handleDeleteInvoice = (identifier: string) => {
+    const existing = data.invoices || [];
+    const target = existing.find((i) => i.id === identifier || i.invoiceNumber === identifier || (!i.id && identifier === 'INV-DRAFT'));
+    if (!target) return;
+
+    const auditEntry = createAuditLogEntry(
+      'Invoice',
+      target.id || 'INV-DRAFT',
+      'DELETE',
+      getActorEmail(),
+      target as unknown as Record<string, unknown>,
+      null,
+      `Deleted invoice ${target.invoiceNumber || 'INV-DRAFT'}`
+    );
+
+    setData((prev) => ({
+      ...prev,
+      invoices: (prev.invoices || []).filter((i) => i !== target && i.id !== identifier && i.invoiceNumber !== identifier),
+      auditLogs: [auditEntry, ...(prev.auditLogs || [])],
+    }));
+  };
+
   return {
     data,
     setData,
@@ -395,5 +634,10 @@ export function useAppState() {
     handleMarkTaskFiled,
     handleSaveCompany,
     handleSaveOrg,
+    handleCreateInvoice,
+    handleCreateCustomer,
+    handleUpdateInvoiceStatus,
+    handleDeleteInvoice,
   };
 }
+

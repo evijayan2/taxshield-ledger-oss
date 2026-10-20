@@ -72,6 +72,12 @@ Every developer and coding agent creating or modifying UI components in this rep
    - ALWAYS use modern **Slide-Over Drawers (Sliders)** that smoothly slide in from the right edge of the screen (`fixed inset-y-0 right-0 max-w-2xl w-full ... slide-in-from-right duration-300`) with a subtle dark backdrop overlay (`bg-slate-900/60 backdrop-blur-sm`).
    - Slide-over drawers keep the application UI sleek, responsive, and state-of-the-art while preserving user context.
 
+6. **Strict Prohibition of Browser-Native Dialogs (`alert`, `confirm`, `prompt`)**:
+   - NEVER call browser-native dialog functions (`window.alert()`, `window.confirm()`, `window.prompt()`). Browser-native popups break application immersion, look unstyled, cannot support dual-theme styling, and disrupt user workflows.
+   - ALWAYS implement custom in-app styled UI components for all user confirmations, destructive action warnings, and alerts:
+     - For destructive actions (e.g. deleting invoices, removing staff, deleting expenses): use an in-app slide-over confirmation drawer or custom in-app glass confirmation modal/popover with explicit red/rose destructive buttons, cancel buttons, and dual-theme glass styling (`.glass-panel`, `.glass-card`).
+     - For notifications and feedback: use styled in-app banners/toasts with clear icons, dismiss triggers, and accessible WCAG AA contrast.
+
 ---
 
 ## Testing expectations

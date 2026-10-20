@@ -387,7 +387,7 @@ export function AssistedPayrollView({
                                 onUpdateStubDisbursement(stub.id, ref);
                                 confetti({ particleCount: 40, spread: 60 });
                               }}
-                              className="px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-xs"
+                              className="px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white transition cursor-pointer shadow-xs"
                             >
                               Mark Paid
                             </button>
@@ -537,7 +537,7 @@ export function AssistedPayrollView({
                       });
                     }
                   }}
-                  className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-medium text-[11px] whitespace-nowrap cursor-pointer transition shrink-0 shadow-xs"
+                  className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-700 text-slate-900 dark:text-white font-medium text-[11px] whitespace-nowrap cursor-pointer transition shrink-0 shadow-xs"
                 >
                   Sync Pay Period to {earliestApprovedDate} – {latestApprovedDate}
                 </button>
@@ -787,7 +787,7 @@ export function AssistedPayrollView({
               <button
                 type="button"
                 onClick={handleExecuteRun}
-                className="px-5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-md shadow-emerald-700/20"
+                className="px-5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white transition cursor-pointer shadow-md shadow-emerald-700/20"
               >
                 Lock & Generate Pay Stubs
               </button>

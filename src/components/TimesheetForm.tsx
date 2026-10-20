@@ -106,7 +106,7 @@ export function TimesheetForm({
               </p>
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold bg-slate-800 text-white rounded-lg transition"
+                className="px-4 py-2 text-xs font-semibold bg-slate-800 text-slate-900 dark:text-white rounded-lg transition"
               >
                 Close
               </button>

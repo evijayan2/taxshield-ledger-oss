@@ -119,7 +119,7 @@ export function W2W3PreviewModal({ org, employees, payStubs, onClose }: W2W3Prev
             onClick={() => setActiveTab('W3_SUMMARY')}
             className={`px-3.5 py-2 text-xs font-bold rounded-lg transition shrink-0 flex items-center gap-2 cursor-pointer ${
               isW3Active
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-sm'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -133,7 +133,7 @@ export function W2W3PreviewModal({ org, employees, payStubs, onClose }: W2W3Prev
               onClick={() => setActiveTab(w2.employeeId)}
               className={`px-3.5 py-2 text-xs font-bold rounded-lg transition shrink-0 flex items-center gap-2 cursor-pointer ${
                 activeTab === w2.employeeId
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-sm'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
@@ -150,7 +150,7 @@ export function W2W3PreviewModal({ org, employees, payStubs, onClose }: W2W3Prev
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">Form W-3 Transmittal Summary</h4>
               <button
                 onClick={handleDownloadW3}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download Form W-3 PDF</span>
@@ -170,7 +170,7 @@ export function W2W3PreviewModal({ org, employees, payStubs, onClose }: W2W3Prev
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">Wage & Tax Statement (Form W-2: {selectedW2.employeeName})</h4>
               <button
                 onClick={() => handleDownloadSingleW2(selectedW2)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download W-2 PDF (Copy B & C)</span>

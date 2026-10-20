@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { AllAppData } from '../types';
 import { getRecordYear, getTaskTaxYear } from '../utils/taxEngine';
+import { calculateAuditReadiness } from 'taxshield-ledger-core';
 
 interface DashboardOverviewViewProps {
   data: AllAppData;
@@ -29,6 +30,22 @@ interface DashboardOverviewViewProps {
  */
 export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverviewViewProps) {
   const activeYear = data.activeTaxYear || 2026;
+
+  // Live Audit Readiness Evaluation
+  const auditReport = React.useMemo(() => {
+    return calculateAuditReadiness({
+      companyId: data.company.id || 'comp_main',
+      taxYear: activeYear,
+      generalExpenses: data.generalExpenses || [],
+      travelExpenses: data.travelExpenses || [],
+      mileageLogs: data.mileageLogs || [],
+      bankTransactions: data.bankTransactions || [],
+      contractorPayments: data.contractorPayments || [],
+      w9Records: data.w9Records || [],
+      employees: data.employees || [],
+      statutory1099Threshold: 600,
+    });
+  }, [data, activeYear]);
 
   const generalExpenses = data.generalExpenses.filter(e => getRecordYear(e.expenseDate) === activeYear);
   const mileageLogs = data.mileageLogs.filter(m => getRecordYear(m.tripDate) === activeYear);
@@ -94,6 +111,14 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
             <span className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-mono font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Audit Logged
             </span>
+            <button
+              type="button"
+              onClick={() => onNavigateTab('AUDIT_READINESS')}
+              className="px-2.5 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{auditReport.overallScore}% Audit-Ready ({auditReport.tier.replace('_', ' ')})</span>
+            </button>
           </div>
           <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             {data.org.name || 'Company Financial Ledger'}
@@ -107,7 +132,7 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => onNavigateTab('EXPENSES')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition cursor-pointer shadow-xs"
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold text-sm rounded-xl transition cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4" />
             New Expense
@@ -120,6 +145,38 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
             Log Mileage
           </button>
         </div>
+      </div>
+
+      {/* Dedicated Continuous Audit Defense & Readiness Banner Card */}
+      <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 shadow-xs">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 flex flex-col items-center justify-center font-mono font-black text-xl shrink-0">
+            <span>{auditReport.overallScore}%</span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Continuous IRS Audit Readiness: {auditReport.tier.replace('_', ' ')}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              {auditReport.summaryStats.missingReceiptsOver75Count === 0
+                ? 'All expenses ≥ $75 possess documentary evidence.'
+                : `${auditReport.summaryStats.missingReceiptsOver75Count} expense(s) ≥ $75 missing receipt documentation.`}{' '}
+              {auditReport.duplicates.length > 0 && `${auditReport.duplicates.length} suspected duplicate transaction(s) pending review.`}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onNavigateTab('AUDIT_READINESS')}
+          className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 transition flex items-center gap-2 shrink-0 cursor-pointer shadow-xs"
+        >
+          <span>Open Audit Defense Center</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Clean Statutory Deadline Alert Banner */}
@@ -221,7 +278,7 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
           <button
             onClick={() => onNavigateTab('COMPLIANCE')}
-            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <span>Compliance Hub & ACH Payouts</span>
             <ArrowRight className="w-3.5 h-3.5" />

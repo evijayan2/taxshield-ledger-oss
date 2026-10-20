@@ -191,7 +191,7 @@ export function TaxPaymentInstructionsDrawer({
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-300">This tax return has already been remitted and logged in the audit trail.</p>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-600 text-slate-900 uppercase tracking-wider">
                   FILED & PAID
                 </span>
               </div>
@@ -349,7 +349,7 @@ export function TaxPaymentInstructionsDrawer({
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
               {guide.stepByStepInstructions.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-3 text-xs">
-                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-slate-900 font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
                     {idx + 1}
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{step}</p>

@@ -100,7 +100,7 @@ export function EmployeePortalDocumentsView({
           {hasIssuedW2 && currentW2 && (
             <button
               onClick={handleDownloadW2}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition text-xs cursor-pointer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition text-xs cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download Form W-2 ({activeTaxYear})</span>

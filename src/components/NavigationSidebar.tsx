@@ -14,24 +14,42 @@ import {
   Building2,
   Plus,
   Clock,
-  Users
+  Users,
+  Calendar,
+  CalendarDays,
+  User,
+  CreditCard,
+  Briefcase,
+  ArrowRightLeft
 } from 'lucide-react';
 import { Organization, TaxYear } from '../types';
 import { isFutureYear } from '../utils/taxEngine';
 
 export type NavigationTab = 
   | 'DASHBOARD'
+  | 'AUDIT_READINESS'
   | 'EXPENSES'
+  | 'INVOICING'
+  | 'RECONCILIATION'
   | 'MILEAGE'
   | 'TIMESHEETS'
+  | 'PAYROLL_CALENDAR'
   | 'STAFF'
+  | 'CONTRACTORS'
   | 'PAYROLL'
   | 'COMPLIANCE'
   | 'TAX_RULES'
+  | 'TAX_COVERAGE'
+  | 'ASSETS'
+  | 'HOME_OFFICE'
+  | 'TAX_SIMULATOR'
   | 'AUDIT_LOGS'
   | 'EXPORT'
   | 'SETTINGS'
-  | 'MY_DOCUMENTS';
+  | 'MY_DOCUMENTS'
+  | 'EMPLOYEE_REIMBURSEMENTS'
+  | 'EMPLOYEE_PTO'
+  | 'EMPLOYEE_PROFILE';
 
 interface NavigationSidebarProps {
   activeTab: NavigationTab;
@@ -77,29 +95,44 @@ export function NavigationSidebar({
       category: 'Overview',
       items: [
         { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'AUDIT_READINESS', label: 'Audit Defense & Readiness', icon: ShieldCheck },
+        { id: 'TAX_SIMULATOR', label: 'Tax Impact Simulator', icon: Calculator },
       ]
     },
     {
-      category: 'Operations & Payroll',
+      category: 'Bookkeeping & Deductions',
       items: [
         { id: 'EXPENSES', label: 'Expenses & Receipts', icon: Receipt },
+        { id: 'INVOICING', label: 'Invoices & Payments', icon: CreditCard },
+        { id: 'RECONCILIATION', label: 'Bank Reconciliation', icon: ArrowRightLeft },
         { id: 'MILEAGE', label: 'Mileage & Travel', icon: Car },
+        { id: 'ASSETS', label: 'Asset Depreciation', icon: Building2 },
+        { id: 'HOME_OFFICE', label: 'Home Office Deduction', icon: Receipt },
+      ]
+    },
+    {
+      category: 'Workforce & Payroll',
+      items: [
         { id: 'STAFF', label: 'Staff & Onboarding', icon: Users },
+        { id: 'CONTRACTORS', label: 'Contractor 1099 Hub', icon: Briefcase },
         { id: 'TIMESHEETS', label: 'Timesheets Ledger', icon: Clock },
+        { id: 'EMPLOYEE_PTO', label: 'PTO & Leave Approvals', icon: CalendarDays },
+        { id: 'PAYROLL_CALENDAR', label: 'Payroll Calendar', icon: Calendar },
         { id: 'PAYROLL', label: 'Assisted Payroll Engine', icon: Calculator },
       ]
     },
     {
-      category: 'Tax & Audit',
+      category: 'Tax & Compliance',
       items: [
         { id: 'COMPLIANCE', label: 'Compliance Calendar', icon: FileText },
+        { id: 'TAX_COVERAGE', label: 'Tax Rule Coverage', icon: ShieldCheck },
         { id: 'TAX_RULES', label: 'Tax Rules Engine', icon: Scale },
-        { id: 'AUDIT_LOGS', label: 'Audit Trail Inspector', icon: ShieldCheck },
       ]
     },
     {
-      category: 'Administration',
+      category: 'Audit & Administration',
       items: [
+        { id: 'AUDIT_LOGS', label: 'Audit Trail Inspector', icon: ShieldCheck },
         { id: 'EXPORT', label: 'Accountant Export', icon: Download },
         { id: 'SETTINGS', label: 'Company Profile & Setup', icon: Settings },
       ]
@@ -119,6 +152,10 @@ export function NavigationSidebar({
       items: [
         { id: 'MY_DOCUMENTS', label: 'My Paystubs & W-2s', icon: FileText },
         { id: 'TIMESHEETS', label: isReadOnly ? 'My Timesheets (Read-Only)' : 'My Timesheets', icon: Clock },
+        { id: 'EMPLOYEE_REIMBURSEMENTS', label: 'Expense & Mileage Claims', icon: Receipt },
+        { id: 'EMPLOYEE_PTO', label: 'Time-Off & PTO Requests', icon: CalendarDays },
+        { id: 'PAYROLL_CALENDAR', label: 'Payroll Calendar', icon: Calendar },
+        { id: 'EMPLOYEE_PROFILE', label: 'My Profile & Direct Deposit', icon: User },
       ]
     }
   ];
@@ -131,6 +168,10 @@ export function NavigationSidebar({
     ...taxYears.map(t => t.year)
   ])).sort((a, b) => b - a);
 
+  const getItemAccent = (_id: NavigationTab, isActive: boolean) => {
+    return { icon: isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200' };
+  };
+
   return (
     <aside className={`fixed left-0 top-0 bottom-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 transition-all duration-300 flex flex-col justify-between ${
       collapsed ? 'w-20' : 'w-64'
@@ -139,7 +180,7 @@ export function NavigationSidebar({
       <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-slate-900 dark:text-white font-bold shadow-md shadow-emerald-900/10">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
@@ -152,7 +193,7 @@ export function NavigationSidebar({
         )}
         {collapsed && (
           <div className="w-full flex justify-center">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-slate-900 dark:text-white font-bold shadow-md">
               TS
             </div>
           </div>
@@ -167,13 +208,13 @@ export function NavigationSidebar({
 
       {/* Tax Year Selector */}
       {!collapsed && (
-        <div className="px-4 py-3 bg-slate-50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Tax Year</span>
+        <div className="px-4 py-3 bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tax Year</span>
           <div className="flex items-center gap-1.5">
             <select
               value={activeTaxYear}
               onChange={(e) => onTaxYearChange(Number(e.target.value))}
-              className="bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 font-mono text-xs font-bold border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 focus:outline-none focus:border-emerald-500 cursor-pointer"
+              className="bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 font-mono text-xs font-bold border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
             >
               {yearNumbers.map(yr => (
                 <option key={yr} value={yr}>
@@ -185,7 +226,7 @@ export function NavigationSidebar({
               <button
                 onClick={onOpenTaxYearSetup}
                 title="Initialize or Edit Tax Year Setup"
-                className="p-1 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-md cursor-pointer transition-colors"
+                className="p-1 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-md cursor-pointer transition-colors shadow-2xs"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -199,8 +240,8 @@ export function NavigationSidebar({
         {navSections.map((section, sIdx) => (
           <div key={section.category} className="space-y-1">
             {!collapsed ? (
-              <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {section.category}
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                <span>{section.category}</span>
               </div>
             ) : (
               sIdx > 0 && <div className="my-2 border-t border-slate-200 dark:border-slate-800/80" />
@@ -209,18 +250,19 @@ export function NavigationSidebar({
             {section.items.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              const accent = getItemAccent(item.id, isActive);
               return (
                 <button
                   key={item.id}
                   onClick={() => onSelectTab(item.id)}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl font-medium text-sm transition-all cursor-pointer ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl font-medium text-sm transition-all cursor-pointer group ${
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                   } ${collapsed ? 'justify-center px-0 py-2.5' : ''}`}
                 >
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${accent.icon}`} />
                   {!collapsed && <span className="flex-1 text-left truncate">{item.label}</span>}
                   {item.id === 'COMPLIANCE' && pendingTaxCount > 0 && !collapsed && (
                     <span className="px-1.5 py-0.5 text-[9px] font-mono font-black rounded-md bg-amber-500 text-slate-950 shadow-xs animate-pulse">

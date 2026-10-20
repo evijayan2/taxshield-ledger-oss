@@ -168,11 +168,12 @@ export function createDefaultComplianceTasks(year: number): ComplianceTask[] {
 /**
  * Dynamic Tax Rate Getter (resolves from Tax Rules Engine)
  */
-export const getActiveRates = () => {
-  const paSit = resolveActiveRuleSync('PA-STATE', 'PA_SIT_RATE');
-  const ficaSs = resolveActiveRuleSync('US-FED', 'FED_FICA_SS');
-  const ficaMed = resolveActiveRuleSync('US-FED', 'FED_FICA_MEDICARE');
-  const paUc = resolveActiveRuleSync('PA-STATE', 'PA_UC_EMPLOYER');
+export const getActiveRates = (effectiveDate?: Date) => {
+  const defDate = effectiveDate ?? new Date();
+  const paSit = resolveActiveRuleSync('PA-STATE', 'PA_SIT_RATE', defDate);
+  const ficaSs = resolveActiveRuleSync('US-FED', 'FED_FICA_SS', defDate);
+  const ficaMed = resolveActiveRuleSync('US-FED', 'FED_FICA_MEDICARE', defDate);
+  const paUc = resolveActiveRuleSync('PA-STATE', 'PA_UC_EMPLOYER', defDate);
 
   if (paSit.payload.rate === undefined || ficaSs.payload.rate === undefined || ficaMed.payload.rate === undefined || paUc.payload.rate === undefined) {
     throw new Error('Required tax rate missing from Tax Rules Engine payload');
@@ -186,10 +187,11 @@ export const getActiveRates = () => {
   };
 };
 
-function resolveLocalEitRate(localityCode?: string): number {
+function resolveLocalEitRate(localityCode?: string, effectiveDate?: Date): number {
   if (!localityCode) return 0;
+  const defDate = effectiveDate ?? new Date();
   if (localityCode === 'DE-LOCAL-WILMINGTON' || localityCode.includes('WILMINGTON')) {
-    const rule = resolveActiveRuleSync('DE-LOCAL-WILMINGTON', 'DE_WILMINGTON_EIT');
+    const rule = resolveActiveRuleSync('DE-LOCAL-WILMINGTON', 'DE_WILMINGTON_EIT', defDate);
     if (typeof rule.payload.rate !== 'number') {
       throw new Error(`Required DE local rule [${rule.ruleCode}] has no rate payload.`);
     }
@@ -199,21 +201,22 @@ function resolveLocalEitRate(localityCode?: string): number {
   if (!/^\d{6}$/.test(psdCode)) {
     throw new Error(`Local tax jurisdiction [${localityCode}] is not mapped to a TaxRuleVersion.`);
   }
-  const rule = resolveActiveRuleSync('PA-LOCAL', `PA_LOCAL_EIT_${psdCode}`);
+  const rule = resolveActiveRuleSync('PA-LOCAL', `PA_LOCAL_EIT_${psdCode}`, defDate);
   if (typeof rule.payload.rate !== 'number') {
     throw new Error(`Required local EIT rule [${rule.ruleCode}] has no rate payload.`);
   }
   return rule.payload.rate;
 }
 
-function resolveLocalServicesTaxAnnualAmount(localityCode: string | undefined, applies: boolean, exempt: boolean): number {
+function resolveLocalServicesTaxAnnualAmount(localityCode: string | undefined, applies: boolean, exempt: boolean, effectiveDate?: Date): number {
   if (!applies || exempt) return 0;
+  const defDate = effectiveDate ?? new Date();
   const psdCode = localityCode?.replace('PA-PSD-', '').replace('PA_LOCAL_LST_', '');
   if (!psdCode || !/^\d{6}$/.test(psdCode)) {
     return 0;
   }
   try {
-    const rule = resolveActiveRuleSync('PA-LOCAL', `PA_LOCAL_LST_${psdCode}`);
+    const rule = resolveActiveRuleSync('PA-LOCAL', `PA_LOCAL_LST_${psdCode}`, defDate);
     const amount = rule.payload.rate ?? rule.payload.ratePerMile;
     return typeof amount === 'number' ? amount : 0;
   } catch {
@@ -232,7 +235,8 @@ export function calculateFederalIncomeTax(
   dependentCredit: number,
   otherIncome: number = 0,
   deductions: number = 0,
-  extraWithholding: number = 0
+  extraWithholding: number = 0,
+  effectiveDate?: Date
 ): number {
   const periodsPerYear = {
     WEEKLY: 52,
@@ -241,10 +245,11 @@ export function calculateFederalIncomeTax(
     MONTHLY: 12
   }[payFrequency] || 26;
 
+  const defDate = effectiveDate ?? new Date();
   const annualizedGross = (grossPay * periodsPerYear) + otherIncome - deductions;
   if (annualizedGross <= 0) return extraWithholding;
 
-  const rule = resolveActiveRuleSync('US-FED', 'FED_FIT_WITHHOLDING');
+  const rule = resolveActiveRuleSync('US-FED', 'FED_FIT_WITHHOLDING', defDate);
   let annualTax = computeFederalWithholdingFromRule(annualizedGross, w4Status, rule);
 
   annualTax = Math.max(0, annualTax - dependentCredit);
@@ -260,13 +265,16 @@ export function calculateGrossToNet(
   hoursWorked: number,
   overtimeHours: number = 0,
   approvedMileageReimbursement: number = 0,
-  approvedTravelReimbursement: number = 0
+  approvedTravelReimbursement: number = 0,
+  effectiveDate?: Date
 ) {
   const regularEarnings = hoursWorked * employee.payRate;
   const overtimeEarnings = overtimeHours * (employee.payRate * 1.5);
   const grossEarnings = Math.round((regularEarnings + overtimeEarnings) * 100) / 100;
 
-  const rates = getActiveRates();
+  const defDate = effectiveDate ?? new Date();
+
+  const rates = getActiveRates(defDate);
 
   const federalIncomeTax = calculateFederalIncomeTax(
     grossEarnings,
@@ -276,7 +284,8 @@ export function calculateGrossToNet(
     employee.w4DependentCredit,
     employee.w4OtherIncome,
     employee.w4Deductions,
-    employee.w4ExtraWithholding
+    employee.w4ExtraWithholding,
+    defDate
   );
 
   const rel = employee.relationshipToOwner || (employee.age !== undefined && employee.age < 18 ? 'CHILD_UNDER_18' : 'NONE');
@@ -327,7 +336,7 @@ export function calculateGrossToNet(
   if (stateCode === 'DE') {
     stateDisplayName = 'Delaware State Income Tax';
     sutaDisplayName = 'DE Unemployment Insurance (SUTA)';
-    const deSitRule = resolveActiveRuleSync('DE-STATE', 'DE_SIT_BRACKETS');
+    const deSitRule = resolveActiveRuleSync('DE-STATE', 'DE_SIT_BRACKETS', defDate);
     if (deSitRule?.payload?.brackets && Array.isArray(deSitRule.payload.brackets)) {
       const periods = employee.payFrequency === 'WEEKLY' ? 52 : employee.payFrequency === 'BI_WEEKLY' ? 26 : employee.payFrequency === 'SEMI_MONTHLY' ? 24 : 12;
       const annualizedGross = grossEarnings * periods;
@@ -346,7 +355,7 @@ export function calculateGrossToNet(
       stateIncomeTax = Math.round((annualTax / periods) * 100) / 100;
     }
 
-    const deSutaRule = resolveActiveRuleSync('DE-STATE', 'DE_SUTA_EMPLOYER');
+    const deSutaRule = resolveActiveRuleSync('DE-STATE', 'DE_SUTA_EMPLOYER', defDate);
     const deRate = deSutaRule.payload.rate;
     if (deRate === undefined) {
       throw new Error('Required tax rate [DE_SUTA_EMPLOYER] missing from Tax Rules Engine payload');
@@ -355,7 +364,7 @@ export function calculateGrossToNet(
   } else if (stateCode === 'NJ') {
     stateDisplayName = 'New Jersey Gross Income Tax';
     sutaDisplayName = 'NJ Employer SUI Tax';
-    const njSitRule = resolveActiveRuleSync('NJ-STATE', 'NJ_SIT_BRACKETS');
+    const njSitRule = resolveActiveRuleSync('NJ-STATE', 'NJ_SIT_BRACKETS', defDate);
     if (njSitRule?.payload?.brackets && Array.isArray(njSitRule.payload.brackets)) {
       const periods = employee.payFrequency === 'WEEKLY' ? 52 : employee.payFrequency === 'BI_WEEKLY' ? 26 : employee.payFrequency === 'SEMI_MONTHLY' ? 24 : 12;
       const annualizedGross = grossEarnings * periods;
@@ -374,7 +383,7 @@ export function calculateGrossToNet(
       stateIncomeTax = Math.round((annualTax / periods) * 100) / 100;
     }
 
-    const njSuiRule = resolveActiveRuleSync('NJ-STATE', 'NJ_SUI_EMPLOYER');
+    const njSuiRule = resolveActiveRuleSync('NJ-STATE', 'NJ_SUI_EMPLOYER', defDate);
     const njRate = njSuiRule.payload.rate;
     if (njRate === undefined) {
       throw new Error('Required tax rate [NJ_SUI_EMPLOYER] missing from Tax Rules Engine payload');
@@ -383,7 +392,7 @@ export function calculateGrossToNet(
   } else if (stateCode === 'NY') {
     stateDisplayName = 'New York State Personal Income Tax';
     sutaDisplayName = 'NY Employer SUTA Tax';
-    const nySitRule = resolveActiveRuleSync('NY-STATE', 'NY_SIT_BRACKETS');
+    const nySitRule = resolveActiveRuleSync('NY-STATE', 'NY_SIT_BRACKETS', defDate);
     if (nySitRule?.payload?.brackets && Array.isArray(nySitRule.payload.brackets)) {
       const periods = employee.payFrequency === 'WEEKLY' ? 52 : employee.payFrequency === 'BI_WEEKLY' ? 26 : employee.payFrequency === 'SEMI_MONTHLY' ? 24 : 12;
       const annualizedGross = grossEarnings * periods;
@@ -402,7 +411,7 @@ export function calculateGrossToNet(
       stateIncomeTax = Math.round((annualTax / periods) * 100) / 100;
     }
 
-    const nySutaRule = resolveActiveRuleSync('NY-STATE', 'NY_SUTA_EMPLOYER');
+    const nySutaRule = resolveActiveRuleSync('NY-STATE', 'NY_SUTA_EMPLOYER', defDate);
     const nyRate = nySutaRule.payload.rate;
     if (nyRate === undefined) {
       throw new Error('Required tax rate [NY_SUTA_EMPLOYER] missing from Tax Rules Engine payload');
@@ -411,7 +420,7 @@ export function calculateGrossToNet(
   } else if (stateCode === 'OH') {
     stateDisplayName = 'Ohio Personal Income Tax';
     sutaDisplayName = 'OH Employer SUTA Tax';
-    const ohSitRule = resolveActiveRuleSync('OH-STATE', 'OH_SIT_BRACKETS');
+    const ohSitRule = resolveActiveRuleSync('OH-STATE', 'OH_SIT_BRACKETS', defDate);
     if (ohSitRule?.payload?.brackets && Array.isArray(ohSitRule.payload.brackets)) {
       const periods = employee.payFrequency === 'WEEKLY' ? 52 : employee.payFrequency === 'BI_WEEKLY' ? 26 : employee.payFrequency === 'SEMI_MONTHLY' ? 24 : 12;
       const annualizedGross = grossEarnings * periods;
@@ -430,7 +439,7 @@ export function calculateGrossToNet(
       stateIncomeTax = Math.round((annualTax / periods) * 100) / 100;
     }
 
-    const ohSutaRule = resolveActiveRuleSync('OH-STATE', 'OH_SUTA_EMPLOYER');
+    const ohSutaRule = resolveActiveRuleSync('OH-STATE', 'OH_SUTA_EMPLOYER', defDate);
     const ohRate = ohSutaRule.payload.rate;
     if (ohRate === undefined) {
       throw new Error('Required tax rate [OH_SUTA_EMPLOYER] missing from Tax Rules Engine payload');
@@ -442,7 +451,7 @@ export function calculateGrossToNet(
     stateIncomeTax = 0;
     const sutaRuleCode = stateCode === 'FL' ? 'FL_SUTA_EMPLOYER' : 'TX_SUTA_EMPLOYER';
     const jurisCode = `${stateCode}-STATE`;
-    const sutaRule = resolveActiveRuleSync(jurisCode, sutaRuleCode);
+    const sutaRule = resolveActiveRuleSync(jurisCode, sutaRuleCode, defDate);
     const rate = sutaRule.payload.rate;
     if (rate === undefined) {
       throw new Error(`Required tax rate [${sutaRuleCode}] missing from Tax Rules Engine payload`);

@@ -204,12 +204,12 @@ export function ComplianceFilingsView({
       )}
 
       {/* Header Banner */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="p-6 rounded-2xl glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Landmark className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Agency Tax Remittance & Compliance Hub</h2>
+          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+            <Landmark className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Agency Tax Remittance & Compliance Engine
           </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Agency Tax Remittance & Compliance Hub</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Real-time tax liability tracking, step-by-step agency deposit guides, and automated box mapping.
           </p>
@@ -318,7 +318,7 @@ export function ComplianceFilingsView({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowW2W3Modal(true)}
-                      className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 cursor-pointer"
+                      className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white transition flex items-center gap-1.5 cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>Preview W-2 / W-3 Forms</span>
@@ -341,7 +341,7 @@ export function ComplianceFilingsView({
                       <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span className="font-bold text-emerald-900 dark:text-emerald-200">Filing Completed & Remittance Recorded</span>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white uppercase tracking-wider">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-slate-900 uppercase tracking-wider">
                       FILED
                     </span>
                   </div>

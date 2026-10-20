@@ -495,9 +495,14 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response) => {
     });
 
     if (!user || !user.credential || !user.isActive) {
+      if (process.env.NODE_ENV !== 'production') {
+        if (!user) console.warn(`[Auth Login] Failed: User "${cleanEmail}" not found in database.`);
+        else if (!user.isActive) console.warn(`[Auth Login] Failed: User "${cleanEmail}" is deactivated.`);
+        else if (!user.credential) console.warn(`[Auth Login] Failed: User "${cleanEmail}" has no password credential set up (invited employee).`);
+      }
       res.status(401).json({
         success: false,
-        error: 'Invalid email or password.',
+        error: !user || user.credential ? 'Invalid email or password.' : 'This account has not set a password yet. Please check your invitation link or contact the company owner.',
         code: 'INVALID_CREDENTIALS',
       });
       return;
@@ -505,6 +510,9 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response) => {
 
     const isMatch = await verifyPassword(password, user.credential.passwordHash);
     if (!isMatch) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Auth Login] Failed: Password does not match for user "${cleanEmail}".`);
+      }
       res.status(401).json({
         success: false,
         error: 'Invalid email or password.',
@@ -606,11 +614,20 @@ authRouter.post('/reset-request', resetLimiter, async (req: Request, res: Respon
     }
 
     const cleanEmail = normalizeEmail(email);
+    console.log(`\n================== [TAXSHIELD AUTH: PASSWORD RESET REQUEST] ==================`);
+    console.log(`Requested Email: "${cleanEmail}"`);
+
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
 
     if (!user || !user.isActive) {
+      const allUsers = await prisma.user.findMany({ select: { email: true, isActive: true } });
+      const accountsList = allUsers.map(u => `${u.email} (${u.isActive ? 'active' : 'inactive'})`).join(', ');
+      console.warn(`[TaxShield Auth] WARNING: Account "${cleanEmail}" NOT FOUND or inactive in PostgreSQL database!`);
+      console.warn(`[TaxShield Auth] Existing users in database: [${accountsList}]`);
+      console.warn(`[TaxShield Auth] No reset token was generated because the email does not match any registered user.`);
+      console.log(`================================================================================\n`);
       res.json(genericSuccess);
       return;
     }
@@ -634,6 +651,10 @@ authRouter.post('/reset-request', resetLimiter, async (req: Request, res: Respon
 
     const origin = req.headers.origin || `http://localhost:${process.env.PORT || 3000}`;
     const resetUrl = `${origin}?token=${rawToken}&action=reset`;
+
+    console.log(`[TaxShield Auth] SUCCESS: Reset token generated for "${user.email}".`);
+    console.log(`[TaxShield Auth] Reset Link: ${resetUrl}`);
+    console.log(`================================================================================\n`);
 
     const emailProvider = getEmailProvider();
     await emailProvider.send({
@@ -723,6 +744,7 @@ authRouter.post('/reset-confirm', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
+      email: resetRecord.user.email,
       message: 'Password successfully updated. Please sign in with your new credentials.',
     });
   } catch (err: any) {

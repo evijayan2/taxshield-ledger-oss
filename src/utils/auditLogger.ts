@@ -21,12 +21,18 @@ export function createAuditLogEntry(
   newState: Record<string, unknown> | null = null,
   reason: string = 'User initiated ledger update'
 ): AuditLogEntry {
+  const safeEntityId =
+    entityId ||
+    (newState && typeof (newState as any).id === 'string' && (newState as any).id) ||
+    (previousState && typeof (previousState as any).id === 'string' && (previousState as any).id) ||
+    `entity_${Date.now()}`;
+
   return {
     id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    entityType,
-    entityId,
-    action,
-    actorId,
+    entityType: entityType || 'General',
+    entityId: safeEntityId,
+    action: action || 'UPDATE',
+    actorId: actorId || 'owner',
     previousState,
     newState,
     reason,

@@ -1,8 +1,8 @@
 # TaxShield Ledger — Phase Implementation & Verification Status
 
-**Last Updated:** September 2, 2026
-**Current Phase Status:** Phase 0 & Phase 1 complete — self-hosted email/password authentication with server-side sessions, two-step bootstrap with full business address, ZIP code, verified supported states dropdown (`PA`, `DE`, `FL`, `NJ`, `NY`, `OH`, `TX`), payroll schedule, state tax filing schedule, automated staff invite dispatch, inactive employee read-only mode, owner & employee settings security management (owner User ID & password change, owner-triggered staff password resets, employee password-only change), single-owner enforcement, and multi-state address-based state/local tax resolution in Staff Onboarding is fully implemented and verified.
-**Test Suite Status:** 21 test files passed / 116 tests passed in OSS; 13 test files passed / 71 tests passed in shared-core; 1 regression suite passed / 6 tests passed; TypeScript check (`pnpm lint`) and production build (`pnpm build`) passed.
+**Last Updated:** October 18, 2026
+**Current Phase Status:** Phase 0, Phase 1, Phase 2, and Phase 3 commercial features active — PostgreSQL direct sync hardened with defensive data sanitization for `employees` (`pay_frequency` fallback) and `audit_log_entries` (`entityId` non-null resolution), contractor W-9 onboarding, vector PDF invoicing, and Mercury bank reconciliation workflows verified.
+**Test Suite Status:** 31 test files passed / 170 tests passed in OSS; 37 test files passed / 214 tests passed in shared-core; 1 regression suite passed / 6 tests passed; TypeScript check (`pnpm lint`) passed.
 ## Repository Split Initiation Status
 
 - [x] Shared-core package scaffold created in `shared-core/`
@@ -94,7 +94,10 @@ This document tracks the current implementation status, verification metrics, pe
 
 ## 4. Test Suite Metrics
 
-- **Total Test Files:** 14 passed
-- **Total Tests:** 70 passed
+- **Total Test Files (OSS):** 31 passed
+- **Total Tests (OSS):** 170 passed
+- **Total Test Files (Core):** 37 passed
+- **Total Tests (Core):** 214 passed
 - **Regression Suite:** `pnpm test:regression` (Passed)
 - **Unit & System Suite:** `pnpm test` (Passed)
+- **Type Checking:** `pnpm lint` (`tsc --noEmit`) (Passed)

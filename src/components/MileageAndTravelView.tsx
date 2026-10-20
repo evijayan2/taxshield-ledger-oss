@@ -225,7 +225,7 @@ export function MileageAndTravelView({
             <span>Total Business Miles</span>
             <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{totalMiles.toFixed(1)} <span className="text-xs font-normal text-slate-500">mi</span></p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight font-mono">{totalMiles.toFixed(1)} <span className="text-xs font-normal text-slate-500">mi</span></p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">Active IRS mileage TaxRuleVersion @ ${activeMileageRate}/mi</p>
         </div>
 
@@ -234,25 +234,25 @@ export function MileageAndTravelView({
             <span>Mileage Deductions / Reimbursements</span>
             <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">${totalMileageDollars.toFixed(2)}</p>
-          <p className="text-[11px] text-emerald-700 dark:text-emerald-300">Accountable Plan Non-Taxable</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight font-mono">${totalMileageDollars.toFixed(2)}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Accountable Plan Non-Taxable</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Tolls & Parking Fees</span>
-            <Receipt className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <Receipt className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-tight">${totalTollsAndParking.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight font-mono">${totalTollsAndParking.toFixed(2)}</p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">PA Turnpike & Parking Meters</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Combined Travel Write-Off</span>
-            <FileCheck2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <FileCheck2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 tracking-tight">${combinedTravelTotal.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight font-mono">${combinedTravelTotal.toFixed(2)}</p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">Offsets Owner Form 1040</p>
         </div>
       </div>
@@ -265,7 +265,7 @@ export function MileageAndTravelView({
             onClick={() => setActiveSubTab('MILEAGE')}
             className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
               activeSubTab === 'MILEAGE'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-md shadow-emerald-700/20'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -278,7 +278,7 @@ export function MileageAndTravelView({
             onClick={() => setActiveSubTab('EXPENSES')}
             className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
               activeSubTab === 'EXPENSES'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-md shadow-emerald-700/20'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -424,14 +424,14 @@ export function MileageAndTravelView({
                         <td className="py-3.5 px-4 text-right font-bold text-slate-900 dark:text-white font-mono">
                           {trip.calculatedMiles.toFixed(1)}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        <td className="py-3.5 px-4 text-right font-bold text-slate-900 dark:text-white font-mono">
                           ${trip.mileageAllowance.toFixed(2)}
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                            trip.status === 'APPROVED' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' :
-                            trip.status === 'REIMBURSED' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30' :
-                            'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30'
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            trip.status === 'APPROVED' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40' :
+                            trip.status === 'REIMBURSED' ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' :
+                            'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/40'
                           }`}>
                             {trip.status}
                           </span>
@@ -502,7 +502,7 @@ export function MileageAndTravelView({
                           {exp.paymentSource === 'PERSONAL_OUT_OF_POCKET' ? 'Personal (Reimbursable)' :
                            exp.paymentSource === 'EZPASS_BUSINESS' ? 'E-ZPass Business' : 'Company Card'}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-bold text-blue-600 dark:text-blue-400 font-mono">
+                        <td className="py-3.5 px-4 text-right font-bold text-slate-900 dark:text-white font-mono">
                           ${exp.amount.toFixed(2)}
                         </td>
                         <td className="py-3.5 px-4 text-center">
@@ -720,7 +720,7 @@ export function MileageAndTravelView({
             <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <Receipt className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Add Toll or Parking Expense</h3>
               </div>
               <button 

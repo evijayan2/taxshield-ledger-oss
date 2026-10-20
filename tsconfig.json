@@ -18,6 +18,15 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "taxshield-ledger-core/server": [
+        "../shared-core/src/server.ts"
+      ],
+      "taxshield-ledger-core/types": [
+        "../shared-core/src/types.ts"
+      ],
+      "taxshield-ledger-core": [
+        "../shared-core/src/index.ts"
       ]
     },
     "allowImportingTsExtensions": true,

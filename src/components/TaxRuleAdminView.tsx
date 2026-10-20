@@ -168,9 +168,9 @@ const TaxRuleCard: React.FC<TaxRuleCardProps> = ({ rule, onStatusTransition }) =
           <span
             className={`text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider ${
               rule.status === 'ACTIVE'
-                ? 'bg-emerald-600 text-white shadow-xs'
+                ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                 : rule.status === 'IN_REVIEW'
-                ? 'bg-amber-500 text-white shadow-xs'
+                ? 'bg-amber-500 text-slate-900 dark:text-white shadow-xs'
                 : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
             }`}
           >
@@ -180,7 +180,7 @@ const TaxRuleCard: React.FC<TaxRuleCardProps> = ({ rule, onStatusTransition }) =
           {rule.status === 'IN_REVIEW' && (
             <button
               onClick={() => onStatusTransition(rule.id, 'ACTIVE')}
-              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-xs cursor-pointer"
+              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white text-xs font-semibold rounded-lg transition shadow-xs cursor-pointer"
             >
               Activate
             </button>
@@ -271,7 +271,7 @@ const TaxRuleCard: React.FC<TaxRuleCardProps> = ({ rule, onStatusTransition }) =
               onClick={() => toggleTab('BRACKETS')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTab === 'BRACKETS'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
@@ -286,7 +286,7 @@ const TaxRuleCard: React.FC<TaxRuleCardProps> = ({ rule, onStatusTransition }) =
               onClick={() => toggleTab('TESTS')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 activeTab === 'TESTS'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
@@ -300,7 +300,7 @@ const TaxRuleCard: React.FC<TaxRuleCardProps> = ({ rule, onStatusTransition }) =
             onClick={() => toggleTab('RAW_JSON')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               activeTab === 'RAW_JSON'
-                ? 'bg-emerald-600 text-white shadow-xs'
+                ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -568,27 +568,27 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
-          <div className="flex items-center gap-2.5">
-            <ShieldCheck className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Tax Rule Governance & Audit Engine</h1>
+          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Tax Rules Engine & Statutory Governance
           </div>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Tax Rule Governance & Audit Engine</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">
             Zero hardcoded rates. Every calculation is versioned and tied to authoritative Tier 1 source citations.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsSyncDrawerOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition shadow-xs text-sm cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition shadow-2xs text-xs cursor-pointer"
           >
-            <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <Server className="w-4 h-4 text-slate-500" />
             <span>Sync from Package Server</span>
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 text-sm cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-bold rounded-xl transition shadow-xs text-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Propose Rule Version
@@ -605,13 +605,13 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
               onClick={() => { setSelectedCategory('ALL'); setSelectedPsd('ALL'); }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'ALL'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Globe className="w-3.5 h-3.5" />
               <span>All Rules</span>
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-700/40 text-white font-mono">
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-700/40 text-slate-900 font-mono">
                 {rules.length}
               </span>
             </button>
@@ -620,7 +620,7 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
               onClick={() => { setSelectedCategory('FEDERAL'); setSelectedPsd('ALL'); }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'FEDERAL'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -632,7 +632,7 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
               onClick={() => { setSelectedCategory('STATE'); setSelectedPsd('ALL'); }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'STATE'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -644,7 +644,7 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
               onClick={() => { setSelectedCategory('PA_PSD'); }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'PA_PSD'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >

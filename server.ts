@@ -19,9 +19,8 @@ const getCurrentDirname = () => {
 };
 const currentDir = getCurrentDirname();
 
-async function startServer() {
+export function createServerApp(): express.Express {
   const app = express();
-  const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json({ limit: '50mb' }));
   app.use(cookieParser());
@@ -654,7 +653,7 @@ async function startServer() {
 
   app.get('/api/tax-packages/remote', requireAuth, requireOwner, async (req, res) => {
     try {
-      const serverUrl = (req.query.serverUrl as string) || undefined;
+      const serverUrl = (req.query.serverUrl as string) || process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || undefined;
       const { fetchRemotePackageCatalog } = await import('./server/services/taxPackageClient.js');
       const result = await fetchRemotePackageCatalog(serverUrl);
       return res.json(result);
@@ -676,8 +675,9 @@ async function startServer() {
       const { syncAllAvailablePackages } = await import('./server/services/taxPackageClient.js');
       const actorId = req.user?.id || 'sys_owner';
       const companyId = req.membership?.companyId || undefined;
+      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'http://localhost:3333';
 
-      const result = await syncAllAvailablePackages(serverUrl || 'http://localhost:3333', {
+      const result = await syncAllAvailablePackages(serverUrl || defaultTaxPackUrl, {
         companyId,
         actorId,
         activateImmediately: activateImmediately !== undefined ? Boolean(activateImmediately) : true
@@ -702,8 +702,9 @@ async function startServer() {
         return res.status(400).json({ success: false, error: 'Package file name is required.' });
       }
 
+      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'http://localhost:3333';
       const { fetchAndVerifyPackage, ingestPackageIntoLedger } = await import('./server/services/taxPackageClient.js');
-      const fetchResult = await fetchAndVerifyPackage(serverUrl || 'http://localhost:3333', fileName);
+      const fetchResult = await fetchAndVerifyPackage(serverUrl || defaultTaxPackUrl, fileName);
       if (!fetchResult.success || !fetchResult.package) {
         return res.status(400).json({ success: false, error: fetchResult.error });
       }
@@ -785,6 +786,13 @@ async function startServer() {
     }
   });
 
+  return app;
+}
+
+async function startServer() {
+  const PORT = Number(process.env.PORT || 3000);
+  const app = createServerApp();
+
   // Mandatory Startup Check & Auto-Sync with TaxPack Distribution Server
   await verifyAndSyncTaxPackServer();
 
@@ -849,6 +857,13 @@ async function verifyAndSyncTaxPackServer() {
   }
 }
 
-startServer().catch(err => {
-  console.error('Fatal server startup error:', err);
-});
+const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.SERVERLESS);
+
+if (!isServerlessRuntime && process.env.NODE_ENV !== 'test') {
+  startServer().catch(err => {
+    console.error('Fatal server startup error:', err);
+  });
+}
+
+export default createServerApp;
+

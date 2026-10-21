@@ -35,8 +35,8 @@ export function FontSizeControl() {
         title="Change Screen Font Size"
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
       >
-        <Type className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-        <span className="font-semibold">{currentOption.label}</span>
+        <Type className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+        <span className="font-semibold hidden sm:inline">{currentOption.label}</span>
         <span className="text-[10px] opacity-75 font-mono px-1 rounded bg-slate-200 dark:bg-slate-700">
           {currentOption.pxLabel}
         </span>

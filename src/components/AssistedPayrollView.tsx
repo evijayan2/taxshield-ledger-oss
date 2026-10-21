@@ -289,10 +289,10 @@ export function AssistedPayrollView({
       </div>
 
       {/* ACH & Direct Deposit Bank Matrix */}
-      <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 shrink-0">
               <Send className="w-4 h-4" />
             </div>
             <div>
@@ -300,7 +300,7 @@ export function AssistedPayrollView({
               <p className="text-[11px] text-slate-500 dark:text-slate-400">Execute ACH transfers from your company bank account and record trace confirmation numbers</p>
             </div>
           </div>
-          <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+          <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
             Total Pending Payout: ${yearPayStubs.filter(s => s.disbursementStatus === 'PENDING').reduce((s, st) => s + st.netPay, 0).toFixed(2)}
           </span>
         </div>

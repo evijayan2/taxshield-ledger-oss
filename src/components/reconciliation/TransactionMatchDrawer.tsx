@@ -128,7 +128,7 @@ export function TransactionMatchDrawer({
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex pl-0 sm:pl-10">
         <div className="w-full glass-panel shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-300">
           {/* Header */}
           <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">

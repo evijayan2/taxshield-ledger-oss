@@ -174,12 +174,12 @@ export function SettingsView({
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Top Banner */}
-      <div className="p-6 rounded-2xl glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 rounded-2xl glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
             <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Company Profile & Infrastructure Settings
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Company Setup & System Parameters</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Company Setup & System Parameters</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Official legal entity parameters, state tax registration, owner credentials, and data backup controls.
           </p>
@@ -438,7 +438,7 @@ export function SettingsView({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Bank Name</label>
                     <input
@@ -471,8 +471,8 @@ export function SettingsView({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 pt-1">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Mercury API Secret Key</label>
                     <input
                       type="password"

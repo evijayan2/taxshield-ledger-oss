@@ -146,28 +146,30 @@ The project is therefore at the expected Phase 2 handoff boundary: the core ledg
 - [x] Feature 3.1: OCR engine for auto-extracting receipt fields (vendor, date, amount, category) with real Tesseract.js image OCR scanning, retail merchant detection (BJ's, Costco, Walmart, Target, Home Depot, Lowe's), refund/return receipt detection, trailing minus currency support, and live scanning progress animation (`ocrService.ts`, `ReceiptOcrScannerDrawer.tsx`, `POST /api/expenses/scan-receipt`).
 - [x] Feature 3.4: Bank CSV / live statement feed import and 4-way transaction reconciliation (`MATCHED`, `UNMATCHED`, `DUPLICATE`, `NEEDS REVIEW`) with universal statement dialect detection (Mercury, Chase, Wells Fargo, BofA, generic Debit/Credit), SHA-256 idempotency fingerprinting, 4-way matching engine (`reconciliationService.ts`), and modern slide-over review drawers (`BankCsvUploadDrawer.tsx`, `TransactionMatchDrawer.tsx`, `ReconciliationView.tsx`).
 - [x] Feature 3.5: Automated duplicate expense detection & company audit readiness score / dashboard (`_bmad-output/plan-3-5-duplicate-detection-and-audit-readiness.md` — Cross-ledger duplicate heuristic engine, 6-pillar score engine [Receipt Coverage § 274(d), Purpose Quality § 162, Bank Clearance, 5-Point Mileage Pub. 463, Contractor 1099 TIN, Duplicate Health], per-expense micro-badges `PerExpenseAuditBadge.tsx`, executive defense workspace `AuditReadinessDashboardView.tsx`, and side-by-side slide-over duplicate review drawer `DuplicateExpenseDrawer.tsx`).
+- [x] Mobile View Responsiveness & Off-Canvas Navigation Drawer: Complete mobile layout overhaul across all screens and slide-over drawers. Resolved desktop-only sidebar collapse limitation by implementing an off-canvas mobile slide-out drawer (`NavigationSidebar.tsx`), mobile hamburger toggle button in sticky header (`App.tsx`), backdrop overlay dismissal, zero mobile content margin offset (`ml-0 md:ml-64`/`md:ml-20`), drawer gutter elimination on narrow viewports (`pl-0 sm:pl-10`), and responsive flex-wrap / grid layouts across all 18 primary views, forms, and slide-overs.
 - [x] Automated Government Source Ingestion Engine (Module 1 — Complete with IRS & PA DOR adapters, package compilation, SHA-256 sealing, and local HTTP server).
 - [ ] Additional Tier 2/3 state source adapters feeding Module 1's packaging engine (NJ, NY, OH, DE).
 
 ### Phase 4 — Reporting & Polish
 - [ ] Advanced document management & cross-entity global search.
 - [ ] Notification & statutory filing alert system.
-- [ ] Mobile-first sub-30s receipt photo & 5-point mileage capture flows.
+- [x] Mobile-first sub-30s receipt photo & 5-point mileage capture flows and responsive viewports across all screens.
 - [ ] Dual CPA Export Package (formatted multi-tab Excel/CSV + high-res PDF bundle).
 
 ---
 
 ## 5. Test Suite Metrics
 
-- **Total Test Files:** 91 passed across repository
-- **Total Tests:** 450 passed 100%
-- **Packaging Engine Suite:** 23 test files / 68 tests passed
+- **Total Test Files:** 94 passed across repository
+- **Total Tests:** 467 passed 100%
+- **Packaging Engine Suite:** 24 test files / 74 tests passed
 - **Shared-Core Suite:** 37 test files / 214 tests passed
-- **OSS App Suite:** 30 test files / 163 tests passed
+- **OSS App Suite:** 32 test files / 174 tests passed
 - **SaaS App Suite:** 1 test file / 5 tests passed
 - **Regression Suite:** `pnpm test:regression` (Passed)
 - **Unit & System Suite:** `pnpm test` (Passed)
 - **TypeScript Check:** `pnpm lint` (Passed)
 - **Production Build:** `pnpm build` (Passed)
+
 
 

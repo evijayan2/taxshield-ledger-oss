@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/taxshield_ledger?schema=public"
+
 jobs:
   test:
     name: Lint, Test, and Build
@@ -33,7 +36,10 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: |
+          (cd ../shared-core && pnpm install --no-frozen-lockfile && pnpm exec prisma generate)
+          pnpm install --no-frozen-lockfile
+          pnpm exec prisma generate
 
       - name: Run Linter & Type Check
         run: pnpm lint

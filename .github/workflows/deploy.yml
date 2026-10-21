@@ -112,6 +112,12 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
+      - name: Sync Regulatory Tax Rule Packages to Production
+        run: |
+          pnpm exec tsx scripts/sync-tax-packages.ts --server "${TAXPACK_SERVER_URL}" --confirm
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Build Application
         run: pnpm build
 

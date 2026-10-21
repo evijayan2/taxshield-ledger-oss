@@ -64,11 +64,36 @@ authRouter.get('/bootstrap-status', async (req: Request, res: Response) => {
       },
     });
 
+    let activeRuleCount = await prisma.taxRuleVersion.count({
+      where: { status: 'ACTIVE' },
+    });
+
+    if (userCount === 0 && activeRuleCount === 0) {
+      try {
+        const { syncAllAvailablePackages } = await import('../services/taxPackageClient.js');
+        const defaultTaxPackUrl =
+          process.env.TAXPACK_SERVER_URL ||
+          process.env.TAX_PACKAGE_SERVER_URL ||
+          'https://tax-rule-packaging-engine.vercel.app';
+        console.log(`[BOOTSTRAP-STATUS] Auto-syncing regulatory tax rules from ${defaultTaxPackUrl}...`);
+        await syncAllAvailablePackages(defaultTaxPackUrl, {
+          actorId: 'system_bootstrap',
+          activateImmediately: true,
+        });
+        activeRuleCount = await prisma.taxRuleVersion.count({
+          where: { status: 'ACTIVE' },
+        });
+      } catch (syncErr: any) {
+        console.warn('[BOOTSTRAP-STATUS] Initial tax package sync attempt:', syncErr);
+      }
+    }
+
     if (userCount === 0) {
       res.json({
         bootstrapRequired: true,
         hasCompany: Boolean(existingCompany),
         company: existingCompany || null,
+        activeTaxRules: activeRuleCount,
       });
       return;
     }
@@ -76,6 +101,7 @@ authRouter.get('/bootstrap-status', async (req: Request, res: Response) => {
     res.json({
       bootstrapRequired: false,
       hasCompany: true,
+      activeTaxRules: activeRuleCount,
     });
   } catch (err: any) {
     console.error('Error checking bootstrap status:', err);
@@ -99,9 +125,29 @@ authRouter.post('/bootstrap', async (req: Request, res: Response) => {
     }
 
     // Verify that tax rules have been ingested from TaxPack server before allowing company creation
-    const activeRuleCount = await prisma.taxRuleVersion.count({
+    let activeRuleCount = await prisma.taxRuleVersion.count({
       where: { status: 'ACTIVE' },
     });
+
+    if (activeRuleCount === 0) {
+      try {
+        const { syncAllAvailablePackages } = await import('../services/taxPackageClient.js');
+        const defaultTaxPackUrl =
+          process.env.TAXPACK_SERVER_URL ||
+          process.env.TAX_PACKAGE_SERVER_URL ||
+          'https://tax-rule-packaging-engine.vercel.app';
+        console.log(`[BOOTSTRAP] No active tax rules detected. Auto-syncing from TaxPack server: ${defaultTaxPackUrl}...`);
+        await syncAllAvailablePackages(defaultTaxPackUrl, {
+          actorId: 'system_bootstrap',
+          activateImmediately: true,
+        });
+        activeRuleCount = await prisma.taxRuleVersion.count({
+          where: { status: 'ACTIVE' },
+        });
+      } catch (syncErr: any) {
+        console.error('[BOOTSTRAP] Automatic tax package sync failed:', syncErr);
+      }
+    }
 
     if (activeRuleCount === 0) {
       res.status(400).json({

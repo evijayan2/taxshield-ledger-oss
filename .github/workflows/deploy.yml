@@ -96,6 +96,11 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm exec prisma generate
 
+      - name: Apply Database Migrations to Production
+        run: pnpm exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Build Application
         run: pnpm build
 

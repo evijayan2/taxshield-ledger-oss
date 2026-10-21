@@ -9,9 +9,21 @@ declare global {
 /**
  * Singleton instance of PrismaClient to prevent connection exhaustion in dev.
  */
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.LOCAL_POSTGRES_URL;
+
+if (databaseUrl && !process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = databaseUrl;
+}
+
 export const prisma: PrismaClient =
   globalThis.globalPrisma ||
   new PrismaClient({
+    ...(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : {}),
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 

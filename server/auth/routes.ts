@@ -79,7 +79,7 @@ authRouter.get('/bootstrap-status', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('Error checking bootstrap status:', err);
-    res.status(500).json({ success: false, error: 'Database check failed' });
+    res.status(500).json({ success: false, error: err.message || 'Database check failed' });
   }
 });
 

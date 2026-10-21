@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/taxshield_ledger?schema=public"
+  DATABASE_URL: "postgresql://postgres:password@localhost:5432/taxshield_ledger?schema=public"
   TAXPACK_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' }}
   TAX_PACKAGE_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' }}
 
@@ -17,6 +17,20 @@ jobs:
   ci-gate:
     name: Verify CI Gate
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: taxshield_ledger
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -39,6 +53,9 @@ jobs:
           (cd ../shared-core && pnpm install --no-frozen-lockfile && pnpm exec prisma generate)
           pnpm install --no-frozen-lockfile
           pnpm exec prisma generate
+
+      - name: Setup Database Schema
+        run: pnpm exec prisma db push --skip-generate
 
       - name: Run Linter & Type Check
         run: pnpm lint

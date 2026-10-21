@@ -1,14 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 
-let createServerApp: () => any;
-try {
-  const require = createRequire(import.meta.url);
-  createServerApp = require('../dist/server.cjs').createServerApp;
-} catch {
-  const serverModule = await import('../server.js');
-  createServerApp = serverModule.createServerApp;
-}
+const require = createRequire(import.meta.url);
+const { createServerApp } = require('../dist/server.cjs');
 
 const app = createServerApp();
 

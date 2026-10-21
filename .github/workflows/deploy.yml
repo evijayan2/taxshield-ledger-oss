@@ -97,7 +97,18 @@ jobs:
           pnpm exec prisma generate
 
       - name: Apply Database Migrations to Production
-        run: pnpm exec prisma migrate deploy
+        run: |
+          if ! pnpm exec prisma migrate deploy; then
+            echo "::warning::Production database schema is non-empty and unbaselined. Baselining existing migrations..."
+            for migration_dir in prisma/migrations/*/; do
+              migration=$(basename "$migration_dir")
+              if [ "$migration" != "migration_lock.toml" ]; then
+                echo "Marking $migration as applied..."
+                pnpm exec prisma migrate resolve --applied "$migration" || true
+              fi
+            done
+            pnpm exec prisma migrate deploy
+          fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 

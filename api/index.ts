@@ -1,5 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createServerApp } from '../server.js';
+import { createRequire } from 'node:module';
+
+let createServerApp: () => any;
+try {
+  const require = createRequire(import.meta.url);
+  createServerApp = require('../dist/server.cjs').createServerApp;
+} catch {
+  const serverModule = await import('../server.js');
+  createServerApp = serverModule.createServerApp;
+}
 
 const app = createServerApp();
 
@@ -8,5 +17,5 @@ const app = createServerApp();
  * Delegates incoming HTTP requests to the Express application router.
  */
 export default function handler(req: IncomingMessage, res: ServerResponse): void {
-  app(req, res);
+  (app as unknown as (req: IncomingMessage, res: ServerResponse) => void)(req, res);
 }

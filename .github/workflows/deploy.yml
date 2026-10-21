@@ -61,11 +61,11 @@ jobs:
       - name: Run Linter & Type Check
         run: pnpm lint
 
-      - name: Run Test Suite
-        run: pnpm test
-
       - name: Build Application
         run: pnpm build
+
+      - name: Run Test Suite
+        run: pnpm test
 
   deploy:
     name: Deploy to Vercel Production
@@ -99,6 +99,9 @@ jobs:
           (cd ../shared-core && pnpm install --no-frozen-lockfile && pnpm exec prisma generate)
           pnpm install --no-frozen-lockfile
           pnpm exec prisma generate
+
+      - name: Build Application
+        run: pnpm build
 
       - name: Validate Vercel Secrets
         run: |

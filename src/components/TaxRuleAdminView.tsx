@@ -745,7 +745,7 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
               versionNumber: 1,
               status: 'ACTIVE',
               sourceTitle: `Sealed Tax Package ${res.packageCode}`,
-              sourceUrl: 'http://localhost:3333/packages',
+              sourceUrl: 'https://tax-rule-packaging-engine.vercel.app/packages',
               sourcePublisher: 'Tax Rule Packaging Server',
               statuteReference: res.manifestChecksum ? res.manifestChecksum.substring(0, 24) : 'Verified',
               citationTier: 'TIER_1_OFFICIAL',

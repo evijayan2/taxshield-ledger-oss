@@ -27,7 +27,7 @@ export const PackageSyncDrawer: React.FC<PackageSyncDrawerProps> = ({
   onClose,
   onPackageIngested,
 }) => {
-  const [serverUrl, setServerUrl] = useState('http://localhost:3333');
+  const [serverUrl, setServerUrl] = useState((import.meta as any).env?.VITE_TAXPACK_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app');
   const [packages, setPackages] = useState<IRemotePackageCatalogItem[]>([]);
   const [schedulerStatus, setSchedulerStatus] = useState<ISchedulerStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -195,7 +195,7 @@ export const PackageSyncDrawer: React.FC<PackageSyncDrawerProps> = ({
                 type="text"
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
-                placeholder="http://localhost:3333"
+                placeholder="https://tax-rule-packaging-engine.vercel.app"
                 className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>

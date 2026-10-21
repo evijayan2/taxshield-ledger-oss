@@ -10,12 +10,17 @@ import {
 /**
  * CLI script to ingest regulatory tax rule packages into TaxShield Ledger OSS database.
  * Usage:
- *   pnpm tsx scripts/sync-tax-packages.ts [--server http://localhost:3333] [--confirm] [--dry-run] [--staged]
+ *   pnpm tsx scripts/sync-tax-packages.ts [--server https://tax-rule-packaging-engine.vercel.app] [--confirm] [--dry-run] [--staged]
  */
 async function main() {
   const args = process.argv.slice(2);
   const serverIndex = args.indexOf('--server');
-  const serverUrl = serverIndex !== -1 && args[serverIndex + 1] ? args[serverIndex + 1] : 'http://localhost:3333';
+  const serverUrl =
+    serverIndex !== -1 && args[serverIndex + 1]
+      ? args[serverIndex + 1]
+      : process.env.TAXPACK_SERVER_URL ||
+        process.env.TAX_PACKAGE_SERVER_URL ||
+        'https://tax-rule-packaging-engine.vercel.app';
   const hasConfirm = args.includes('--confirm');
   const hasDryRun = args.includes('--dry-run');
   const hasStaged = args.includes('--staged');

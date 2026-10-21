@@ -675,7 +675,7 @@ export function createServerApp(): express.Express {
       const { syncAllAvailablePackages } = await import('./server/services/taxPackageClient.js');
       const actorId = req.user?.id || 'sys_owner';
       const companyId = req.membership?.companyId || undefined;
-      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'http://localhost:3333';
+      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app';
 
       const result = await syncAllAvailablePackages(serverUrl || defaultTaxPackUrl, {
         companyId,
@@ -702,7 +702,7 @@ export function createServerApp(): express.Express {
         return res.status(400).json({ success: false, error: 'Package file name is required.' });
       }
 
-      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'http://localhost:3333';
+      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app';
       const { fetchAndVerifyPackage, ingestPackageIntoLedger } = await import('./server/services/taxPackageClient.js');
       const fetchResult = await fetchAndVerifyPackage(serverUrl || defaultTaxPackUrl, fileName);
       if (!fetchResult.success || !fetchResult.package) {
@@ -815,7 +815,7 @@ async function startServer() {
     console.log(`TaxShield Ledger Server running on http://0.0.0.0:${PORT}`);
     try {
       const { startDailyPackageSyncScheduler } = await import('./server/services/taxPackageClient.js');
-      startDailyPackageSyncScheduler({ serverUrl: process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'http://localhost:3333' });
+      startDailyPackageSyncScheduler({ serverUrl: process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' });
     } catch (schedErr) {
       console.warn('Could not start daily package sync scheduler:', schedErr);
     }
@@ -823,7 +823,7 @@ async function startServer() {
 }
 
 async function verifyAndSyncTaxPackServer() {
-  const serverUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'http://localhost:3333';
+  const serverUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app';
   console.log(`[TAXPACK MANDATORY INIT] Connecting to TaxPack server at ${serverUrl}...`);
   try {
     const { fetchRemotePackageCatalog, syncAllAvailablePackages } = await import('./server/services/taxPackageClient.js');

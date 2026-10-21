@@ -17,6 +17,7 @@ export {
   stopDailyPackageSyncScheduler,
   getDailyPackageSyncStatus,
   triggerManualPackageSync,
+  DEFAULT_TAXPACK_SERVER_URL,
   type IRemotePackageCatalogItem,
   type IIngestionResult,
   type IBatchIngestionResult,

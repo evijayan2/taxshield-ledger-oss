@@ -1,8 +1,8 @@
 # TaxShield Ledger — Phase Implementation & Verification Status
 
-**Last Updated:** October 21, 2026
+**Last Updated:** October 22, 2026
 **Current Phase Status:** Phase 0, Phase 1, Phase 2, and Phase 3 Commercial Expansion fully complete; PostgreSQL direct SQL synchronization hardened against null constraint violations (`employees.pay_frequency`, `audit_log_entries.entityId`), defensive load/save snapshot repair implemented; Module 1 (Tax Rule Packaging Engine) and OSS Client/Server Subsystem (`taxshield-ledger-oss`) fully connected with GitHub Actions CI/CD and Vercel Serverless production deployment pipelines with dynamic TaxPack distribution server resolution and hardened test database container isolation.
-**Test Suite Status:** 24 test files / 74 tests passed in packaging engine; 37 test files / 214 tests passed in shared-core; 32 test files / 174 tests passed in OSS; 1 test file / 5 tests passed in SaaS. Total: **94 test files / 467 tests 100% PASSED**.
+**Test Suite Status:** 24 test files / 74 tests passed in packaging engine; 37 test files / 214 tests passed in shared-core; 33 test files / 179 tests passed in OSS; 1 test file / 5 tests passed in SaaS. Total: **95 test files / 472 tests 100% PASSED**.
 - [x] Shared-core package scaffold created in `shared-core/`
 - [x] OSS runtime profile scaffold created in `taxshield-ledger-oss/`
 - [x] SaaS runtime profile scaffold created in `taxshield-ledger-saas/`
@@ -27,6 +27,7 @@
 - [x] Pay Schedule Configuration & Anchor Settings Linkage (`shared-core/src/server/services/payrollScheduleEngine.ts`, `taxshield-ledger-oss/src/components/PayrollCalendarView.tsx`, `App.tsx`, `useAppState.ts`) linking anchor parameters (`anchorPayDate`, `paydayDayOfWeek`, `periodLagDays`, `semiMonthlyDay1`, `semiMonthlyDay2`, `monthlyPayDay`, `timesheetCutoffDays`, `weekendRollRule`) to Company pay schedules, keeping `Company.payFrequency` and `PayScheduleConfig` synchronized, calculating fiscal calendar periods deterministically, and exposing full anchor controls in the slide-over drawer.
 - [x] Module 1 (Tax Rule Packaging Engine) Vercel Production Deployment & GitHub Actions CI/CD Pipeline: automated PR gating on lint/test/build (`.github/workflows/ci.yml`), push-to-main deployment via Vercel CLI (`.github/workflows/deploy.yml`), Vercel Serverless Function package distribution entrypoint (`api/index.ts`, `vercel.json`), and integration test suite (`tests/integration/vercelServerless.test.ts`).
 - [x] `taxshield-ledger-oss` Vercel Production Deployment & GitHub Actions CI/CD Pipeline: automated PR gating on lint/test/build (`.github/workflows/ci.yml`), push-to-main deployment via Vercel CLI (`.github/workflows/deploy.yml`), dynamic TaxPack distribution server resolution (`TAXPACK_SERVER_URL` via GitHub workflow `env:` with zero hardcoding in application source code), automated production Prisma schema migration deployment (`prisma migrate deploy`) with idempotent unbaselined fallback resolution (`prisma migrate resolve --applied`), automated production regulatory tax rule package synchronization and cryptographic sealing verification (`scripts/sync-tax-packages.ts --server "${TAXPACK_SERVER_URL}" --confirm`), runtime defensive auto-sync during company onboarding bootstrap (`/api/auth/bootstrap`, `/api/auth/bootstrap-status`), Vercel Serverless Function API entrypoint (`api/index.ts`, `vercel.json`) loading pre-bundled `dist/server.cjs` with verified live production endpoints (`/api/health`, `/api/postgres/status`), isolated CI test database container configuration (`localhost:5432` postgres service), serverless integration test suite (`tests/integration/vercelServerless.test.ts`), client-side browser bundling defense via `src/lib/prismaBrowserStub.ts` and Vite aliases resolving `.prisma/client/index-browser` to eliminate bare specifier browser runtime failures, Prisma `rhel-openssl-3.0.x` AWS Lambda binaryTargets configuration, and clean initial database state verified prompting the 2-step Company Registration & Owner Setup Wizard.
+- [x] Vercel Preview & CI Build Self-Sufficiency: Resolved Vercel PR preview deployment failures (`[vite:load-fallback] Could not load /vercel/shared-core/src/index.ts: ENOENT` and Rollup `tesseract.js` / `jspdf` resolution) by implementing `scripts/ensure-shared-core.cjs` build hook with local/parent directory resolution and node_modules linking, dynamic candidate directory lookup in `vite.config.ts`, explicit Vite aliases for `tesseract.js`, `jspdf`, `crypto`, and `node:crypto`, TypeScript paths fallback in `tsconfig.json`, and configuring `installCommand` and `buildCommand` in `vercel.json`.
 - [x] Initial split boundary implemented: shared-core owns the domain contract and wrapper packages re-export the core types instead of duplicating them
 - [ ] Promote the split into separate remote repositories and validate the package boundary after the workspace is stable
 
@@ -146,28 +147,30 @@ The project is therefore at the expected Phase 2 handoff boundary: the core ledg
 - [x] Feature 3.1: OCR engine for auto-extracting receipt fields (vendor, date, amount, category) with real Tesseract.js image OCR scanning, retail merchant detection (BJ's, Costco, Walmart, Target, Home Depot, Lowe's), refund/return receipt detection, trailing minus currency support, and live scanning progress animation (`ocrService.ts`, `ReceiptOcrScannerDrawer.tsx`, `POST /api/expenses/scan-receipt`).
 - [x] Feature 3.4: Bank CSV / live statement feed import and 4-way transaction reconciliation (`MATCHED`, `UNMATCHED`, `DUPLICATE`, `NEEDS REVIEW`) with universal statement dialect detection (Mercury, Chase, Wells Fargo, BofA, generic Debit/Credit), SHA-256 idempotency fingerprinting, 4-way matching engine (`reconciliationService.ts`), and modern slide-over review drawers (`BankCsvUploadDrawer.tsx`, `TransactionMatchDrawer.tsx`, `ReconciliationView.tsx`).
 - [x] Feature 3.5: Automated duplicate expense detection & company audit readiness score / dashboard (`_bmad-output/plan-3-5-duplicate-detection-and-audit-readiness.md` — Cross-ledger duplicate heuristic engine, 6-pillar score engine [Receipt Coverage § 274(d), Purpose Quality § 162, Bank Clearance, 5-Point Mileage Pub. 463, Contractor 1099 TIN, Duplicate Health], per-expense micro-badges `PerExpenseAuditBadge.tsx`, executive defense workspace `AuditReadinessDashboardView.tsx`, and side-by-side slide-over duplicate review drawer `DuplicateExpenseDrawer.tsx`).
+- [x] Mobile View Responsiveness & Off-Canvas Navigation Drawer: Complete mobile layout overhaul across all screens and slide-over drawers. Resolved desktop-only sidebar collapse limitation by implementing an off-canvas mobile slide-out drawer (`NavigationSidebar.tsx`), mobile hamburger toggle button in sticky header (`App.tsx`), backdrop overlay dismissal, zero mobile content margin offset (`ml-0 md:ml-64`/`md:ml-20`), drawer gutter elimination on narrow viewports (`pl-0 sm:pl-10`), and responsive flex-wrap / grid layouts across all 18 primary views, forms, and slide-overs.
 - [x] Automated Government Source Ingestion Engine (Module 1 — Complete with IRS & PA DOR adapters, package compilation, SHA-256 sealing, and local HTTP server).
 - [ ] Additional Tier 2/3 state source adapters feeding Module 1's packaging engine (NJ, NY, OH, DE).
 
 ### Phase 4 — Reporting & Polish
 - [ ] Advanced document management & cross-entity global search.
 - [ ] Notification & statutory filing alert system.
-- [ ] Mobile-first sub-30s receipt photo & 5-point mileage capture flows.
+- [x] Mobile-first sub-30s receipt photo & 5-point mileage capture flows and responsive viewports across all screens.
 - [ ] Dual CPA Export Package (formatted multi-tab Excel/CSV + high-res PDF bundle).
 
 ---
 
 ## 5. Test Suite Metrics
 
-- **Total Test Files:** 91 passed across repository
-- **Total Tests:** 450 passed 100%
-- **Packaging Engine Suite:** 23 test files / 68 tests passed
+- **Total Test Files:** 94 passed across repository
+- **Total Tests:** 467 passed 100%
+- **Packaging Engine Suite:** 24 test files / 74 tests passed
 - **Shared-Core Suite:** 37 test files / 214 tests passed
-- **OSS App Suite:** 30 test files / 163 tests passed
+- **OSS App Suite:** 32 test files / 174 tests passed
 - **SaaS App Suite:** 1 test file / 5 tests passed
 - **Regression Suite:** `pnpm test:regression` (Passed)
 - **Unit & System Suite:** `pnpm test` (Passed)
 - **TypeScript Check:** `pnpm lint` (Passed)
 - **Production Build:** `pnpm build` (Passed)
+
 
 

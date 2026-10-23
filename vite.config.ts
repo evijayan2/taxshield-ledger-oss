@@ -1,17 +1,29 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const isTest = mode === 'test' || Boolean(process.env.VITEST);
 
+  const sharedCoreCandidates = [
+    path.resolve(__dirname, '../shared-core'),
+    path.resolve(__dirname, './shared-core'),
+  ];
+  const sharedCoreDir =
+    sharedCoreCandidates.find((dir) => fs.existsSync(path.resolve(dir, 'src/index.ts'))) ||
+    path.resolve(__dirname, '../shared-core');
+
   const aliases: Record<string, string> = {
     '@': path.resolve(__dirname, '.'),
-    'taxshield-ledger-core/server': path.resolve(__dirname, '../shared-core/src/server.ts'),
-    'taxshield-ledger-core/types': path.resolve(__dirname, '../shared-core/src/types.ts'),
-    'taxshield-ledger-core': path.resolve(__dirname, '../shared-core/src/index.ts'),
-    crypto: path.resolve(__dirname, '../shared-core/src/lib/browserCryptoPolyfill.ts'),
+    'taxshield-ledger-core/server': path.resolve(sharedCoreDir, 'src/server.ts'),
+    'taxshield-ledger-core/types': path.resolve(sharedCoreDir, 'src/types.ts'),
+    'taxshield-ledger-core': path.resolve(sharedCoreDir, 'src/index.ts'),
+    'tesseract.js': path.resolve(__dirname, 'node_modules/tesseract.js'),
+    jspdf: path.resolve(__dirname, 'node_modules/jspdf'),
+    crypto: path.resolve(sharedCoreDir, 'src/lib/browserCryptoPolyfill.ts'),
+    'node:crypto': path.resolve(sharedCoreDir, 'src/lib/browserCryptoPolyfill.ts'),
   };
 
   // In client/browser build, stub Prisma to prevent invalid ESM references to .prisma/client/index-browser

@@ -568,30 +568,30 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Tax Rules Engine & Statutory Governance
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Tax Rule Governance & Audit Engine</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Tax Rule Governance & Audit Engine</h1>
           <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">
             Zero hardcoded rates. Every calculation is versioned and tied to authoritative Tier 1 source citations.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => setIsSyncDrawerOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition shadow-2xs text-xs cursor-pointer"
+            className="flex-1 sm:flex-initial justify-center flex items-center gap-2 px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition shadow-2xs text-xs cursor-pointer"
           >
             <Server className="w-4 h-4 text-slate-500" />
             <span>Sync from Package Server</span>
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-bold rounded-xl transition shadow-xs text-xs cursor-pointer"
+            className="flex-1 sm:flex-initial justify-center flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-bold rounded-xl transition shadow-xs text-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Propose Rule Version
+            <span>Propose Rule Version</span>
           </button>
         </div>
       </div>

@@ -66,7 +66,7 @@ export function EmployeePortalDocumentsView({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 py-6">
+    <div className="space-y-6 max-w-7xl mx-auto px-0 sm:px-2 py-1 sm:py-4">
       {/* Inactive Read-Only Warning Banner */}
       {isReadOnly && (
         <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 text-xs shadow-sm flex items-start gap-3.5">
@@ -83,24 +83,24 @@ export function EmployeePortalDocumentsView({
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-6 rounded-2xl shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold text-xs uppercase tracking-wider mb-1">
             <User className="w-4 h-4" /> Employee Portal & Payroll Documents
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             {employee ? `${employee.firstName} ${employee.lastName}` : (user?.displayName || user?.email || 'My Account')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+          <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-1">
             Official payroll records, itemized pay stubs, and IRS Form W-2 tax documentation for {org.name || 'Company'}.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {hasIssuedW2 && currentW2 && (
             <button
               onClick={handleDownloadW2}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition text-xs cursor-pointer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition text-xs cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download Form W-2 ({activeTaxYear})</span>
@@ -142,7 +142,7 @@ export function EmployeePortalDocumentsView({
       {/* Tax Documentation Section (Form W-2 Summary) */}
       {hasIssuedW2 && currentW2 ? (
         <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <h3 className="text-base font-bold text-slate-900 dark:text-white">

@@ -61,18 +61,18 @@ export function PassThroughSimulatorView({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <TrendingDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Owner Pass-Through Tax Strategy & Loss Simulator</h2>
+            <TrendingDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight">Owner Pass-Through Tax Strategy & Loss Simulator</h2>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             For Micro-LLCs with $0 income: ordinary and necessary business expenses flow through to Form 1040 Schedule C / 1065 K-1 to legally reduce personal tax liability.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 w-full sm:w-auto">
           <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Owner Bracket:</span>
           <input
             type="number"

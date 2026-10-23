@@ -23,7 +23,7 @@ export const TaxRuleCoverageMatrixView: React.FC<Props> = ({ company, employees 
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -34,7 +34,7 @@ export const TaxRuleCoverageMatrixView: React.FC<Props> = ({ company, employees 
                 Fail-Closed Statutory Engine
               </span>
             </div>
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
               Tax Rule Coverage Matrix
             </h1>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
@@ -42,11 +42,11 @@ export const TaxRuleCoverageMatrixView: React.FC<Props> = ({ company, employees 
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <select
               value={taxYear}
               onChange={(e) => setTaxYear(parseInt(e.target.value, 10))}
-              className="glass-input px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
+              className="glass-input flex-1 sm:flex-initial px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
             >
               <option value={2026}>Tax Year 2026</option>
               <option value={2027}>Tax Year 2027</option>
@@ -54,16 +54,16 @@ export const TaxRuleCoverageMatrixView: React.FC<Props> = ({ company, employees 
 
             <button
               onClick={() => setIsSyncDrawerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-xs transition-all cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-xs transition-all cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
-              Sync Tax Packages
+              <span>Sync Tax Packages</span>
             </button>
           </div>
         </div>
 
         {/* Readiness Overview Banner */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
             <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Readiness Score

@@ -12,6 +12,7 @@ const { execSync } = require('child_process');
  * @param {string} [options.repoUrl]
  * @param {(p: string) => boolean} [options.fileExists]
  * @param {(cmd: string) => void} [options.runCommand]
+ * @param {(target: string, path: string, type?: string) => void} [options.symlinkSync]
  * @returns {{ status: 'found' | 'cloned', location: string, source: 'parent' | 'local' }}
  */
 function ensureSharedCore(options = {}) {
@@ -21,6 +22,7 @@ function ensureSharedCore(options = {}) {
   const repoUrl = options.repoUrl || 'https://github.com/evijayan2/taxshield-ledger-core.git';
   const fileExists = options.fileExists || ((filePath) => fs.existsSync(filePath));
   const runCommand = options.runCommand || ((cmd) => execSync(cmd, { stdio: 'inherit' }));
+  const symlinkSync = options.symlinkSync || ((target, p, type) => fs.symlinkSync(target, p, type));
 
   const parentHasCore = fileExists(path.join(parentSharedCore, 'src/index.ts'));
   const localHasCore = fileExists(path.join(localSharedCore, 'src/index.ts'));
@@ -47,6 +49,18 @@ function ensureSharedCore(options = {}) {
     runCommand(`git clone --depth 1 ${repoUrl} "${localSharedCore}"`);
     if (fileExists(path.join(localSharedCore, 'src/index.ts'))) {
       clonedTo = localSharedCore;
+    }
+  }
+
+  if (clonedTo) {
+    try {
+      const sourceNodeModules = path.join(rootDir, 'node_modules');
+      const targetNodeModules = path.join(clonedTo, 'node_modules');
+      if (fileExists(sourceNodeModules) && !fileExists(targetNodeModules)) {
+        symlinkSync(sourceNodeModules, targetNodeModules, 'junction');
+      }
+    } catch {
+      // Best-effort symlink fallback
     }
   }
 

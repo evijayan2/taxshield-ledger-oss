@@ -20,7 +20,10 @@ export default defineConfig(({ mode }) => {
     'taxshield-ledger-core/server': path.resolve(sharedCoreDir, 'src/server.ts'),
     'taxshield-ledger-core/types': path.resolve(sharedCoreDir, 'src/types.ts'),
     'taxshield-ledger-core': path.resolve(sharedCoreDir, 'src/index.ts'),
+    'tesseract.js': path.resolve(__dirname, 'node_modules/tesseract.js'),
+    jspdf: path.resolve(__dirname, 'node_modules/jspdf'),
     crypto: path.resolve(sharedCoreDir, 'src/lib/browserCryptoPolyfill.ts'),
+    'node:crypto': path.resolve(sharedCoreDir, 'src/lib/browserCryptoPolyfill.ts'),
   };
 
   // In client/browser build, stub Prisma to prevent invalid ESM references to .prisma/client/index-browser

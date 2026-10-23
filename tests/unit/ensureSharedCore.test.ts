@@ -106,4 +106,38 @@ describe('ensureSharedCore helper', () => {
     expect(result.source).toBe('local');
     expect(mockRunCommand).toHaveBeenCalledTimes(2);
   });
+
+  it('attempts to symlink node_modules when shared-core is cloned and target node_modules does not exist', () => {
+    const rootPath = path.resolve('/mock/workspace/taxshield-ledger-oss');
+    const parentPath = path.resolve('/mock/workspace/shared-core');
+    const localPath = path.resolve('/mock/workspace/taxshield-ledger-oss/shared-core');
+    let hasCloned = false;
+    const mockFileExists = vi.fn((filePath: string) => {
+      if (filePath === path.join(parentPath, 'src/index.ts') && hasCloned) return true;
+      if (filePath === path.join(rootPath, 'node_modules')) return true;
+      if (filePath === path.join(parentPath, 'node_modules')) return false;
+      return false;
+    });
+    const mockRunCommand = vi.fn(() => {
+      hasCloned = true;
+    });
+    const mockSymlinkSync = vi.fn();
+
+    const result = ensureSharedCore({
+      rootDir: rootPath,
+      parentSharedCore: parentPath,
+      localSharedCore: localPath,
+      fileExists: mockFileExists,
+      runCommand: mockRunCommand,
+      symlinkSync: mockSymlinkSync,
+    });
+
+    expect(result.status).toBe('cloned');
+    expect(mockSymlinkSync).toHaveBeenCalledWith(
+      path.join(rootPath, 'node_modules'),
+      path.join(parentPath, 'node_modules'),
+      'junction'
+    );
+  });
 });
+

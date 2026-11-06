@@ -100,12 +100,15 @@ This repo is intended to be public with outside contributors, most of whom will 
 
 ## Tech stack
 
-- **Framework:** Next.js (App Router) + React
-- **Test tooling:** Vite/Vitest for unit and regression tests. (Assumption: "Next.js/Vite/React" is read as *Next.js as the app framework, Vite-powered Vitest as the test runner* — Next.js doesn't use Vite for its own build. Flag this if the intent was actually a separate Vite-built app alongside Next.js.)
-- **Database:** Postgres
-- **ORM:** Prisma. (Assumption, stated for one reason: Prisma's declarative schema + migration history is a strong fit for the versioned, effective-dated `TaxRule`/`TaxRuleVersion` model this project is built around, and it has first-class Next.js/Vercel support. Drizzle is a reasonable alternative if you'd rather have a lighter, more SQL-like layer — swap this line and the commands below if so.)
-- **Local dev environment:** Docker Compose (Postgres, and anything else local dev needs — no cloud dependency required to run the app locally)
-- **Hosting:** Vercel
+- **Framework & Frontend:** React 19 + Vite + Tailwind CSS v4 (Single Page Application with slide-over drawers and dual light/dark theme support)
+- **Backend / API:** Node.js + Express (`server.ts`, `server/`, `api/`)
+- **Shared Core:** `shared-core/` (core financial ledger, payroll engine, date resolver, OCR engine, and audit logging)
+- **Tax Packaging Engine:** `tax-rule-packaging-engine/` (TaxPack distribution server on `http://localhost:3333`, CLI, sealed tax rule packages)
+- **Test tooling:** Vitest for unit, regression (`pnpm test:regression`), and integration tests
+- **Database:** PostgreSQL
+- **ORM:** Prisma (37 relational models in `prisma/schema.prisma` across 14 migrations). Declarative schema + migration history is a strong fit for the versioned, effective-dated `TaxRule`/`TaxRuleVersion` model this project is built around.
+- **Local dev environment:** Docker Compose / local PostgreSQL
+- **Hosting:** Vercel (static frontend build + Express serverless API)
 - **CI/CD:** GitHub Actions — lint/test on every PR; a separate deploy workflow pushes to Vercel via the Vercel CLI rather than relying on Vercel's default GitHub auto-deploy, so deploys are explicit and gated by the same CI checks as everything else.
 - **Package manager: pnpm, always.** Never use `npm` or `yarn` in commands, scripts, CI, or Docker files — including examples, docs snippets, and one-off suggestions.
 
@@ -157,29 +160,33 @@ docker compose down
 
 ## Directory structure
 
-Mapped from the four-layer architecture onto Next.js's App Router conventions. Adjust as Phase 0 scaffolding is actually built, but keep the layer boundaries intact — the point of the four layers is that Business Services and the Rules Engine never import a hardcoded rate, and that's easier to enforce (and to review in a PR) if they live in predictable places.
+The open-source single-company app follows a clear separation between Vite/React frontend, Express backend, Prisma relational persistence, and shared packages:
 
 ```
-/docs                    → development plan, PRD, architecture notes
+/api                     → Vercel serverless function entrypoint (api/index.ts)
+/docs                    → phase status, research, spec documents
 /prisma
-  schema.prisma          → core data model (Company, TaxYear, TaxJurisdiction, TaxRule, TaxRuleVersion...)
-  /migrations
-  seed.ts                → seeds federal/PA rule data via TaxRule records — never inline rates
+  schema.prisma          → relational data model (37 models covering Company, TaxRule, PayrollRun, etc.)
+  /migrations            → 14 Prisma migrations
+  seed.ts                → database seeding via Prisma
+/scripts                 → database verification, reset, and taxpack sync scripts
+/server                  → backend services, auth, data services, prisma client
+/server.ts               → Express API server & routes
 /src
-  /app                    → Next.js App Router — pages, layouts, route handlers (User Interface layer)
-  /server
-    /services             → Business Services (expense, payroll, mileage, reimbursement, compliance...)
-    /rules-engine         → Tax Rules Engine (rule resolution, effective-date logic, regression harness)
-    /ingestion            → Government Source Layer (Phase 2+: per-source ingestion jobs)
-    /jurisdiction         → Jurisdiction Resolver (Phase 3)
-  /lib                    → shared utilities, Prisma client, auth
+  /components            → UI views (~18 views), slide-over drawers, theme components
+  /context               → React context providers (Theme, Auth, etc.)
+  /utils                 → client tax engine utilities, formatting, helpers
+  App.tsx                → primary application layout & routing
+  index.css              → Tailwind CSS v4 & glassmorphism utilities
+  main.tsx               → React 19 entry point
 /tests
-  /regression             → Rule regression-test cases (inputs → expected outputs)
-  /unit
-/docker-compose.yml       → local Postgres (+ any other local services)
+  /unit                  → Vitest unit tests
+  /regression            → tax rule regression test harness
+  /integration           → API & workflow integration tests
+/docker-compose.yml      → local Postgres (+ any other local services)
 /.github/workflows
-  ci.yml                  → lint + test on every PR
-  deploy.yml              → deploy to Vercel via CLI on merge to main, gated on ci.yml passing
+  ci.yml                 → lint + test on every PR
+  deploy.yml             → deploy to Vercel via CLI on merge to main, gated on ci.yml passing
 ```
 
 ---

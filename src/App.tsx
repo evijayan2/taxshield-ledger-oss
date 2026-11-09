@@ -136,6 +136,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
     handleCreateCustomer,
     handleUpdateInvoiceStatus,
     handleDeleteInvoice,
+    handleResetAllData,
   } = state;
 
   const { user, membership, isOwner, isEmployee, isReadOnly, employeeProfile, signOut } = useAuth();
@@ -684,7 +685,8 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
                 allData={data}
                 onSaveOrg={handleSaveOrg}
                 onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
-                onResetAllData={() => setData(prev => ({ ...prev, generalExpenses: [], mileageLogs: [], travelExpenses: [], payrollRuns: [], payStubs: [], timesheets: [], auditLogs: [] }))}
+                onResetAllData={handleResetAllData}
+                onNavigateTab={(tab) => setActiveTab(tab as NavigationTab)}
                 onExportJSON={() => {
                   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                   const url = URL.createObjectURL(blob);

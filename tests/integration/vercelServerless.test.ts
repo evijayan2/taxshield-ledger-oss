@@ -52,7 +52,7 @@ describe('Vercel Serverless Function Handler (taxshield-ledger-oss)', () => {
   });
 
   it('respects TAXPACK_SERVER_URL environment variable', () => {
-    const testUrl = 'https://tax-rule-packaging-engine.vercel.app';
+    const testUrl = 'http://localhost:3333';
     process.env.TAXPACK_SERVER_URL = testUrl;
 
     expect(process.env.TAXPACK_SERVER_URL).toBe(testUrl);

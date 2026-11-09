@@ -13,7 +13,9 @@ import {
   Calendar,
   MapPin,
   User,
-  Clock
+  Clock,
+  ArrowRight,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Organization, Employee } from '../types';
@@ -22,6 +24,7 @@ import { SUPPORTED_STATES, getSupportedStateByCode } from '../utils/supportedSta
 import { useAuth } from '../context/AuthContext';
 import { AccountSecuritySection } from './AccountSecuritySection';
 import { EmployeeSecurityRoster } from './EmployeeSecurityRoster';
+import { ResetLedgerConfirmDrawer } from './ResetLedgerConfirmDrawer';
 
 interface SettingsViewProps {
   org: Organization;
@@ -29,7 +32,7 @@ interface SettingsViewProps {
   allData?: AllAppData;
   onSaveOrg: (org: Organization) => void;
   onSaveEmployees?: (employees: Employee[]) => void;
-  onResetAllData: () => void;
+  onResetAllData: () => Promise<{ success: boolean; error?: string } | void> | void;
   onClearToFreshSlate?: () => void;
   onExportJSON: () => void;
   onImportJSON: (jsonData: any) => void;
@@ -37,11 +40,13 @@ interface SettingsViewProps {
   onPullFromPostgres?: () => Promise<void>;
   isOwner?: boolean;
   isEmployee?: boolean;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export function SettingsView({
   org,
   employees = [],
+  allData,
   onSaveOrg,
   onResetAllData,
   onClearToFreshSlate,
@@ -49,6 +54,7 @@ export function SettingsView({
   onImportJSON,
   isOwner = true,
   isEmployee = false,
+  onNavigateTab,
 }: SettingsViewProps) {
   const { user } = useAuth();
   const [orgForm, setOrgForm] = useState<Organization>({ ...org });
@@ -56,10 +62,26 @@ export function SettingsView({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [testingMercury, setTestingMercury] = useState(false);
   const [mercuryTestResult, setMercuryTestResult] = useState<{ success: boolean; message: string; accounts?: any[] } | null>(null);
+  const [showResetConfirmDrawer, setShowResetConfirmDrawer] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setOrgForm({ ...org });
   }, [org]);
+
+  const handleConfirmReset = async () => {
+    setIsResetting(true);
+    try {
+      await onResetAllData();
+      setShowResetConfirmDrawer(false);
+      setResetSuccessMessage('All ledger records have been successfully reset. Total deductions and operating expenses are now $0.00.');
+    } catch (err: any) {
+      console.error('Failed to reset ledger data:', err);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleTestMercuryConnection = async () => {
     if (!orgForm.mercuryApiKey) {
@@ -570,6 +592,42 @@ export function SettingsView({
           Export complete financial records, 5-point mileage logs, pay stubs, and compliance filings as a JSON backup, or reset data.
         </p>
 
+        {resetSuccessMessage && (
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <div>
+                <p className="font-semibold text-xs text-emerald-900 dark:text-emerald-200">
+                  Ledger Reset Complete
+                </p>
+                <p className="text-emerald-700 dark:text-emerald-400 text-xs">
+                  {resetSuccessMessage}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {onNavigateTab && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab('DASHBOARD')}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <span>View Dashboard</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setResetSuccessMessage(null)}
+                className="p-1 rounded-lg text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3 pt-1">
           <button
             onClick={onExportJSON}
@@ -596,7 +654,8 @@ export function SettingsView({
           )}
 
           <button
-            onClick={onResetAllData}
+            type="button"
+            onClick={() => setShowResetConfirmDrawer(true)}
             className="px-3 py-2 text-xs font-medium rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 transition flex items-center gap-1 cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
@@ -604,6 +663,23 @@ export function SettingsView({
           </button>
         </div>
       </div>
+
+      {/* Slide-over Confirmation Drawer for Resetting Ledger */}
+      <ResetLedgerConfirmDrawer
+        isOpen={showResetConfirmDrawer}
+        onClose={() => !isResetting && setShowResetConfirmDrawer(false)}
+        onConfirm={handleConfirmReset}
+        isResetting={isResetting}
+        companyName={org.name}
+        counts={{
+          expenses: allData?.generalExpenses?.length,
+          mileage: allData?.mileageLogs?.length,
+          travel: allData?.travelExpenses?.length,
+          payroll: allData?.payrollRuns?.length,
+          invoices: allData?.invoices?.length,
+          bankTx: allData?.bankTransactions?.length,
+        }}
+      />
     </div>
   );
 }

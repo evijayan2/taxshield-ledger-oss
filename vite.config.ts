@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
     '@': path.resolve(__dirname, '.'),
     'taxshield-ledger-core/server': path.resolve(sharedCoreDir, 'src/server.ts'),
     'taxshield-ledger-core/types': path.resolve(sharedCoreDir, 'src/types.ts'),
+    'taxshield-ledger-core/fixtures': path.resolve(sharedCoreDir, 'prisma/fixtures/index.ts'),
     'taxshield-ledger-core': path.resolve(sharedCoreDir, 'src/index.ts'),
     'tesseract.js': path.resolve(__dirname, 'node_modules/tesseract.js'),
     jspdf: path.resolve(__dirname, 'node_modules/jspdf'),
@@ -28,11 +29,17 @@ export default defineConfig(({ mode }) => {
 
   // In client/browser build, stub Prisma to prevent invalid ESM references to .prisma/client/index-browser
   if (!isTest) {
-    aliases['@prisma/client'] = path.resolve(__dirname, 'src/lib/prismaBrowserStub.ts');
-    aliases['.prisma/client/index-browser'] = path.resolve(__dirname, 'src/lib/prismaBrowserStub.ts');
+    const browserStub = path.resolve(__dirname, 'src/lib/prismaBrowserStub.ts');
+    aliases['@prisma/client'] = browserStub;
+    aliases['.prisma/client/index-browser'] = browserStub;
+    aliases[path.resolve(__dirname, 'src/lib/prisma.ts')] = browserStub;
+    aliases[path.resolve(sharedCoreDir, 'src/lib/prisma.ts')] = browserStub;
   }
 
   return {
+    define: {
+      'process.env': {},
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: aliases,

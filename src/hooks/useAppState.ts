@@ -612,6 +612,71 @@ export function useAppState() {
     }));
   };
 
+  /**
+   * Resets all transactional ledger records to zero while preserving company and tax rule configuration.
+   * Immediately persists the reset to PostgreSQL backend and logs an audit trail event.
+   */
+  const handleResetAllData = async (): Promise<{ success: boolean; error?: string }> => {
+    const actorEmail = getActorEmail();
+    const currentCompany = data.company || data.org;
+    const compId = currentCompany?.id || 'comp_main';
+
+    const auditEntry = createAuditLogEntry(
+      'Company',
+      compId,
+      'UPDATE',
+      actorEmail,
+      {
+        generalExpensesCount: data.generalExpenses?.length || 0,
+        mileageLogsCount: data.mileageLogs?.length || 0,
+        travelExpensesCount: data.travelExpenses?.length || 0,
+        payrollRunsCount: data.payrollRuns?.length || 0,
+        invoicesCount: data.invoices?.length || 0,
+        bankTransactionsCount: data.bankTransactions?.length || 0,
+      },
+      {
+        resetAt: new Date().toISOString(),
+      },
+      'Full ledger reset: cleared all expenses, mileage logs, travel expenses, payroll runs, pay stubs, timesheets, invoices, and bank transactions.'
+    );
+
+    const cleanData: AllAppData = {
+      ...data,
+      generalExpenses: [],
+      mileageLogs: [],
+      travelExpenses: [],
+      payrollRuns: [],
+      payStubs: [],
+      timesheets: [],
+      invoices: [],
+      contractorPayments: [],
+      bankTransactions: [],
+      bankBatches: [],
+      complianceTasks: createDefaultComplianceTasks(data.activeTaxYear || 2026),
+      auditLogs: [auditEntry, ...(data.auditLogs || [])],
+    };
+
+    // 1. Immediately update local state
+    setData(cleanData);
+
+    // 2. Immediately persist to PostgreSQL backend
+    if (dbStatus?.connected) {
+      try {
+        const res = await saveServerAppData(cleanData);
+        if (!res.success) {
+          setDbError(res.error || 'Failed to persist ledger reset to PostgreSQL');
+          return { success: false, error: res.error };
+        }
+        return { success: true };
+      } catch (err: any) {
+        setDbError(err.message || 'Network error resetting ledger data');
+        return { success: false, error: err.message };
+      }
+    }
+
+    return { success: true };
+  };
+
   return {
     data,
     setData,
@@ -638,6 +703,7 @@ export function useAppState() {
     handleCreateCustomer,
     handleUpdateInvoiceStatus,
     handleDeleteInvoice,
+    handleResetAllData,
   };
 }
 

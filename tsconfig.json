@@ -27,6 +27,10 @@
         "../shared-core/src/types.ts",
         "./shared-core/src/types.ts"
       ],
+      "taxshield-ledger-core/fixtures": [
+        "../shared-core/prisma/fixtures/index.ts",
+        "./shared-core/prisma/fixtures/index.ts"
+      ],
       "taxshield-ledger-core": [
         "../shared-core/src/index.ts",
         "./shared-core/src/index.ts"

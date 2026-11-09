@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
@@ -19,6 +20,11 @@ const getCurrentDirname = () => {
 };
 const currentDir = getCurrentDirname();
 
+const DEFAULT_TAXPACK_URL =
+  process.env.TAXPACK_SERVER_URL ||
+  process.env.TAX_PACKAGE_SERVER_URL ||
+  '';
+
 export function createServerApp(): express.Express {
   const app = express();
 
@@ -27,6 +33,16 @@ export function createServerApp(): express.Express {
 
   // Authentication Endpoints
   app.use('/api/auth', authRouter);
+
+  // Serve favicon gracefully
+  app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {
+    const svgPath = path.join(currentDir, 'public', 'favicon.svg');
+    if (fs.existsSync(svgPath)) {
+      res.type('image/svg+xml').sendFile(svgPath);
+    } else {
+      res.status(204).end();
+    }
+  });
 
   // API Routes
   app.get('/api/health', (req, res) => {
@@ -653,7 +669,7 @@ export function createServerApp(): express.Express {
 
   app.get('/api/tax-packages/remote', requireAuth, requireOwner, async (req, res) => {
     try {
-      const serverUrl = (req.query.serverUrl as string) || process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || undefined;
+      const serverUrl = (req.query.serverUrl as string) || DEFAULT_TAXPACK_URL;
       const { fetchRemotePackageCatalog } = await import('./server/services/taxPackageClient.js');
       const result = await fetchRemotePackageCatalog(serverUrl);
       return res.json(result);
@@ -675,7 +691,7 @@ export function createServerApp(): express.Express {
       const { syncAllAvailablePackages } = await import('./server/services/taxPackageClient.js');
       const actorId = req.user?.id || 'sys_owner';
       const companyId = req.membership?.companyId || undefined;
-      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app';
+      const defaultTaxPackUrl = DEFAULT_TAXPACK_URL;
 
       const result = await syncAllAvailablePackages(serverUrl || defaultTaxPackUrl, {
         companyId,
@@ -702,7 +718,7 @@ export function createServerApp(): express.Express {
         return res.status(400).json({ success: false, error: 'Package file name is required.' });
       }
 
-      const defaultTaxPackUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app';
+      const defaultTaxPackUrl = DEFAULT_TAXPACK_URL;
       const { fetchAndVerifyPackage, ingestPackageIntoLedger } = await import('./server/services/taxPackageClient.js');
       const fetchResult = await fetchAndVerifyPackage(serverUrl || defaultTaxPackUrl, fileName);
       if (!fetchResult.success || !fetchResult.package) {
@@ -815,7 +831,7 @@ async function startServer() {
     console.log(`TaxShield Ledger Server running on http://0.0.0.0:${PORT}`);
     try {
       const { startDailyPackageSyncScheduler } = await import('./server/services/taxPackageClient.js');
-      startDailyPackageSyncScheduler({ serverUrl: process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' });
+      startDailyPackageSyncScheduler({ serverUrl: DEFAULT_TAXPACK_URL });
     } catch (schedErr) {
       console.warn('Could not start daily package sync scheduler:', schedErr);
     }
@@ -823,7 +839,11 @@ async function startServer() {
 }
 
 async function verifyAndSyncTaxPackServer() {
-  const serverUrl = process.env.TAXPACK_SERVER_URL || process.env.TAX_PACKAGE_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app';
+  const serverUrl = DEFAULT_TAXPACK_URL;
+  if (!serverUrl) {
+    console.log('[TAXPACK] TAXPACK_SERVER_URL not configured. Skipping automatic startup sync.');
+    return;
+  }
   console.log(`[TAXPACK MANDATORY INIT] Connecting to TaxPack server at ${serverUrl}...`);
   try {
     const { fetchRemotePackageCatalog, syncAllAvailablePackages } = await import('./server/services/taxPackageClient.js');

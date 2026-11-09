@@ -11,6 +11,9 @@ export const loginLimiter = rateLimit({
   max: isDev ? 1000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    forwardedHeader: false,
+  },
   message: {
     success: false,
     error: 'Too many login attempts from this IP. Please try again after 15 minutes.',
@@ -26,6 +29,9 @@ export const resetLimiter = rateLimit({
   max: isDev ? 1000 : 5,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    forwardedHeader: false,
+  },
   message: {
     success: false,
     error: 'Too many password reset requests. Please try again later.',
@@ -41,6 +47,9 @@ export const inviteLimiter = rateLimit({
   max: isDev ? 1000 : 20,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    forwardedHeader: false,
+  },
   message: {
     success: false,
     error: 'Too many invitation requests. Please try again later.',

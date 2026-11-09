@@ -28,6 +28,9 @@ const DEFAULT_TAXPACK_URL =
 export function createServerApp(): express.Express {
   const app = express();
 
+  // Trust reverse proxy (Vercel, AWS ALB, Nginx) for accurate client IP identification
+  app.set('trust proxy', 1);
+
   app.use(express.json({ limit: '50mb' }));
   app.use(cookieParser());
 

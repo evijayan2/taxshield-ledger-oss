@@ -662,20 +662,15 @@ authRouter.post('/reset-request', resetLimiter, async (req: Request, res: Respon
     }
 
     const cleanEmail = normalizeEmail(email);
-    console.log(`\n================== [TAXSHIELD AUTH: PASSWORD RESET REQUEST] ==================`);
-    console.log(`Requested Email: "${cleanEmail}"`);
 
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
 
     if (!user || !user.isActive) {
-      const allUsers = await prisma.user.findMany({ select: { email: true, isActive: true } });
-      const accountsList = allUsers.map(u => `${u.email} (${u.isActive ? 'active' : 'inactive'})`).join(', ');
-      console.warn(`[TaxShield Auth] WARNING: Account "${cleanEmail}" NOT FOUND or inactive in PostgreSQL database!`);
-      console.warn(`[TaxShield Auth] Existing users in database: [${accountsList}]`);
-      console.warn(`[TaxShield Auth] No reset token was generated because the email does not match any registered user.`);
-      console.log(`================================================================================\n`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[TaxShield Auth] Reset requested for non-existent or inactive user: "${cleanEmail}"`);
+      }
       res.json(genericSuccess);
       return;
     }
@@ -700,9 +695,10 @@ authRouter.post('/reset-request', resetLimiter, async (req: Request, res: Respon
     const origin = req.headers.origin || `http://localhost:${process.env.PORT || 3000}`;
     const resetUrl = `${origin}?token=${rawToken}&action=reset`;
 
-    console.log(`[TaxShield Auth] SUCCESS: Reset token generated for "${user.email}".`);
-    console.log(`[TaxShield Auth] Reset Link: ${resetUrl}`);
-    console.log(`================================================================================\n`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[TaxShield Auth] Reset token generated for "${user.email}".`);
+      console.log(`[TaxShield Auth] Reset Link: ${resetUrl}`);
+    }
 
     const emailProvider = getEmailProvider();
     await emailProvider.send({

@@ -65,10 +65,10 @@ export const AssetDepreciationView: React.FC<Props> = ({ company }) => {
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md shadow-sm">
+      <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 Phase 2 Asset Ledger
               </span>
@@ -76,17 +76,17 @@ export const AssetDepreciationView: React.FC<Props> = ({ company }) => {
                 IRS Form 4562 & Schedule C Line 13
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1">
               Capital Asset & Depreciation Tracking
             </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Manage machinery, vehicles, office technology, Section 179 elections, and MACRS depreciation schedules.
             </p>
           </div>
 
           <button
             onClick={() => setIsAddDrawerOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-xs transition-all shrink-0 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-xs transition-all w-full sm:w-auto shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add Capital Asset
@@ -94,7 +94,7 @@ export const AssetDepreciationView: React.FC<Props> = ({ company }) => {
         </div>
 
         {/* Summary Stat Cards */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
             <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Total Cost Basis
@@ -213,7 +213,7 @@ export const AssetDepreciationView: React.FC<Props> = ({ company }) => {
       {isAddDrawerOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAddDrawerOpen(false)} />
-          <div className="fixed inset-y-0 right-0 max-w-lg w-full flex pl-10">
+          <div className="fixed inset-y-0 right-0 max-w-lg w-full flex pl-0 sm:pl-10">
             <div className="w-full glass-panel bg-white/95 dark:bg-slate-900/95 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between">
               <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -353,7 +353,7 @@ export const AssetDepreciationView: React.FC<Props> = ({ company }) => {
       {selectedAssetSchedule && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedAssetSchedule(null)} />
-          <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex pl-10">
+          <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex pl-0 sm:pl-10">
             <div className="w-full glass-panel bg-white/95 dark:bg-slate-900/95 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between p-6 space-y-4 animate-in slide-in-from-right duration-300">
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">

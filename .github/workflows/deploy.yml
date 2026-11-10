@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 env:
-  TAXPACK_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' }}
-  TAX_PACKAGE_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' }}
+  TAXPACK_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || '' }}
+  TAX_PACKAGE_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || '' }}
 
 jobs:
   ci-gate:
@@ -73,8 +73,8 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      TAXPACK_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' }}
-      TAX_PACKAGE_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || 'https://tax-rule-packaging-engine.vercel.app' }}
+      TAXPACK_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || '' }}
+      TAX_PACKAGE_SERVER_URL: ${{ vars.TAXPACK_SERVER_URL || '' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

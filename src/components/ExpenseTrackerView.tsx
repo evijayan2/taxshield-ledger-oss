@@ -159,22 +159,22 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
   return (
     <div className="space-y-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Receipt className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Receipt className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600 dark:text-emerald-400 shrink-0" />
             General Expenses & Receipts
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
             Track business operating expenses mapped directly to IRS Schedule C lines.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => !isFutureActiveYear && setShowOcrDrawer(true)}
             disabled={isFutureActiveYear}
             title={isFutureActiveYear ? `Scanning receipts for future tax year (${activeTaxYear}) is locked` : 'Scan Receipt (OCR)'}
-            className={`flex items-center gap-2 px-4 py-2.5 font-medium rounded-xl transition-all ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 font-medium rounded-xl text-xs sm:text-sm transition-all ${
               isFutureActiveYear
                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
                 : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs cursor-pointer'
@@ -187,7 +187,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
             onClick={() => !isFutureActiveYear && setShowAddModal(true)}
             disabled={isFutureActiveYear}
             title={isFutureActiveYear ? `Adding expenses for future tax year (${activeTaxYear}) is locked` : 'Add Expense'}
-            className={`flex items-center gap-2 px-5 py-2.5 font-medium rounded-xl transition-all ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 font-medium rounded-xl text-xs sm:text-sm transition-all ${
               isFutureActiveYear
                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer'

@@ -204,23 +204,23 @@ export function ComplianceFilingsView({
       )}
 
       {/* Header Banner */}
-      <div className="p-6 rounded-2xl glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 rounded-2xl glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
             <Landmark className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Agency Tax Remittance & Compliance Engine
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Agency Tax Remittance & Compliance Hub</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Agency Tax Remittance & Compliance Hub</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Real-time tax liability tracking, step-by-step agency deposit guides, and automated box mapping.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => !isFutureActiveYear && setShowW2W3Modal(true)}
             disabled={isFutureActiveYear}
             title={isFutureActiveYear ? `Generating W-2/W-3 forms for future tax year (${activeTaxYear}) is locked` : 'Generate W-2 / W-3 PDFs'}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+            className={`flex-1 sm:flex-initial justify-center px-3.5 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
               isFutureActiveYear
                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
                 : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-700/20 cursor-pointer'

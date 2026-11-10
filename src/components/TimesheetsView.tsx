@@ -78,7 +78,7 @@ export function TimesheetsView({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 py-6">
+    <div className="space-y-6 max-w-7xl mx-auto px-0 sm:px-2 py-1 sm:py-4">
       {/* Future Tax Year Warning Banner */}
       {isFutureActiveYear && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs font-medium flex items-center gap-3 shadow-sm">
@@ -106,12 +106,12 @@ export function TimesheetsView({
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div>
           <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Labor & Attendance Compliance
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Staff & Member Timesheet Ledger
           </h1>
           <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">
@@ -120,7 +120,7 @@ export function TimesheetsView({
         </div>
 
         {!isReadOnly && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <button
               onClick={() => {
                 if (onNavigateToPayroll) {

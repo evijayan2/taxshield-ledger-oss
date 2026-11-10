@@ -171,9 +171,9 @@ export function AuditReadinessDashboardView({
   return (
     <div className="space-y-6">
       {/* Executive Header Banner */}
-      <div className="glass-panel p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold">
               Tax Year {activeYear} Defense
             </span>
@@ -182,8 +182,8 @@ export function AuditReadinessDashboardView({
               {tierBadge.label}
             </span>
           </div>
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <ShieldCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-600 dark:text-emerald-400 shrink-0" />
             Audit Defense & Readiness Dashboard
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-sm max-w-2xl">
@@ -204,7 +204,7 @@ export function AuditReadinessDashboardView({
       </div>
 
       {/* Top Stat Grid: Dial + Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Overall Score Dial Card */}
         <div className="glass-card p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 flex flex-col justify-between relative overflow-hidden">
           <div className="flex justify-between items-start">
@@ -349,7 +349,7 @@ export function AuditReadinessDashboardView({
           Statutory IRS Compliance Pillars
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.values(pillars).map((p) => {
             const statusClass =
               p.status === 'EXCELLENT'
@@ -405,7 +405,7 @@ export function AuditReadinessDashboardView({
       </div>
 
       {/* "Needs Attention" Action Center */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+      <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">

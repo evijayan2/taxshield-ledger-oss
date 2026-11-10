@@ -37,8 +37,8 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 max-w-lg w-full flex">
-        <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-4">
+      <div className="fixed inset-y-0 right-0 max-w-lg w-full flex pl-0 sm:pl-10">
+        <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-4 sm:p-6 space-y-4">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Propose New Tax Rule Version</h2>
           <form onSubmit={onSubmit} className="space-y-3 text-xs flex-1">
             <div>

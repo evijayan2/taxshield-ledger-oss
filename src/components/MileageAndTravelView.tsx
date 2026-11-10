@@ -259,7 +259,7 @@ export function MileageAndTravelView({
 
       {/* Action Bar & Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             id="subtab-mileage"
             onClick={() => setActiveSubTab('MILEAGE')}
@@ -287,7 +287,7 @@ export function MileageAndTravelView({
           </button>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {/* Driver Filter */}
           <div className="flex items-center gap-2">
             <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />

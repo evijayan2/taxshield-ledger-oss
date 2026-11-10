@@ -81,18 +81,18 @@ export function EmployeeProfileView({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <User className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">My Profile & Direct Deposit</h2>
+            <User className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">My Profile & Direct Deposit</h2>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400">
             View and update your personal details, home tax residence address, W-4 withholding declarations, and direct deposit ACH target.
           </p>
         </div>
         {savedSuccess && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-bold animate-fade-in">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-bold animate-fade-in self-start sm:self-auto">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Saved Successfully!
           </div>
         )}
@@ -321,10 +321,10 @@ export function EmployeeProfileView({
           <div className="flex justify-end p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 cursor-pointer transition-all"
+              className="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 cursor-pointer transition-all"
             >
               <Save className="w-4 h-4" />
-              Save Profile & Direct Deposit
+              <span>Save Profile & Direct Deposit</span>
             </button>
           </div>
         )}

@@ -124,17 +124,17 @@ export function InvoicingView({
             Issue itemized bills, collect ACH & Card payments via Stripe, and automate merchant fee accounting.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowCustomerDrawer(true)}
-            className="px-3.5 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5"
+            className="flex-1 sm:flex-none justify-center px-3.5 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
           >
             <Building2 className="w-4 h-4" />
             Clients ({customers.length})
           </button>
           <button
             onClick={() => setShowInvoiceDrawer(true)}
-            className="px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-lg shadow-sm flex items-center gap-1.5"
+            className="flex-1 sm:flex-none justify-center px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             New Invoice

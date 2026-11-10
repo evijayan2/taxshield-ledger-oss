@@ -65,8 +65,8 @@ export function W2W3PreviewModal({ org, employees, payStubs, onClose }: W2W3Prev
       />
 
       {/* Slide-over Drawer Panel */}
-      <div className="fixed inset-y-0 right-0 max-w-4xl w-full flex">
-        <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-6">
+      <div className="fixed inset-y-0 right-0 max-w-4xl w-full flex pl-0 sm:pl-10">
+        <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-4 sm:p-6 space-y-4 sm:space-y-6">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">

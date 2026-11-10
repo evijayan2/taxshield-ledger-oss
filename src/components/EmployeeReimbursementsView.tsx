@@ -111,11 +111,11 @@ export function EmployeeReimbursementsView({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Receipt className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Expense & Mileage Claims</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Receipt className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">Expense & Mileage Claims</h2>
             <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
               IRS Accountable Plan
             </span>
@@ -127,10 +127,10 @@ export function EmployeeReimbursementsView({
         {!isReadOnly && (
           <button
             onClick={() => setShowDrawer(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white font-semibold text-xs rounded-xl shadow-xs transition-all w-full sm:w-auto cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            New Reimbursement Claim
+            <span>New Reimbursement Claim</span>
           </button>
         )}
       </div>

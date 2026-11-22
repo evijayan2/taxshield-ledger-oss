@@ -489,6 +489,7 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
   const rules = [...fetchedRules, ...dynamicPsdRules, ...customRules];
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSyncDrawerOpen, setIsSyncDrawerOpen] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProposeRuleFormData>({
     ruleCode: 'PA_SIT_RATE',
     name: 'PA Personal Income Tax',
@@ -519,9 +520,10 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
   const handleAddRuleVersion = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.sourceTitle || !formData.sourceUrl || !formData.statuteReference) {
-      alert('Source Title, Source URL, and Statute Reference citations are strictly required.');
+      setFormError('Source Title, Source URL, and Statute Reference citations are strictly required.');
       return;
     }
+    setFormError(null);
     const newRule: TaxRuleAdminItem = {
       id: `ver_custom_${Date.now()}`,
       ruleCode: formData.ruleCode,
@@ -724,10 +726,15 @@ export const TaxRuleAdminView: React.FC<TaxRuleAdminViewProps> = ({ employees = 
       {/* Drawers */}
       <ProposeRuleVersionDrawer
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setFormError(null);
+        }}
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleAddRuleVersion}
+        error={formError}
+        onDismissError={() => setFormError(null)}
       />
 
       <PackageSyncDrawer

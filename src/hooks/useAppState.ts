@@ -4,6 +4,7 @@ import { getPostgresStatus, fetchServerAppData, saveServerAppData, PostgresStatu
 import { GeneralExpense, MileageLog, TravelExpense, TimesheetEntry, TimesheetStatus, Company, Organization, TaxYear, ComplianceTask } from '../types';
 import { createAuditLogEntry } from '../utils/auditLogger';
 import { createDefaultComplianceTasks, getTaskTaxYear, isFutureYear, isFutureDateString, getFutureYearLockMessage } from '../utils/taxEngine';
+import { ToastMessage } from '../components/ToastNotification';
 import { 
   generateFiscalYearCalendar, 
   isTimesheetModificationAllowed, 
@@ -23,6 +24,16 @@ export function useAppState() {
   const [dbStatus, setDbStatus] = useState<PostgresStatus | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
+    const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    setToasts(prev => [...prev, { ...toast, id }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   const checkAndSyncPostgres = async () => {
     try {
@@ -287,7 +298,11 @@ export function useAppState() {
     const lockCheck = isTimesheetModificationAllowed(newEntry.workDate, data.calendarPeriods || []);
     if (!lockCheck.allowed) {
       console.warn(lockCheck.message);
-      alert(lockCheck.message || 'Pay period is locked for timesheet submission.');
+      addToast({
+        type: 'warning',
+        title: 'Pay Period Locked',
+        message: lockCheck.message || 'Pay period is locked for timesheet submission.',
+      });
       return;
     }
 
@@ -335,7 +350,11 @@ export function useAppState() {
       const lockCheck = isTimesheetModificationAllowed(target.workDate, data.calendarPeriods || []);
       if (!lockCheck.allowed) {
         console.warn(lockCheck.message);
-        alert(lockCheck.message || 'Cannot update status on a locked pay period timesheet.');
+        addToast({
+          type: 'warning',
+          title: 'Pay Period Locked',
+          message: lockCheck.message || 'Cannot update status on a locked pay period timesheet.',
+        });
         return;
       }
     }
@@ -352,7 +371,11 @@ export function useAppState() {
       const lockCheck = isTimesheetModificationAllowed(target.workDate, data.calendarPeriods || []);
       if (!lockCheck.allowed) {
         console.warn(lockCheck.message);
-        alert(lockCheck.message || 'Cannot delete timesheet entry for a locked pay period.');
+        addToast({
+          type: 'warning',
+          title: 'Pay Period Locked',
+          message: lockCheck.message || 'Cannot delete timesheet entry for a locked pay period.',
+        });
         return;
       }
     }
@@ -704,6 +727,9 @@ export function useAppState() {
     handleUpdateInvoiceStatus,
     handleDeleteInvoice,
     handleResetAllData,
+    toasts,
+    addToast,
+    dismissToast,
   };
 }
 

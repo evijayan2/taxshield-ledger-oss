@@ -319,75 +319,79 @@ export function InvoicingView({
         onSaveCustomer={onCreateCustomer}
       />
 
-      {/* Custom In-App Delete Confirmation Modal */}
+      {/* Slide-Over Confirmation Drawer */}
       {invoiceToDelete && (
-        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 overflow-hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setInvoiceToDelete(null)}
           />
 
-          {/* Dialog Panel */}
-          <div className="relative glass-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="w-11 h-11 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center text-rose-600 dark:text-rose-400 flex-shrink-0">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <button
-                type="button"
-                onClick={() => setInvoiceToDelete(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+          {/* Slide-Over Drawer Panel */}
+          <div className="fixed inset-y-0 right-0 max-w-md w-full flex">
+            <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl p-6 flex flex-col justify-between animate-in slide-in-from-right duration-300 space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="w-11 h-11 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center text-rose-600 dark:text-rose-400 flex-shrink-0">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setInvoiceToDelete(null)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Client Invoice?</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Are you sure you want to delete invoice <span className="font-mono font-bold text-slate-900 dark:text-white">{invoiceToDelete.invoiceNumber || 'INV-DRAFT'}</span>? This will permanently remove this bill and its line items from your accounts receivable ledger and record the event in the audit trail.
-              </p>
-            </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Client Invoice?</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    Are you sure you want to delete invoice <span className="font-mono font-bold text-slate-900 dark:text-white">{invoiceToDelete.invoiceNumber || 'INV-DRAFT'}</span>? This will permanently remove this bill and its line items from your accounts receivable ledger and record the event in the audit trail.
+                  </p>
+                </div>
 
-            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs space-y-1.5">
-              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
-                <span>Client</span>
-                <span className="font-medium text-slate-900 dark:text-white">
-                  {invoiceToDelete.customerName || (customers || []).find((c) => c.id === invoiceToDelete.customerId)?.name || 'Client'}
-                </span>
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs space-y-2">
+                  <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                    <span>Client</span>
+                    <span className="font-medium text-slate-900 dark:text-white">
+                      {invoiceToDelete.customerName || (customers || []).find((c) => c.id === invoiceToDelete.customerId)?.name || 'Client'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                    <span>Total Amount</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
+                      ${Number(invoiceToDelete.totalAmount || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                    <span>Status</span>
+                    <span>{getStatusBadge(invoiceToDelete.status)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
-                <span>Total Amount</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">
-                  ${Number(invoiceToDelete.totalAmount || 0).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
-                <span>Status</span>
-                <span>{getStatusBadge(invoiceToDelete.status)}</span>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setInvoiceToDelete(null)}
-                className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onDeleteInvoice?.(invoiceToDelete.id || invoiceToDelete.invoiceNumber || 'INV-DRAFT');
-                  setInvoiceToDelete(null);
-                }}
-                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete Invoice
-              </button>
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setInvoiceToDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteInvoice?.(invoiceToDelete.id || invoiceToDelete.invoiceNumber || 'INV-DRAFT');
+                    setInvoiceToDelete(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Invoice
+                </button>
+              </div>
             </div>
           </div>
         </div>

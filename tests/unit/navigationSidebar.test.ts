@@ -65,5 +65,29 @@ describe('NavigationSidebar State Badge Resolution', () => {
     expect(employeeTabs).toContain('EMPLOYEE_PTO');
     expect(employeeTabs).toContain('EMPLOYEE_PROFILE');
   });
+
+  it('should structure owner navigation into the 4 primary pillars plus settings', async () => {
+    const { OWNER_HUBS, EMPLOYEE_HUBS } = await import('../../src/components/NavigationSidebar');
+    expect(OWNER_HUBS.length).toBe(5);
+    expect(OWNER_HUBS.map(h => h.hubId)).toEqual([
+      'OVERVIEW',
+      'BOOKKEEPING',
+      'PAYROLL',
+      'TAX_COMPLIANCE',
+      'SETTINGS'
+    ]);
+
+    // All items should have a shortLabel for top contextual pill navigation
+    const allOwnerItems = OWNER_HUBS.flatMap(h => h.items);
+    expect(allOwnerItems.length).toBe(21);
+    allOwnerItems.forEach(item => {
+      expect(item.shortLabel).toBeDefined();
+      expect(item.shortLabel!.length).toBeGreaterThan(0);
+    });
+
+    // Employee portal hub verification
+    expect(EMPLOYEE_HUBS.length).toBe(1);
+    expect(EMPLOYEE_HUBS[0].items.length).toBe(6);
+  });
 });
 

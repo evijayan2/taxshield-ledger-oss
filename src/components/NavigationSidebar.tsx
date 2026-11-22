@@ -52,6 +52,88 @@ export type NavigationTab =
   | 'EMPLOYEE_PTO'
   | 'EMPLOYEE_PROFILE';
 
+export interface NavItemConfig {
+  id: NavigationTab;
+  label: string;
+  shortLabel?: string;
+  icon: React.ElementType;
+}
+
+export interface NavHubConfig {
+  hubId: 'OVERVIEW' | 'BOOKKEEPING' | 'PAYROLL' | 'TAX_COMPLIANCE' | 'SETTINGS' | 'EMPLOYEE_PORTAL';
+  category: string;
+  items: NavItemConfig[];
+}
+
+export const OWNER_HUBS: NavHubConfig[] = [
+  {
+    hubId: 'OVERVIEW',
+    category: 'Overview',
+    items: [
+      { id: 'DASHBOARD', label: 'Dashboard', shortLabel: 'Overview', icon: LayoutDashboard },
+      { id: 'AUDIT_READINESS', label: 'Audit Defense & Readiness', shortLabel: 'Audit Score', icon: ShieldCheck },
+      { id: 'TAX_SIMULATOR', label: 'Tax Impact Simulator', shortLabel: 'Simulator', icon: Calculator },
+    ]
+  },
+  {
+    hubId: 'BOOKKEEPING',
+    category: 'Bookkeeping',
+    items: [
+      { id: 'EXPENSES', label: 'Expenses & Receipts', shortLabel: 'Expenses', icon: Receipt },
+      { id: 'INVOICING', label: 'Invoices & Payments', shortLabel: 'Invoices', icon: CreditCard },
+      { id: 'RECONCILIATION', label: 'Bank Reconciliation', shortLabel: 'Recon', icon: ArrowRightLeft },
+      { id: 'MILEAGE', label: 'Mileage & Travel', shortLabel: 'Mileage', icon: Car },
+      { id: 'ASSETS', label: 'Asset Depreciation', shortLabel: 'Depreciation', icon: Building2 },
+      { id: 'HOME_OFFICE', label: 'Home Office Deduction', shortLabel: 'Home Office', icon: Receipt },
+    ]
+  },
+  {
+    hubId: 'PAYROLL',
+    category: 'Workforce & Payroll',
+    items: [
+      { id: 'PAYROLL', label: 'Assisted Payroll Engine', shortLabel: 'Run Payroll', icon: Calculator },
+      { id: 'STAFF', label: 'Staff & Onboarding', shortLabel: 'Staff', icon: Users },
+      { id: 'CONTRACTORS', label: 'Contractor 1099 Hub', shortLabel: '1099 Hub', icon: Briefcase },
+      { id: 'TIMESHEETS', label: 'Timesheets Ledger', shortLabel: 'Timesheets', icon: Clock },
+      { id: 'EMPLOYEE_PTO', label: 'PTO & Leave Approvals', shortLabel: 'PTO & Leave', icon: CalendarDays },
+      { id: 'PAYROLL_CALENDAR', label: 'Payroll Calendar', shortLabel: 'Calendar', icon: Calendar },
+    ]
+  },
+  {
+    hubId: 'TAX_COMPLIANCE',
+    category: 'Tax & Compliance',
+    items: [
+      { id: 'COMPLIANCE', label: 'Compliance Calendar', shortLabel: 'Compliance', icon: FileText },
+      { id: 'TAX_COVERAGE', label: 'Tax Rule Coverage', shortLabel: 'Rule Coverage', icon: ShieldCheck },
+      { id: 'TAX_RULES', label: 'Tax Rules Engine', shortLabel: 'Rule Engine', icon: Scale },
+      { id: 'EXPORT', label: 'Accountant Export', shortLabel: 'Export', icon: Download },
+      { id: 'AUDIT_LOGS', label: 'Audit Trail Inspector', shortLabel: 'Audit Trail', icon: ShieldCheck },
+    ]
+  },
+  {
+    hubId: 'SETTINGS',
+    category: 'Settings',
+    items: [
+      { id: 'SETTINGS', label: 'Company Profile & Setup', shortLabel: 'Company Profile', icon: Settings },
+    ]
+  }
+];
+
+export const EMPLOYEE_HUBS: NavHubConfig[] = [
+  {
+    hubId: 'EMPLOYEE_PORTAL',
+    category: 'Employee Portal',
+    items: [
+      { id: 'MY_DOCUMENTS', label: 'My Paystubs & W-2s', shortLabel: 'Paystubs & W-2s', icon: FileText },
+      { id: 'TIMESHEETS', label: 'My Timesheets', shortLabel: 'Timesheets', icon: Clock },
+      { id: 'EMPLOYEE_REIMBURSEMENTS', label: 'Expense & Mileage Claims', shortLabel: 'Claims', icon: Receipt },
+      { id: 'EMPLOYEE_PTO', label: 'Time-Off & PTO Requests', shortLabel: 'Time Off', icon: CalendarDays },
+      { id: 'PAYROLL_CALENDAR', label: 'Payroll Calendar', shortLabel: 'Calendar', icon: Calendar },
+      { id: 'EMPLOYEE_PROFILE', label: 'My Profile & Direct Deposit', shortLabel: 'Profile', icon: User },
+    ]
+  }
+];
+
 interface NavigationSidebarProps {
   activeTab: NavigationTab;
   onSelectTab: (tab: NavigationTab) => void;
@@ -88,84 +170,18 @@ export function NavigationSidebar({
   mobileOpen = false,
   onCloseMobile,
 }: NavigationSidebarProps) {
-  const ownerNavSections: Array<{
-    category: string;
-    items: Array<{
-      id: NavigationTab;
-      label: string;
-      icon: React.ElementType;
-    }>;
-  }> = [
-    {
-      category: 'Overview',
-      items: [
-        { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'AUDIT_READINESS', label: 'Audit Defense & Readiness', icon: ShieldCheck },
-        { id: 'TAX_SIMULATOR', label: 'Tax Impact Simulator', icon: Calculator },
+  const navSections = isEmployee
+    ? [
+        {
+          ...EMPLOYEE_HUBS[0],
+          category: isReadOnly ? 'Employee Portal (Read-Only)' : 'Employee Portal',
+          items: EMPLOYEE_HUBS[0].items.map((item) => ({
+            ...item,
+            label: isReadOnly && item.id === 'TIMESHEETS' ? 'My Timesheets (Read-Only)' : item.label,
+          })),
+        },
       ]
-    },
-    {
-      category: 'Bookkeeping & Deductions',
-      items: [
-        { id: 'EXPENSES', label: 'Expenses & Receipts', icon: Receipt },
-        { id: 'INVOICING', label: 'Invoices & Payments', icon: CreditCard },
-        { id: 'RECONCILIATION', label: 'Bank Reconciliation', icon: ArrowRightLeft },
-        { id: 'MILEAGE', label: 'Mileage & Travel', icon: Car },
-        { id: 'ASSETS', label: 'Asset Depreciation', icon: Building2 },
-        { id: 'HOME_OFFICE', label: 'Home Office Deduction', icon: Receipt },
-      ]
-    },
-    {
-      category: 'Workforce & Payroll',
-      items: [
-        { id: 'STAFF', label: 'Staff & Onboarding', icon: Users },
-        { id: 'CONTRACTORS', label: 'Contractor 1099 Hub', icon: Briefcase },
-        { id: 'TIMESHEETS', label: 'Timesheets Ledger', icon: Clock },
-        { id: 'EMPLOYEE_PTO', label: 'PTO & Leave Approvals', icon: CalendarDays },
-        { id: 'PAYROLL_CALENDAR', label: 'Payroll Calendar', icon: Calendar },
-        { id: 'PAYROLL', label: 'Assisted Payroll Engine', icon: Calculator },
-      ]
-    },
-    {
-      category: 'Tax & Compliance',
-      items: [
-        { id: 'COMPLIANCE', label: 'Compliance Calendar', icon: FileText },
-        { id: 'TAX_COVERAGE', label: 'Tax Rule Coverage', icon: ShieldCheck },
-        { id: 'TAX_RULES', label: 'Tax Rules Engine', icon: Scale },
-      ]
-    },
-    {
-      category: 'Audit & Administration',
-      items: [
-        { id: 'AUDIT_LOGS', label: 'Audit Trail Inspector', icon: ShieldCheck },
-        { id: 'EXPORT', label: 'Accountant Export', icon: Download },
-        { id: 'SETTINGS', label: 'Company Profile & Setup', icon: Settings },
-      ]
-    }
-  ];
-
-  const employeeNavSections: Array<{
-    category: string;
-    items: Array<{
-      id: NavigationTab;
-      label: string;
-      icon: React.ElementType;
-    }>;
-  }> = [
-    {
-      category: isReadOnly ? 'Employee Portal (Read-Only)' : 'Employee Portal',
-      items: [
-        { id: 'MY_DOCUMENTS', label: 'My Paystubs & W-2s', icon: FileText },
-        { id: 'TIMESHEETS', label: isReadOnly ? 'My Timesheets (Read-Only)' : 'My Timesheets', icon: Clock },
-        { id: 'EMPLOYEE_REIMBURSEMENTS', label: 'Expense & Mileage Claims', icon: Receipt },
-        { id: 'EMPLOYEE_PTO', label: 'Time-Off & PTO Requests', icon: CalendarDays },
-        { id: 'PAYROLL_CALENDAR', label: 'Payroll Calendar', icon: Calendar },
-        { id: 'EMPLOYEE_PROFILE', label: 'My Profile & Direct Deposit', icon: User },
-      ]
-    }
-  ];
-
-  const navSections = isEmployee ? employeeNavSections : ownerNavSections;
+    : OWNER_HUBS;
 
   // Build unique year list from database taxYears state + activeTaxYear
   const yearNumbers = Array.from(new Set([
@@ -174,7 +190,9 @@ export function NavigationSidebar({
   ])).sort((a, b) => b - a);
 
   const getItemAccent = (_id: NavigationTab, isActive: boolean) => {
-    return { icon: isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200' };
+    return { 
+      icon: isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200' 
+    };
   };
 
   const handleItemClick = (id: NavigationTab) => {
@@ -195,7 +213,7 @@ export function NavigationSidebar({
       {/* Sidebar Header */}
       <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div className={`items-center gap-3 ${collapsed ? 'flex md:hidden' : 'flex'}`}>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-slate-900 dark:text-white font-bold shadow-md shadow-emerald-900/10 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-900/10 shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -208,7 +226,7 @@ export function NavigationSidebar({
 
         {collapsed && (
           <div className="hidden md:flex w-full justify-center">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-slate-900 dark:text-white font-bold shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-bold shadow-md">
               TS
             </div>
           </div>
@@ -230,7 +248,7 @@ export function NavigationSidebar({
             type="button"
             onClick={onCloseMobile}
             title="Close navigation menu"
-            className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors md:hidden cursor-pointer"
+            className="p-2 text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors md:hidden cursor-pointer"
             aria-label="Close navigation"
           >
             <X className="w-5 h-5" />
@@ -259,7 +277,7 @@ export function NavigationSidebar({
             <button
               onClick={onOpenTaxYearSetup}
               title="Initialize or Edit Tax Year Setup"
-              className="p-1 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-md cursor-pointer transition-colors shadow-2xs"
+              className="p-1.5 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-md cursor-pointer transition-colors shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -289,10 +307,10 @@ export function NavigationSidebar({
                   key={item.id}
                   onClick={() => handleItemClick(item.id)}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl font-medium text-sm transition-all cursor-pointer group ${
+                  className={`w-full min-h-[42px] flex items-center gap-3 px-3.5 py-2 rounded-xl font-medium text-sm transition-all cursor-pointer group ${
                     isActive
-                      ? 'bg-emerald-600 text-slate-900 dark:text-white shadow-xs font-semibold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                      ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                   } ${collapsed ? 'justify-start md:justify-center px-3.5 md:px-0 py-2 md:py-2.5' : ''}`}
                 >
                   <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${accent.icon}`} />

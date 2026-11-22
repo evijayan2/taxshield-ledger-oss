@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle, X } from 'lucide-react';
 import type { TaxRuleAdminItem } from './TaxRuleAdminView';
 
 export interface ProposeRuleFormData {
@@ -20,6 +21,8 @@ export interface ProposeRuleVersionDrawerProps {
   formData: ProposeRuleFormData;
   setFormData: React.Dispatch<React.SetStateAction<ProposeRuleFormData>>;
   onSubmit: (e: React.FormEvent) => void;
+  error?: string | null;
+  onDismissError?: () => void;
 }
 
 export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> = ({
@@ -28,6 +31,8 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
   formData,
   setFormData,
   onSubmit,
+  error,
+  onDismissError,
 }) => {
   if (!isOpen) return null;
 
@@ -39,10 +44,38 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
       />
       <div className="fixed inset-y-0 right-0 max-w-lg w-full flex pl-0 sm:pl-10">
         <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-4 sm:p-6 space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Propose New Tax Rule Version</h2>
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Propose New Tax Rule Version</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start justify-between gap-2 text-xs text-rose-800 dark:text-rose-200 animate-in fade-in">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+              {onDismissError && (
+                <button
+                  type="button"
+                  onClick={onDismissError}
+                  className="p-1 text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+
           <form onSubmit={onSubmit} className="space-y-3 text-xs flex-1">
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 mb-1">Source Title *</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1 font-medium">Source Title *</label>
               <input
                 type="text"
                 required
@@ -53,7 +86,7 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
               />
             </div>
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 mb-1">Source URL *</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1 font-medium">Source URL *</label>
               <input
                 type="url"
                 required
@@ -64,7 +97,7 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
               />
             </div>
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 mb-1">Publisher *</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1 font-medium">Publisher *</label>
               <input
                 type="text"
                 required
@@ -75,13 +108,24 @@ export const ProposeRuleVersionDrawer: React.FC<ProposeRuleVersionDrawerProps> =
               />
             </div>
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 mb-1">Tax Rate / Rule Value *</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1 font-medium">Statute Reference / Regulation *</label>
+              <input
+                type="text"
+                required
+                value={formData.statuteReference}
+                onChange={(e) => setFormData({ ...formData, statuteReference: e.target.value })}
+                placeholder="e.g. 72 P.S. § 7302 / Act 32"
+                className="w-full glass-input p-2.5 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1 font-medium">Tax Rate / Rule Value *</label>
               <input
                 type="text"
                 required
                 value={formData.rateValue}
                 onChange={(e) => setFormData({ ...formData, rateValue: e.target.value })}
-                placeholder="Enter the cited rate"
+                placeholder="e.g. 0.0307"
                 className="w-full glass-input p-2.5 rounded-lg text-sm"
               />
             </div>

@@ -10,7 +10,12 @@ import {
   Sparkles,
   Printer,
   Download,
-  Lock
+  Lock,
+  Building2,
+  CreditCard,
+  ShieldCheck,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Employee, Organization, PayrollRun, PayStub, MileageLog, TravelExpense, TimesheetEntry } from '../types';
@@ -53,6 +58,7 @@ export function AssistedPayrollView({
   const [showRunModal, setShowRunModal] = useState(false);
   const [copiedAchId, setCopiedAchId] = useState<string | null>(null);
   const [autoFillFeedback, setAutoFillFeedback] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
+  const [executionError, setExecutionError] = useState<string | null>(null);
 
   // Auto-calculate smart default payroll period based on LLC setup payFrequency & history
   const calculatedPeriod = React.useMemo(() => {
@@ -168,9 +174,14 @@ export function AssistedPayrollView({
 
   const handleExecuteRun = () => {
     if (activeStubsToSave.length === 0 || isFutureActiveYear || isPayPeriodFuture) {
-      alert('No active earnings, hours, or reimbursements found for this period. At least one staff member must have hours or earnings to generate pay stubs.');
+      setExecutionError(
+        isFutureActiveYear || isPayPeriodFuture
+          ? 'Cannot process payroll runs in future dates or future tax years.'
+          : 'No active earnings, hours, or reimbursements found for this period. At least one staff member must have hours or earnings to generate pay stubs.'
+      );
       return;
     }
+    setExecutionError(null);
 
     const stubsToSave: Omit<PayStub, 'id' | 'payrollRunId' | 'createdAt'>[] = activeStubsToSave.map(sp => ({
       employeeId: sp.employee.id,
@@ -245,6 +256,12 @@ export function AssistedPayrollView({
   // State for reference code inputs in disbursement matrix
   const [refInputs, setRefInputs] = useState<Record<string, string>>({});
 
+  const totalEmployerCostYtd = yearPayrollRuns.reduce((sum, r) => sum + (r.totalEmployerTaxes || 0) + (r.totalGross || 0), 0);
+  const totalNetPayYtd = yearPayStubs.reduce((sum, s) => sum + (s.netPay || 0), 0);
+  const totalTaxLiabilitiesYtd = 
+    yearPayStubs.reduce((sum, s) => sum + (s.totalEmployeeTaxes || 0), 0) + 
+    yearPayrollRuns.reduce((sum, r) => sum + (r.totalEmployerTaxes || 0), 0);
+
   return (
     <div className="space-y-6">
       {/* Future Tax Year Warning Banner */}
@@ -288,6 +305,48 @@ export function AssistedPayrollView({
         </button>
       </div>
 
+      {/* Gusto-Style Hero Stat Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Total Employer Cost (YTD)</span>
+            <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="text-xl sm:text-2xl font-bold font-mono text-slate-900 dark:text-white">
+            ${totalEmployerCostYtd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+            Wages + employer FICA, FUTA, SUTA
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Net Take-Home Pay (YTD)</span>
+            <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <p className="text-xl sm:text-2xl font-bold font-mono text-slate-900 dark:text-white">
+            ${totalNetPayYtd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+            Direct deposit payouts to staff ({yearPayStubs.length} stubs)
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Total Tax Liabilities (YTD)</span>
+            <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+          </div>
+          <p className="text-xl sm:text-2xl font-bold font-mono text-slate-900 dark:text-white">
+            ${totalTaxLiabilitiesYtd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+            Federal, PA SIT &amp; local EIT withheld/owed
+          </span>
+        </div>
+      </div>
+
       {/* ACH & Direct Deposit Bank Matrix */}
       <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -306,7 +365,8 @@ export function AssistedPayrollView({
         </div>
 
         <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50/50 dark:bg-slate-950/40">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -387,7 +447,7 @@ export function AssistedPayrollView({
                                 onUpdateStubDisbursement(stub.id, ref);
                                 confetti({ particleCount: 40, spread: 60 });
                               }}
-                              className="px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white transition cursor-pointer shadow-xs"
+                              className="px-2.5 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-xs"
                             >
                               Mark Paid
                             </button>
@@ -399,6 +459,112 @@ export function AssistedPayrollView({
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cardification (screens < md) */}
+          <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+            {yearPayStubs.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 text-xs">
+                No pay stubs created yet. Tap "Run Pay Period" above to compute and disburse your first payroll.
+              </div>
+            ) : (
+              yearPayStubs.slice(0, 6).map((stub) => {
+                const emp = employees.find(e => e.id === stub.employeeId);
+                if (!emp) return null;
+                const isPaid = stub.disbursementStatus === 'PAID';
+
+                return (
+                  <div key={`mobile_${stub.id}`} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                          {emp.firstName} {emp.lastName}
+                        </h4>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                          {stub.payDate || stub.periodEnd}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400 block">
+                          ${stub.netPay.toFixed(2)}
+                        </span>
+                        <span className="text-[10px] text-slate-400">Net ACH Payout</span>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-slate-100/70 dark:bg-slate-900/60 text-xs flex items-center justify-between gap-2 font-mono">
+                      <span className="truncate text-slate-700 dark:text-slate-300 text-[11px]">
+                        {emp.bankName ? `${emp.bankName} (${emp.accountType === 'SAVINGS' ? 'Sav' : 'Chk'} ${emp.bankAccountMasked || ''})` : 'ACH Pending'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyAchInfo(emp, stub.netPay, stub.id)}
+                        className="px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-sans font-medium flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        {copiedAchId === stub.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            <span>Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-[11px] py-1 bg-slate-100/40 dark:bg-slate-900/30 rounded-lg">
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase">Gross</span>
+                        <span className="font-mono font-medium text-slate-800 dark:text-slate-200">${stub.grossEarnings.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase">Taxes</span>
+                        <span className="font-mono font-medium text-rose-600 dark:text-rose-400">-${stub.totalEmployeeTaxes.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase">Reimb.</span>
+                        <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">+${stub.totalReimbursements.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-1">
+                      {isPaid ? (
+                        <div className="flex items-center justify-between">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Disbursed
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">{stub.achTraceRef}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="ACH trace ref #"
+                            value={refInputs[stub.id] || ''}
+                            onChange={(e) => setRefInputs({ ...refInputs, [stub.id]: e.target.value })}
+                            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-900 dark:text-white text-xs flex-1 focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const ref = refInputs[stub.id] || `ACH-${Math.floor(Math.random() * 899999 + 100000)}`;
+                              onUpdateStubDisbursement(stub.id, ref);
+                              confetti({ particleCount: 40, spread: 60 });
+                            }}
+                            className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-xs min-h-[40px] shrink-0"
+                          >
+                            Mark Paid
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -503,12 +669,52 @@ export function AssistedPayrollView({
                 </div>
               </div>
               <button 
-                onClick={() => setShowRunModal(false)}
+                onClick={() => {
+                  setShowRunModal(false);
+                  setExecutionError(null);
+                }}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
+
+            {/* Gusto-Style 3-Step Guided Process Indicator */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-mono">1</span>
+                  <span>Hours &amp; Wages</span>
+                </div>
+                <div className="h-0.5 w-4 sm:w-10 bg-emerald-500/50" />
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-mono">2</span>
+                  <span>Statutory Taxes</span>
+                </div>
+                <div className="h-0.5 w-4 sm:w-10 bg-emerald-500/50" />
+                <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-bold">
+                  <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center text-[10px] font-mono">3</span>
+                  <span>Payout &amp; Audit</span>
+                </div>
+              </div>
+            </div>
+
+            {executionError && (
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start justify-between gap-2 text-xs text-rose-800 dark:text-rose-200 animate-in fade-in duration-200">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <span>{executionError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setExecutionError(null)}
+                  className="p-1 text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 cursor-pointer"
+                  aria-label="Dismiss error"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {approvedTimesheetsInPeriodCount > 0 ? (
               <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">

@@ -10,11 +10,12 @@ import { useAuth, AuthProvider } from './context/AuthContext';
 import { AuthGate } from './components/AuthGate';
 import { LLCOnboardingModal } from './components/LLCOnboardingModal';
 import { TaxYearSetupModal } from './components/TaxYearSetupModal';
-import { NavigationSidebar, NavigationTab } from './components/NavigationSidebar';
+import { NavigationSidebar, NavigationTab, OWNER_HUBS, EMPLOYEE_HUBS } from './components/NavigationSidebar';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { FontSizeControl } from './components/FontSizeControl';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { DatabaseOfflineBanner } from './components/DatabaseOfflineBanner';
+import { ToastNotification } from './components/ToastNotification';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { isOrgConfigured } from './utils/storage';
 import { useAppState } from './hooks/useAppState';
@@ -137,6 +138,8 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
     handleUpdateInvoiceStatus,
     handleDeleteInvoice,
     handleResetAllData,
+    toasts,
+    dismissToast,
   } = state;
 
   const { user, membership, isOwner, isEmployee, isReadOnly, employeeProfile, signOut } = useAuth();
@@ -160,6 +163,12 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
 
   const isDbOffline = !isInitialLoading && Boolean(dbStatus && !dbStatus.connected);
   const currentActiveTaxYear = data.activeTaxYear || 2026;
+  const pendingTaxCount = (data.complianceTasks || []).filter(
+    (t) => getTaskTaxYear(t) === currentActiveTaxYear && t.status !== 'FILED'
+  ).length;
+
+  const currentHubs = isEmployee ? EMPLOYEE_HUBS : OWNER_HUBS;
+  const activeHub = currentHubs.find((hub) => hub.items.some((item) => item.id === activeTab));
 
   React.useEffect(() => {
     const compName = data?.company?.name || data?.org?.name;
@@ -204,7 +213,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
         onOpenTaxYearSetup={() => setShowTaxYearModal(true)}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        pendingTaxCount={(data.complianceTasks || []).filter(t => getTaskTaxYear(t) === currentActiveTaxYear && t.status !== 'FILED').length}
+        pendingTaxCount={pendingTaxCount}
         isEmployee={isEmployee}
         isReadOnly={isReadOnly}
         mobileOpen={mobileSidebarOpen}
@@ -272,6 +281,43 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
             </div>
           </div>
         </header>
+
+        {/* Contextual Sub-Navigation Pill Bar */}
+        {activeHub && activeHub.items.length > 1 && (
+          <nav
+            aria-label="Contextual Sub Navigation"
+            className="sticky top-[49px] sm:top-[57px] z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-3 sm:px-6 py-2 overflow-x-auto no-scrollbar flex items-center gap-1.5 sm:gap-2 shadow-2xs"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 sm:mr-2 shrink-0 hidden sm:flex">
+              <span>{activeHub.category}</span>
+              <span>•</span>
+            </div>
+            {activeHub.items.map((item) => {
+              const isSubActive = activeTab === item.id;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`min-h-[38px] sm:min-h-[34px] px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                    isSubActive
+                      ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+                  <span>{item.shortLabel || item.label}</span>
+                  {item.id === 'COMPLIANCE' && pendingTaxCount > 0 && (
+                    <span className="px-1.5 py-0.2 text-[9px] font-mono font-black rounded bg-amber-500 text-slate-950">
+                      {pendingTaxCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        )}
 
         {/* Onboarding Banner if not configured */}
         {!isConfigured && !isInitialLoading && (
@@ -732,6 +778,9 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
         }}
         onClose={() => setShowTaxYearModal(false)}
       />
+
+      {/* Global In-App Toast Notifications */}
+      <ToastNotification toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

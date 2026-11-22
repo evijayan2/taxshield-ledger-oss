@@ -65,6 +65,8 @@ export function SettingsView({
   const [showResetConfirmDrawer, setShowResetConfirmDrawer] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     setOrgForm({ ...org });
@@ -146,8 +148,11 @@ export function SettingsView({
       try {
         const json = JSON.parse(evt.target?.result as string);
         onImportJSON(json);
+        setImportError(null);
+        setImportSuccess('Ledger state imported successfully.');
       } catch (err) {
-        alert('Invalid JSON backup file.');
+        setImportError('Invalid JSON backup file. Please select a valid TaxShield Ledger export.');
+        setImportSuccess(null);
       }
     };
     reader.readAsText(file);
@@ -662,6 +667,38 @@ export function SettingsView({
             <span>Reset All Data</span>
           </button>
         </div>
+
+        {importError && (
+          <div className="mt-3 p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-between text-xs text-rose-800 dark:text-rose-200 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span>{importError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setImportError(null)}
+              className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 p-1 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {importSuccess && (
+          <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>{importSuccess}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setImportSuccess(null)}
+              className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-200 p-1 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Slide-over Confirmation Drawer for Resetting Ledger */}

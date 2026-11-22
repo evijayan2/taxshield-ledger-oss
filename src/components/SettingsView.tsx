@@ -7,6 +7,7 @@ import {
   Download, 
   Upload, 
   CheckCircle2,
+  AlertCircle,
   Sparkles,
   Pencil,
   ShieldCheck,

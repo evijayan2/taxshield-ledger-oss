@@ -10,6 +10,7 @@ import { loadAllDataFromPostgres, saveAllDataToPostgres } from './server/dataSer
 import { authRouter } from './server/auth/routes.js';
 import { sutaRouter } from './server/routes/sutaRoutes.js';
 import { nachaRouter } from './server/routes/nachaRoutes.js';
+import { payrollLiabilityRouter } from './server/routes/payrollLiabilityRoutes.js';
 import { requireAuth, requireOwner, type AuthenticatedRequest } from './server/auth/middleware.js';
 
 const getCurrentDirname = () => {
@@ -40,6 +41,7 @@ export function createServerApp(): express.Express {
   app.use('/api/auth', authRouter);
   app.use('/api', sutaRouter);
   app.use('/api', nachaRouter);
+  app.use('/api', payrollLiabilityRouter);
 
   // Serve favicon gracefully
   app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {

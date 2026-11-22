@@ -24,6 +24,7 @@ import { printPayStubPdf, savePayStubPdf } from '../utils/payStubPdfBuilder';
 import { getApprovedHoursForEmployee } from '../utils/timesheetUtils';
 import { calculateNextPayrollPeriod } from '../utils/payrollDateUtils';
 import { NachaExportButton } from './NachaExportButton';
+import { PaymentConciergeDrawer } from './PaymentConciergeDrawer';
 
 interface AssistedPayrollViewProps {
   employees: Employee[];
@@ -57,6 +58,7 @@ export function AssistedPayrollView({
   const yearPayStubs = payStubs.filter(s => getRecordYear(s.payDate || s.periodStart) === activeTaxYear);
 
   const [showRunModal, setShowRunModal] = useState(false);
+  const [selectedRunForConcierge, setSelectedRunForConcierge] = useState<PayrollRun | null>(null);
   const [copiedAchId, setCopiedAchId] = useState<string | null>(null);
   const [autoFillFeedback, setAutoFillFeedback] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
   const [executionError, setExecutionError] = useState<string | null>(null);
@@ -221,22 +223,21 @@ export function AssistedPayrollView({
       disbursementStatus: 'PENDING',
     }));
 
-    onCreatePayrollRun(
-      {
-        periodStart,
-        periodEnd,
-        payDate,
-        status: 'LOCKED',
-        totalGross: totalRunGross,
-        totalEmployeeTaxes: totalRunEmployeeTaxes,
-        totalReimbursements: totalRunReimbursements,
-        totalNetPay: totalRunNet,
-        totalEmployerTaxes: totalRunEmployerTaxes,
-        totalCompanyCost: totalRunCompanyCost,
-        stubsCount: stubsToSave.length,
-      },
-      stubsToSave
-    );
+    const runPayload = {
+      periodStart,
+      periodEnd,
+      payDate,
+      status: 'LOCKED' as const,
+      totalGross: totalRunGross,
+      totalEmployeeTaxes: totalRunEmployeeTaxes,
+      totalReimbursements: totalRunReimbursements,
+      totalNetPay: totalRunNet,
+      totalEmployerTaxes: totalRunEmployerTaxes,
+      totalCompanyCost: totalRunCompanyCost,
+      stubsCount: stubsToSave.length,
+    };
+
+    onCreatePayrollRun(runPayload, stubsToSave);
 
     confetti({
       particleCount: 80,
@@ -245,6 +246,11 @@ export function AssistedPayrollView({
     });
 
     setShowRunModal(false);
+    setSelectedRunForConcierge({
+      ...runPayload,
+      id: `run_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    });
   };
 
   const copyAchInfo = (emp: Employee, amount: number, id: string) => {
@@ -598,9 +604,20 @@ export function AssistedPayrollView({
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white">Pay Period: {run.periodStart} to {run.periodEnd}</h4>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400">Pay Date: {run.payDate} • Status: {run.status}</p>
                   </div>
-                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    ${run.totalNetPay.toFixed(2)} Net
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRunForConcierge(run)}
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 transition flex items-center gap-1 cursor-pointer shadow-xs"
+                      title="Open Payroll Payment Concierge for this run"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Payment Concierge</span>
+                    </button>
+                    <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      ${run.totalNetPay.toFixed(2)} Net
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center text-xs py-1">
@@ -1011,6 +1028,16 @@ export function AssistedPayrollView({
           </div>
         </div>
       )}
+      {/* Payroll Payment Concierge Slide-Over Drawer */}
+      <PaymentConciergeDrawer
+        isOpen={selectedRunForConcierge !== null}
+        onClose={() => setSelectedRunForConcierge(null)}
+        payrollRun={selectedRunForConcierge}
+        payStubs={yearPayStubs}
+        employees={employees}
+        company={org}
+        onUpdateStubDisbursement={onUpdateStubDisbursement}
+      />
     </div>
   );
 }

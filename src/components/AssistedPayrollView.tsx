@@ -25,6 +25,7 @@ import { getApprovedHoursForEmployee } from '../utils/timesheetUtils';
 import { calculateNextPayrollPeriod } from '../utils/payrollDateUtils';
 import { NachaExportButton } from './NachaExportButton';
 import { PaymentConciergeDrawer } from './PaymentConciergeDrawer';
+import { ProviderAuditDrawer } from './audit/ProviderAuditDrawer';
 
 interface AssistedPayrollViewProps {
   employees: Employee[];
@@ -58,6 +59,7 @@ export function AssistedPayrollView({
   const yearPayStubs = payStubs.filter(s => getRecordYear(s.payDate || s.periodStart) === activeTaxYear);
 
   const [showRunModal, setShowRunModal] = useState(false);
+  const [showProviderAuditDrawer, setShowProviderAuditDrawer] = useState(false);
   const [selectedRunForConcierge, setSelectedRunForConcierge] = useState<PayrollRun | null>(null);
   const [copiedAchId, setCopiedAchId] = useState<string | null>(null);
   const [autoFillFeedback, setAutoFillFeedback] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
@@ -296,20 +298,33 @@ export function AssistedPayrollView({
           </p>
         </div>
 
-        <button
-          id="run-payroll-btn"
-          onClick={() => !isFutureActiveYear && setShowRunModal(true)}
-          disabled={isFutureActiveYear}
-          title={isFutureActiveYear ? `Running payroll for future tax year (${activeTaxYear}) is locked` : 'Run Pay Period'}
-          className={`px-5 py-2.5 text-xs font-semibold rounded-xl transition flex items-center gap-2 ${
-            isFutureActiveYear
-              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-              : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-md shadow-emerald-700/20 cursor-pointer'
-          }`}
-        >
-          {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Play className="w-4 h-4 fill-white" />}
-          <span>Run Pay Period</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            id="verify-provider-btn"
+            onClick={() => setShowProviderAuditDrawer(true)}
+            className="px-4 py-2.5 text-xs font-semibold rounded-xl transition flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 active:scale-95 cursor-pointer shadow-xs"
+            title="Import and audit payroll registers from Gusto, QuickBooks Online, or generic CSV"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span>Verify Provider (Audit)</span>
+          </button>
+
+          <button
+            id="run-payroll-btn"
+            onClick={() => !isFutureActiveYear && setShowRunModal(true)}
+            disabled={isFutureActiveYear}
+            title={isFutureActiveYear ? `Running payroll for future tax year (${activeTaxYear}) is locked` : 'Run Pay Period'}
+            className={`px-5 py-2.5 text-xs font-semibold rounded-xl transition flex items-center gap-2 ${
+              isFutureActiveYear
+                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-md shadow-emerald-700/20 cursor-pointer'
+            }`}
+          >
+            {isFutureActiveYear ? <Lock className="w-4 h-4 text-amber-500" /> : <Play className="w-4 h-4 fill-white" />}
+            <span>Run Pay Period</span>
+          </button>
+        </div>
       </div>
 
       {/* Gusto-Style Hero Stat Strip */}
@@ -1037,6 +1052,13 @@ export function AssistedPayrollView({
         employees={employees}
         company={org}
         onUpdateStubDisbursement={onUpdateStubDisbursement}
+      />
+
+      {/* Verify Provider Payroll Register Audit Drawer */}
+      <ProviderAuditDrawer
+        isOpen={showProviderAuditDrawer}
+        onClose={() => setShowProviderAuditDrawer(false)}
+        company={org}
       />
     </div>
   );

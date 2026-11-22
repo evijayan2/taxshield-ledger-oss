@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Receipt, 
@@ -11,6 +11,7 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
   Building2,
   Plus,
   Clock,
@@ -21,6 +22,7 @@ import {
   CreditCard,
   Briefcase,
   ArrowRightLeft,
+  Search,
   X
 } from 'lucide-react';
 import { Organization, TaxYear } from '../types';
@@ -152,7 +154,8 @@ interface NavigationSidebarProps {
 }
 
 /**
- * Modern Sidebar Navigation for TaxShield Ledger supporting dual-theme and full mobile drawer responsiveness.
+ * Modern Sidebar Navigation for TaxShield Ledger supporting dual-theme, 
+ * collapsible accordion sections, live quick-jump search, and full mobile drawer responsiveness.
  */
 export function NavigationSidebar({
   activeTab,
@@ -170,8 +173,11 @@ export function NavigationSidebar({
   mobileOpen = false,
   onCloseMobile,
 }: NavigationSidebarProps) {
-  const navSections = isEmployee
-    ? [
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const navSections = useMemo(() => {
+    if (isEmployee) {
+      return [
         {
           ...EMPLOYEE_HUBS[0],
           category: isReadOnly ? 'Employee Portal (Read-Only)' : 'Employee Portal',
@@ -180,14 +186,95 @@ export function NavigationSidebar({
             label: isReadOnly && item.id === 'TIMESHEETS' ? 'My Timesheets (Read-Only)' : item.label,
           })),
         },
-      ]
-    : OWNER_HUBS;
+      ];
+    }
+    return OWNER_HUBS;
+  }, [isEmployee, isReadOnly]);
+
+  // Identify which hub contains the activeTab
+  const activeHubId = useMemo(() => {
+    for (const section of navSections) {
+      if (section.items.some(item => item.id === activeTab)) {
+        return section.hubId;
+      }
+    }
+    return null;
+  }, [navSections, activeTab]);
+
+  // Section collapse states: Record<hubId, boolean> (true = explicitly collapsed)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  // Auto-expand the active section whenever activeTab changes
+  useEffect(() => {
+    if (activeHubId) {
+      setCollapsedSections(prev => ({
+        ...prev,
+        [activeHubId]: false,
+      }));
+    }
+  }, [activeHubId]);
+
+  const isSectionExpanded = (hubId: string) => {
+    // Always expand all matching sections during search
+    if (searchQuery.trim().length > 0) return true;
+    // If explicitly set, respect user state
+    if (collapsedSections[hubId] !== undefined) {
+      return !collapsedSections[hubId];
+    }
+    // Default: active section and OVERVIEW are expanded
+    return hubId === activeHubId || hubId === 'OVERVIEW';
+  };
+
+  const toggleSection = (hubId: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [hubId]: isSectionExpanded(hubId),
+    }));
+  };
+
+  const handleExpandAll = () => {
+    const next: Record<string, boolean> = {};
+    navSections.forEach(s => { next[s.hubId] = false; });
+    setCollapsedSections(next);
+  };
+
+  const handleCollapseAll = () => {
+    const next: Record<string, boolean> = {};
+    navSections.forEach(s => {
+      // Keep active section open so user isn't lost
+      next[s.hubId] = s.hubId !== activeHubId;
+    });
+    setCollapsedSections(next);
+  };
+
+  // Filter sections by search query in real-time
+  const filteredSections = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return navSections;
+
+    return navSections
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item =>
+          item.label.toLowerCase().includes(q) ||
+          (item.shortLabel && item.shortLabel.toLowerCase().includes(q)) ||
+          section.category.toLowerCase().includes(q)
+        )
+      }))
+      .filter(section => section.items.length > 0);
+  }, [navSections, searchQuery]);
+
+  const totalMatches = useMemo(() => {
+    return filteredSections.reduce((sum, s) => sum + s.items.length, 0);
+  }, [filteredSections]);
 
   // Build unique year list from database taxYears state + activeTaxYear
-  const yearNumbers = Array.from(new Set([
-    activeTaxYear,
-    ...taxYears.map(t => t.year)
-  ])).sort((a, b) => b - a);
+  const yearNumbers = useMemo(() => {
+    return Array.from(new Set([
+      activeTaxYear,
+      ...taxYears.map(t => t.year)
+    ])).sort((a, b) => b - a);
+  }, [activeTaxYear, taxYears]);
 
   const getItemAccent = (_id: NavigationTab, isActive: boolean) => {
     return { 
@@ -199,6 +286,18 @@ export function NavigationSidebar({
     onSelectTab(id);
     if (onCloseMobile) {
       onCloseMobile();
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const firstItem = filteredSections[0]?.items[0];
+      if (firstItem) {
+        handleItemClick(firstItem.id);
+        setSearchQuery('');
+      }
+    } else if (e.key === 'Escape') {
+      setSearchQuery('');
     }
   };
 
@@ -285,50 +384,160 @@ export function NavigationSidebar({
         </div>
       </div>
 
-      {/* Navigation Items */}
-      <nav className="p-3 space-y-4 flex-1 overflow-y-auto">
-        {navSections.map((section, sIdx) => (
-          <div key={section.category} className="space-y-1">
-            <div className={`px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 items-center justify-between ${
-              collapsed ? 'flex md:hidden' : 'flex'
-            }`}>
-              <span>{section.category}</span>
-            </div>
-            {collapsed && sIdx > 0 && (
-              <div className="hidden md:block my-2 border-t border-slate-200 dark:border-slate-800/80" />
-            )}
+      {/* Quick Jump Search Input (visible when sidebar is expanded) */}
+      <div className={`px-3 py-2 border-b border-slate-200 dark:border-slate-800/80 ${collapsed ? 'hidden md:hidden' : 'block'}`}>
+        <div className="relative flex items-center">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 text-slate-400 pointer-events-none shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Quick jump (e.g. payroll, w-2)..."
+            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-2xs"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
 
-            {section.items.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              const accent = getItemAccent(item.id, isActive);
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemClick(item.id)}
-                  title={collapsed ? item.label : undefined}
-                  className={`w-full min-h-[42px] flex items-center gap-3 px-3.5 py-2 rounded-xl font-medium text-sm transition-all cursor-pointer group ${
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-xs font-semibold'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                  } ${collapsed ? 'justify-start md:justify-center px-3.5 md:px-0 py-2 md:py-2.5' : ''}`}
-                >
-                  <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${accent.icon}`} />
-                  <span className={`flex-1 text-left truncate ${collapsed ? 'inline md:hidden' : 'inline'}`}>
-                    {item.label}
-                  </span>
-                  {item.id === 'COMPLIANCE' && pendingTaxCount > 0 && (
-                    <span className={`px-1.5 py-0.5 text-[9px] font-mono font-black rounded-md bg-amber-500 text-slate-950 shadow-xs animate-pulse ${
-                      collapsed ? 'inline md:hidden' : 'inline'
-                    }`}>
-                      DUE
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+        {/* Search Results Summary & Global Toggle */}
+        {!searchQuery && !isEmployee && (
+          <div className="flex items-center justify-between pt-1.5 px-0.5 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
+            <span>Sections</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleExpandAll}
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+              >
+                Expand all
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={handleCollapseAll}
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+              >
+                Collapse
+              </button>
+            </div>
           </div>
-        ))}
+        )}
+
+        {searchQuery && (
+          <div className="flex items-center justify-between pt-1.5 px-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
+            <span>{totalMatches} page{totalMatches === 1 ? '' : 's'} found</span>
+            <span className="text-[9px] text-slate-400 font-sans">Press Enter to open</span>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation Items (Collapsible Accordion Sections) */}
+      <nav className="p-3 space-y-3 flex-1 overflow-y-auto">
+        {filteredSections.length === 0 ? (
+          <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1 animate-in fade-in">
+            <p className="font-semibold text-slate-700 dark:text-slate-300">No matching pages</p>
+            <p className="text-[11px]">No tools match "{searchQuery}"</p>
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="text-emerald-600 dark:text-emerald-400 font-medium underline text-xs cursor-pointer mt-1"
+            >
+              Clear search
+            </button>
+          </div>
+        ) : (
+          filteredSections.map((section, sIdx) => {
+            const expanded = isSectionExpanded(section.hubId);
+            const containsActive = section.items.some(item => item.id === activeTab);
+
+            return (
+              <div key={section.hubId} className="space-y-1">
+                {/* Collapsible Section Header */}
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.hubId)}
+                  className={`w-full px-2.5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer group select-none rounded-lg hover:bg-slate-100/70 dark:hover:bg-slate-800/50 ${
+                    containsActive
+                      ? 'text-emerald-700 dark:text-emerald-400'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  } ${
+                    collapsed ? 'flex md:hidden items-center justify-between' : 'flex items-center justify-between'
+                  }`}
+                  aria-expanded={expanded}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>{section.category}</span>
+                    <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-normal ${
+                      containsActive 
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                    }`}>
+                      {section.items.length}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200">
+                    {expanded ? (
+                      <ChevronDown className="w-3.5 h-3.5 transition-transform" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 transition-transform" />
+                    )}
+                  </div>
+                </button>
+
+                {collapsed && sIdx > 0 && (
+                  <div className="hidden md:block my-2 border-t border-slate-200 dark:border-slate-800/80" />
+                )}
+
+                {/* Sub-Items List (hidden if section collapsed, always rendered if desktop collapsed to icons) */}
+                {(expanded || collapsed) && (
+                  <div className={`space-y-0.5 animate-in fade-in duration-150 ${
+                    collapsed ? 'block' : expanded ? 'block' : 'hidden'
+                  }`}>
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      const accent = getItemAccent(item.id, isActive);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleItemClick(item.id)}
+                          title={collapsed ? item.label : undefined}
+                          className={`w-full min-h-[42px] flex items-center gap-3 px-3.5 py-2 rounded-xl font-medium text-sm transition-all cursor-pointer group ${
+                            isActive
+                              ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                              : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                          } ${collapsed ? 'justify-start md:justify-center px-3.5 md:px-0 py-2 md:py-2.5' : ''}`}
+                        >
+                          <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${accent.icon}`} />
+                          <span className={`flex-1 text-left truncate ${collapsed ? 'inline md:hidden' : 'inline'}`}>
+                            {item.label}
+                          </span>
+                          {item.id === 'COMPLIANCE' && pendingTaxCount > 0 && (
+                            <span className={`px-1.5 py-0.5 text-[9px] font-mono font-black rounded-md bg-amber-500 text-slate-950 shadow-xs animate-pulse ${
+                              collapsed ? 'inline md:hidden' : 'inline'
+                            }`}>
+                              DUE
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </nav>
 
       {/* Footer LLC Info */}

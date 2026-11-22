@@ -31,9 +31,7 @@
 - [x] Initial split boundary implemented: shared-core owns the domain contract and wrapper packages re-export the core types instead of duplicating them
 - [x] Client-Side Browser Runtime Defense & Favicon Resolution: Resolved `Uncaught ReferenceError: process is not defined at prisma.ts:13:3` by guarding `src/lib/prisma.ts`, `shared-core/src/lib/prisma.ts`, `logger.ts`, and `tinCrypto.ts` with browser-safe environment detection, delegating browser-side Prisma operations to `prismaBrowserStub.ts`, adding `define: { 'process.env': {} }` to `vite.config.ts`, and extending Vite aliases to intercept direct `prisma.ts` imports. Resolved browser 404 on `/favicon.ico` by generating an SVG favicon in `public/favicon.svg`, adding `<link rel="icon" ...>` tags to `index.html`, and serving `/favicon.ico` gracefully via `server.ts`.
 - [x] Slide-Over Ledger Reset Drawer & Transaction Data Clearance: Resolved issue where 'Reset All Data' lacked user confirmation, provided zero visual feedback, and failed to immediately clear PostgreSQL snapshots. Created `ResetLedgerConfirmDrawer.tsx` (accessible slide-over drawer adhering to AGENTS.md UI Rules 5 & 6 with backdrop blur, itemized review of cleared vs preserved records, and loading spinner), integrated `handleResetAllData` in `useAppState.ts` with atomic state reset, audit logging, and immediate `saveServerAppData` database synchronization, and added an in-app success banner with a 'View Dashboard' shortcut in `SettingsView.tsx`. Verified with unit tests in `tests/unit/resetLedgerWorkflow.test.ts`.
-- [x] Fixture Deduplication & Shared-Core Fixture Consolidation: Removed redundant fixture copies from `taxshield-ledger-oss/prisma/fixtures/` (~136 KB, 10 JSON files), centralizing authoritative offline test fixtures and calculation caches in `shared-core` exported via `taxshield-ledger-core/fixtures`. Re-exported domain utilities (`taxRulesEngine`, `localTaxDistricts`, `paSchoolDistricts`, `supportedStates`) from `shared-core` to prevent code divergence.
-- [x] Zero-Default Package Server URL Configuration: Completely purged hardcoded fallback string `'https://tax-rule-packaging-engine.vercel.app'` from all source files, scripts, and CI workflows across `taxshield-ledger-oss`, `shared-core`, and `taxshield-ledger-saas`. All package distribution clients now strictly derive the server URL from `process.env.TAXPACK_SERVER_URL` with pre-flight URL validation to eliminate `undefined/packages` network failures.
-- [x] PostgreSQL Direct Sync Hardening & Constraint Collision Remediation: Resolved `audit_log_entries` foreign key violation (`code 23503`) by verifying valid company IDs before child record insertion and mapping orphaned company references to the active company ID. Resolved `tax_years_companyId_year_key` unique constraint violation (`code 23505`) by inspecting existing `("companyId", year)` records, updating directly or upserting on `("companyId", year)` rather than `id`, and deduplicating client payload arrays. Added PostgreSQL transaction `SAVEPOINT` / `ROLLBACK TO SAVEPOINT` blocks around `timesheets`, `audit_log_entries`, and `tax_years` to isolate synchronization faults and prevent transaction-wide aborts (`25P02`). Synchronized these safeguards identically across `taxshield-ledger-oss` and `shared-core`.
+- [x] Test Suite PDF Artifact Cleanup: Resolved issue where running unit tests for `payStubPdfBuilder` generated persistent PayStub PDF files on disk (`Acme_Software_LLC_Doe_John_PayStub_2026-08-15.pdf`) in `shared-core/` and `taxshield-ledger-oss/`. Added automated before/after test hooks and post-assertion cleanup in `payStubPdfBuilder.test.ts` to ensure all generated PDF files are cleanly deleted from disk immediately after tests succeed.
 - [ ] Promote the split into separate remote repositories and validate the package boundary after the workspace is stable
 
 This document tracks the current implementation status, verification metrics, pending backlog, and newly added capabilities across all development phases of TaxShield Ledger.
@@ -140,6 +138,18 @@ The project is therefore at the expected Phase 2 handoff boundary: the core ledg
 18. **Strict In-App Confirmation Architecture & Elimination of Native Browser Dialogs (`AGENTS.md`, `InvoicingView.tsx`)**
     - Codified binding rule in `AGENTS.md` (Rule 6 under UI Component Creation & Theme Rules): strict prohibition of browser-native popups (`window.alert()`, `window.confirm()`, `window.prompt()`).
     - Implemented custom in-app glass confirmation modal in `InvoicingView.tsx` with dark backdrop blur, red alert badge, invoice summary pill (Client, Total Due, Status), and high-contrast dual-theme action buttons for invoice deletions.
+19. **Complete UX/UI Modernization, Mobile Cardification & Native Dialog Eradication (`NavigationSidebar.tsx`, `App.tsx`, `AssistedPayrollView.tsx`, `ExpenseTrackerView.tsx`, `ToastNotification.tsx`)**
+    - **Linear-Style 4-Pillar Information Architecture:** Restructured the 24-item flat sidebar into 4 clear operational hubs (`OVERVIEW`, `BOOKKEEPING`, `PAYROLL`, `TAX_COMPLIANCE`, plus `SETTINGS`). Accessible touch targets (minimum 44px) and high-contrast active state (vibrant Emerald 600 with white text) in both Light (`#f8fafc`) and Dark (`#0b0f19`) themes.
+    - **Contextual Sticky Sub-Nav Pill Bar (`App.tsx`):** Placed right beneath the main header bar. Renders horizontally scrollable pill tabs for the active hub, allowing 1-tap switching between related tools on mobile and desktop without opening the off-canvas drawer.
+    - **Zero Native Dialogs & Zero Centered Popups:** Permanently removed all remaining `window.alert()` calls across the repository (`AssistedPayrollView.tsx`, `SettingsView.tsx`, `TaxRuleAdminView.tsx`, `useAppState.ts`). Converted the single centered popup in `InvoicingView.tsx` into an edge-anchored slide-over drawer.
+    - **In-App Toast Notification Stack (`ToastNotification.tsx`):** Built accessible in-app toast stack supporting `success`, `warning`, `error`, and `info` with auto-dismiss timers, clear icons, and manual dismiss triggers.
+    - **Gusto-Style Payroll Hero Stat Strip & 3-Step Wizard (`AssistedPayrollView.tsx`):** Added executive YTD Hero Stat Strip (`Total Employer Cost`, `Net Take-Home Pay`, `Total Tax Liabilities`) and a 3-step progress breadcrumb (`1. Hours & Wages` ➔ `2. Statutory Taxes` ➔ `3. Payout & Audit`) in the Run Pay Period drawer.
+    - **Mobile Cardification for Wide Tables (`ExpenseTrackerView.tsx`, `AssistedPayrollView.tsx`):** Implemented responsive dual-render views: wide multi-column tables for desktop (`hidden md:block`) and thumb-friendly itemized glass cards for mobile screens (`block md:hidden`).
+20. **Collapsible Accordion Navigation & Real-Time Quick-Jump Search (`src/components/NavigationSidebar.tsx`, `tests/unit/navigationSidebar.test.ts`)**
+    - Instant quick-jump search input in the application sidebar with search icon, clear button (`X`), and keyboard navigation (Enter selects first match, Escape clears filter).
+    - Real-time search filtering across tool names, short labels, and category/hub names.
+    - Collapsible accordion sections for the primary hubs with animated chevron indicators, item counts, active tab auto-expansion, and bulk 'Expand all' / 'Collapse' toggles.
+    - Full dual-theme high contrast styling with `.glass-input` and zero layout jumps.
 
 ---
 
@@ -158,6 +168,18 @@ The project is therefore at the expected Phase 2 handoff boundary: the core ledg
 - [x] BMad Skill Template Modernization & Renderer Compatibility: Resolved Jinja2 template syntax error in `.agent/skills/bmad-build-auto` and `.agent/skills/bmad-build` by migrating from legacy v6 Go-template dot syntax (`{{.variable}}`) to canonical BMad v7 Jinja2 expressions (`{{ rendered(...) }}`, `{{ initiative_folder }}`), verifying 100% clean rendering and execution via `uv run _bmad/scripts/render_skill.py`.
 - [ ] Additional Tier 2/3 state source adapters feeding Module 1's packaging engine (NJ, NY, OH, DE).
 
+### Phase 3 Extension — Cost-Effective Sovereign Core Payroll & S-Corp Compliance Initiative
+- [x] Product Requirements Document (PRD) approved: `docs/prd-cost-effective-payroll-compliance.md` (100% zero-paid-service architecture, multi-vector pre/post-tax deduction engine, IRC § 1372 S-Corp shareholder health, company SUTA experience ratings, decoupled `PayrollTaxLiability` ledger, universal NACHA direct deposit, EFTPS ACH credit TXP addenda, "Verify Your Provider" importer, Form 941/940 worksheets, SSA EFW2 annual W-2 batch).
+- [x] Technical Architecture Specification approved: `docs/architecture-cost-effective-payroll.md` (ERD data contracts for `PayrollTaxLiability`, `TaxPaymentAllocation`, `BenefitPlan`, `EmployeeDeduction`, `CompanyTaxSetting`, `ExperienceRateHistory`, `AchOriginatorProfile`, `AchBatch`; ordered deduction cascade pipeline; zero-paid-service integration architecture).
+- [ ] Wave 1.1: Prisma Schema Migration across `shared-core`, `taxshield-ledger-oss`, and `taxshield-ledger-saas` for `PayrollTaxLiability`, `BenefitPlan`, and `CompanyTaxSetting`.
+- [ ] Wave 1.2: Multi-Vector Benefit Deduction Engine with IRC § 1372 S-Corp Shareholder Health Exemption in `shared-core`.
+- [ ] Wave 1.3: Company SUTA Experience Rating System with statutory bounds validation and notice attachment.
+- [ ] Wave 1.4: Universal NACHA PPD Direct Deposit Generator (`nachaGenerator.ts`) with 94-character fixed-width serialization.
+- [ ] Wave 1.5: Payroll Payment Concierge slide-over drawer (`PaymentConciergeDrawer.tsx`) with 1-click EFTPS/DOR payment instructions and confirmation logging.
+- [ ] Wave 2.1: "Verify Your Provider" Gusto/QBO payroll register CSV variance importer.
+- [ ] Wave 2.2: Form 941 & Form 940 quarterly/annual reconciliation worksheets & draft PDFs.
+- [ ] Wave 2.3: SSA EFW2 512-byte fixed-width annual W-2 electronic batch generator.
+
 ### Phase 4 — Reporting & Polish
 - [ ] Advanced document management & cross-entity global search.
 - [ ] Notification & statutory filing alert system.
@@ -168,11 +190,11 @@ The project is therefore at the expected Phase 2 handoff boundary: the core ledg
 
 ## 5. Test Suite Metrics
 
-- **Total Test Files:** 94 passed across repository
-- **Total Tests:** 467 passed 100%
+- **Total Test Files:** 96 passed across repository
+- **Total Tests:** 476 passed 100%
 - **Packaging Engine Suite:** 24 test files / 74 tests passed
 - **Shared-Core Suite:** 37 test files / 214 tests passed
-- **OSS App Suite:** 32 test files / 174 tests passed
+- **OSS App Suite:** 34 test files / 183 tests passed
 - **SaaS App Suite:** 1 test file / 5 tests passed
 - **Regression Suite:** `pnpm test:regression` (Passed)
 - **Unit & System Suite:** `pnpm test` (Passed)

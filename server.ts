@@ -9,6 +9,7 @@ import { getPool, initPostgresTables, getPostgresConnectionString } from './serv
 import { loadAllDataFromPostgres, saveAllDataToPostgres } from './server/dataService.js';
 import { authRouter } from './server/auth/routes.js';
 import { sutaRouter } from './server/routes/sutaRoutes.js';
+import { nachaRouter } from './server/routes/nachaRoutes.js';
 import { requireAuth, requireOwner, type AuthenticatedRequest } from './server/auth/middleware.js';
 
 const getCurrentDirname = () => {
@@ -38,6 +39,7 @@ export function createServerApp(): express.Express {
   // Authentication Endpoints
   app.use('/api/auth', authRouter);
   app.use('/api', sutaRouter);
+  app.use('/api', nachaRouter);
 
   // Serve favicon gracefully
   app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {

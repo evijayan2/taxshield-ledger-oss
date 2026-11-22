@@ -23,6 +23,7 @@ import { calculateGrossToNet, getRecordYear, isFutureYear, isFutureDateString } 
 import { printPayStubPdf, savePayStubPdf } from '../utils/payStubPdfBuilder';
 import { getApprovedHoursForEmployee } from '../utils/timesheetUtils';
 import { calculateNextPayrollPeriod } from '../utils/payrollDateUtils';
+import { NachaExportButton } from './NachaExportButton';
 
 interface AssistedPayrollViewProps {
   employees: Employee[];
@@ -359,9 +360,17 @@ export function AssistedPayrollView({
               <p className="text-[11px] text-slate-500 dark:text-slate-400">Execute ACH transfers from your company bank account and record trace confirmation numbers</p>
             </div>
           </div>
-          <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
-            Total Pending Payout: ${yearPayStubs.filter(s => s.disbursementStatus === 'PENDING').reduce((s, st) => s + st.netPay, 0).toFixed(2)}
-          </span>
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
+            <NachaExportButton
+              org={org}
+              employees={employees}
+              payStubs={yearPayStubs}
+              onUpdateStubDisbursement={onUpdateStubDisbursement}
+            />
+            <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+              Total Pending: ${yearPayStubs.filter(s => s.disbursementStatus === 'PENDING').reduce((s, st) => s + st.netPay, 0).toFixed(2)}
+            </span>
+          </div>
         </div>
 
         <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50/50 dark:bg-slate-950/40">

@@ -8,6 +8,7 @@ import { createServer as createViteServer } from 'vite';
 import { getPool, initPostgresTables, getPostgresConnectionString } from './server/db.js';
 import { loadAllDataFromPostgres, saveAllDataToPostgres } from './server/dataService.js';
 import { authRouter } from './server/auth/routes.js';
+import { sutaRouter } from './server/routes/sutaRoutes.js';
 import { requireAuth, requireOwner, type AuthenticatedRequest } from './server/auth/middleware.js';
 
 const getCurrentDirname = () => {
@@ -36,6 +37,7 @@ export function createServerApp(): express.Express {
 
   // Authentication Endpoints
   app.use('/api/auth', authRouter);
+  app.use('/api', sutaRouter);
 
   // Serve favicon gracefully
   app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {

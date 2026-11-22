@@ -26,6 +26,7 @@ import { useAuth } from '../context/AuthContext';
 import { AccountSecuritySection } from './AccountSecuritySection';
 import { EmployeeSecurityRoster } from './EmployeeSecurityRoster';
 import { ResetLedgerConfirmDrawer } from './ResetLedgerConfirmDrawer';
+import { SutaSettingsDrawer } from './SutaSettingsDrawer';
 
 interface SettingsViewProps {
   org: Organization;
@@ -53,6 +54,7 @@ export function SettingsView({
   onClearToFreshSlate,
   onExportJSON,
   onImportJSON,
+  onSyncToPostgres,
   isOwner = true,
   isEmployee = false,
   onNavigateTab,
@@ -64,6 +66,7 @@ export function SettingsView({
   const [testingMercury, setTestingMercury] = useState(false);
   const [mercuryTestResult, setMercuryTestResult] = useState<{ success: boolean; message: string; accounts?: any[] } | null>(null);
   const [showResetConfirmDrawer, setShowResetConfirmDrawer] = useState(false);
+  const [showSutaDrawer, setShowSutaDrawer] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -315,6 +318,25 @@ export function SettingsView({
                 </span>
                 <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   Resolved from the active TaxRuleVersion per trip date
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800/60 space-y-2 col-span-full">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> State Unemployment (SUTA) Experience Ratings
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSutaDrawer(true)}
+                    className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Manage Rates & DOL Notices</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Record company-assigned state unemployment contribution rates (e.g. PA Form UC-657) with statutory bounds validation.
                 </p>
               </div>
             </div>
@@ -717,6 +739,15 @@ export function SettingsView({
           invoices: allData?.invoices?.length,
           bankTx: allData?.bankTransactions?.length,
         }}
+      />
+
+      {/* Slide-over Drawer for SUTA Experience Ratings */}
+      <SutaSettingsDrawer
+        isOpen={showSutaDrawer}
+        onClose={() => setShowSutaDrawer(false)}
+        companyId={org.id}
+        companyState={org.state || 'PA'}
+        onSaved={onSyncToPostgres}
       />
     </div>
   );

@@ -25,6 +25,7 @@ If a task seems to need a hardcoded number to move faster, stop and say so inste
 The project is sequenced into 5 phases (0 through 4), each with explicit dependencies, exit criteria, and a risk table in the development plan. Rules for agents:
 
 - **Build one phase at a time, in order.** Don't start Phase 2 work while Phase 1's exit criteria are unmet, and don't reach ahead into Phase 3 "while you're in there." If given a vague instruction like "build the app," ask which phase to work on rather than attempting everything.
+- **Every epic must be in its own dedicated branch.** Never develop directly on `main` or lump multiple unrelated epics into a single branch. Always check out a dedicated `feat/<epic-name>` branch before starting implementation.
 - **Keep phase status documentation updated.** Whenever any feature work, phase deliverable, or major bug fix is completed, update `docs/phase-status.md` with the new module status, file references, test metrics, and remaining pending backlog items.
 - **Respect the dependency graph**, not just the phase numbers — e.g., Phase 3 depends on *both* Phase 1 (payroll engine to extend) and Phase 2 (automated rule engine to keep multi-jurisdiction rules current). Don't treat either dependency as optional because the other is closer to done.
 - **Pause for explicit review before implementing or modifying the Phase 0 core schema** (`Company`, `TaxYear`, `TaxJurisdiction`, `TaxRule`, `TaxRuleVersion`, `EffectivePeriod`, `CalculationSnapshot`, `AuditLogEntry`). This is load-bearing for every later phase. Present the proposed schema/migration as a plan and wait for approval before generating code.
@@ -44,6 +45,24 @@ These come from the risk tables in the development plan — treat them as requir
 - **Multi-state payroll runs are blocked, not degraded, when a required jurisdiction's rule isn't `Active`.** Never fall back to a best-guess or default rate for a missing jurisdiction rule.
 - **Duplicate/transaction matching defaults to "needs review," not auto-confirmed**, until false-positive rates are actually measured and known to be low.
 - **Row-level ownership fields** (`company_id`, `created_by`, etc.) are included on every table from Phase 0 onward, even though only one user exists — this is a schema decision made once, not deferred.
+
+---
+
+## Branching & Epic Isolation Strategy
+
+**Every Epic, Major Feature Initiative, or Significant Milestone MUST be developed in its own dedicated feature branch.**
+
+Rules for coding agents:
+- **Never develop directly on `main` or merge multiple unrelated epics into one branch.** Before starting any feature work, PRD epic, or architectural milestone, verify that you are on (or create and switch to) the dedicated branch for that epic.
+- **Branch naming convention:** Follow `feat/<epic-or-feature-name>` for features and `fix/<issue-name>` for bug fixes (e.g. `feat/multi-vector-deductions`, `feat/suta-experience-ratings`, `feat/payroll-tax-liability-ledger`, `feat/nacha-direct-deposit`, `feat/mobile-device-view-support`).
+- **Encapsulation of Epic Scope:** Each branch owns its full vertical slice: schema migrations, core domain logic, UI views/drawers, unit tests, integration tests, and documentation updates. Do not leak changes from future epics or unrelated initiatives into an active branch.
+- **Multi-Repository Synchronization:** Because this monorepo consists of multiple component repositories (`shared-core`, `taxshield-ledger-oss`, `taxshield-ledger-saas`, `tax-rule-packaging-engine`), whenever an epic spans multiple sub-packages, create the matching branch name across all affected repositories.
+- **Merge & Completion Gates:** An epic branch is only ready to merge when:
+  1. All regression tests pass (`pnpm test:regression`).
+  2. Full test suite passes (`pnpm test`) with zero failures.
+  3. Production build succeeds (`pnpm build`).
+  4. Dual-theme compatibility (Light & Dark) and mobile responsive constraints are verified.
+  5. `docs/phase-status.md` is updated with the completed deliverables and updated test metrics.
 
 ---
 
@@ -100,12 +119,15 @@ This repo is intended to be public with outside contributors, most of whom will 
 
 ## Tech stack
 
-- **Framework:** Next.js (App Router) + React
-- **Test tooling:** Vite/Vitest for unit and regression tests. (Assumption: "Next.js/Vite/React" is read as *Next.js as the app framework, Vite-powered Vitest as the test runner* — Next.js doesn't use Vite for its own build. Flag this if the intent was actually a separate Vite-built app alongside Next.js.)
-- **Database:** Postgres
-- **ORM:** Prisma. (Assumption, stated for one reason: Prisma's declarative schema + migration history is a strong fit for the versioned, effective-dated `TaxRule`/`TaxRuleVersion` model this project is built around, and it has first-class Next.js/Vercel support. Drizzle is a reasonable alternative if you'd rather have a lighter, more SQL-like layer — swap this line and the commands below if so.)
-- **Local dev environment:** Docker Compose (Postgres, and anything else local dev needs — no cloud dependency required to run the app locally)
-- **Hosting:** Vercel
+- **Framework & Frontend:** React 19 + Vite + Tailwind CSS v4 (Single Page Application with slide-over drawers and dual light/dark theme support)
+- **Backend / API:** Node.js + Express (`server.ts`, `server/`, `api/`)
+- **Shared Core:** `shared-core/` (core financial ledger, payroll engine, date resolver, OCR engine, and audit logging)
+- **Tax Packaging Engine:** `tax-rule-packaging-engine/` (TaxPack distribution server on `http://localhost:3333`, CLI, sealed tax rule packages)
+- **Test tooling:** Vitest for unit, regression (`pnpm test:regression`), and integration tests
+- **Database:** PostgreSQL
+- **ORM:** Prisma (37 relational models in `prisma/schema.prisma` across 14 migrations). Declarative schema + migration history is a strong fit for the versioned, effective-dated `TaxRule`/`TaxRuleVersion` model this project is built around.
+- **Local dev environment:** Docker Compose / local PostgreSQL
+- **Hosting:** Vercel (static frontend build + Express serverless API)
 - **CI/CD:** GitHub Actions — lint/test on every PR; a separate deploy workflow pushes to Vercel via the Vercel CLI rather than relying on Vercel's default GitHub auto-deploy, so deploys are explicit and gated by the same CI checks as everything else.
 - **Package manager: pnpm, always.** Never use `npm` or `yarn` in commands, scripts, CI, or Docker files — including examples, docs snippets, and one-off suggestions.
 
@@ -157,29 +179,33 @@ docker compose down
 
 ## Directory structure
 
-Mapped from the four-layer architecture onto Next.js's App Router conventions. Adjust as Phase 0 scaffolding is actually built, but keep the layer boundaries intact — the point of the four layers is that Business Services and the Rules Engine never import a hardcoded rate, and that's easier to enforce (and to review in a PR) if they live in predictable places.
+The open-source single-company app follows a clear separation between Vite/React frontend, Express backend, Prisma relational persistence, and shared packages:
 
 ```
-/docs                    → development plan, PRD, architecture notes
+/api                     → Vercel serverless function entrypoint (api/index.ts)
+/docs                    → phase status, research, spec documents
 /prisma
-  schema.prisma          → core data model (Company, TaxYear, TaxJurisdiction, TaxRule, TaxRuleVersion...)
-  /migrations
-  seed.ts                → seeds federal/PA rule data via TaxRule records — never inline rates
+  schema.prisma          → relational data model (37 models covering Company, TaxRule, PayrollRun, etc.)
+  /migrations            → 14 Prisma migrations
+  seed.ts                → database seeding via Prisma
+/scripts                 → database verification, reset, and taxpack sync scripts
+/server                  → backend services, auth, data services, prisma client
+/server.ts               → Express API server & routes
 /src
-  /app                    → Next.js App Router — pages, layouts, route handlers (User Interface layer)
-  /server
-    /services             → Business Services (expense, payroll, mileage, reimbursement, compliance...)
-    /rules-engine         → Tax Rules Engine (rule resolution, effective-date logic, regression harness)
-    /ingestion            → Government Source Layer (Phase 2+: per-source ingestion jobs)
-    /jurisdiction         → Jurisdiction Resolver (Phase 3)
-  /lib                    → shared utilities, Prisma client, auth
+  /components            → UI views (~18 views), slide-over drawers, theme components
+  /context               → React context providers (Theme, Auth, etc.)
+  /utils                 → client tax engine utilities, formatting, helpers
+  App.tsx                → primary application layout & routing
+  index.css              → Tailwind CSS v4 & glassmorphism utilities
+  main.tsx               → React 19 entry point
 /tests
-  /regression             → Rule regression-test cases (inputs → expected outputs)
-  /unit
-/docker-compose.yml       → local Postgres (+ any other local services)
+  /unit                  → Vitest unit tests
+  /regression            → tax rule regression test harness
+  /integration           → API & workflow integration tests
+/docker-compose.yml      → local Postgres (+ any other local services)
 /.github/workflows
-  ci.yml                  → lint + test on every PR
-  deploy.yml              → deploy to Vercel via CLI on merge to main, gated on ci.yml passing
+  ci.yml                 → lint + test on every PR
+  deploy.yml             → deploy to Vercel via CLI on merge to main, gated on ci.yml passing
 ```
 
 ---

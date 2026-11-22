@@ -4,6 +4,7 @@ import { getPostgresStatus, fetchServerAppData, saveServerAppData, PostgresStatu
 import { GeneralExpense, MileageLog, TravelExpense, TimesheetEntry, TimesheetStatus, Company, Organization, TaxYear, ComplianceTask } from '../types';
 import { createAuditLogEntry } from '../utils/auditLogger';
 import { createDefaultComplianceTasks, getTaskTaxYear, isFutureYear, isFutureDateString, getFutureYearLockMessage } from '../utils/taxEngine';
+import { ToastMessage } from '../components/ToastNotification';
 import { 
   generateFiscalYearCalendar, 
   isTimesheetModificationAllowed, 
@@ -23,6 +24,16 @@ export function useAppState() {
   const [dbStatus, setDbStatus] = useState<PostgresStatus | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
+    const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    setToasts(prev => [...prev, { ...toast, id }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   const checkAndSyncPostgres = async () => {
     try {
@@ -287,7 +298,11 @@ export function useAppState() {
     const lockCheck = isTimesheetModificationAllowed(newEntry.workDate, data.calendarPeriods || []);
     if (!lockCheck.allowed) {
       console.warn(lockCheck.message);
-      alert(lockCheck.message || 'Pay period is locked for timesheet submission.');
+      addToast({
+        type: 'warning',
+        title: 'Pay Period Locked',
+        message: lockCheck.message || 'Pay period is locked for timesheet submission.',
+      });
       return;
     }
 
@@ -335,7 +350,11 @@ export function useAppState() {
       const lockCheck = isTimesheetModificationAllowed(target.workDate, data.calendarPeriods || []);
       if (!lockCheck.allowed) {
         console.warn(lockCheck.message);
-        alert(lockCheck.message || 'Cannot update status on a locked pay period timesheet.');
+        addToast({
+          type: 'warning',
+          title: 'Pay Period Locked',
+          message: lockCheck.message || 'Cannot update status on a locked pay period timesheet.',
+        });
         return;
       }
     }
@@ -352,7 +371,11 @@ export function useAppState() {
       const lockCheck = isTimesheetModificationAllowed(target.workDate, data.calendarPeriods || []);
       if (!lockCheck.allowed) {
         console.warn(lockCheck.message);
-        alert(lockCheck.message || 'Cannot delete timesheet entry for a locked pay period.');
+        addToast({
+          type: 'warning',
+          title: 'Pay Period Locked',
+          message: lockCheck.message || 'Cannot delete timesheet entry for a locked pay period.',
+        });
         return;
       }
     }
@@ -612,6 +635,71 @@ export function useAppState() {
     }));
   };
 
+  /**
+   * Resets all transactional ledger records to zero while preserving company and tax rule configuration.
+   * Immediately persists the reset to PostgreSQL backend and logs an audit trail event.
+   */
+  const handleResetAllData = async (): Promise<{ success: boolean; error?: string }> => {
+    const actorEmail = getActorEmail();
+    const currentCompany = data.company || data.org;
+    const compId = currentCompany?.id || 'comp_main';
+
+    const auditEntry = createAuditLogEntry(
+      'Company',
+      compId,
+      'UPDATE',
+      actorEmail,
+      {
+        generalExpensesCount: data.generalExpenses?.length || 0,
+        mileageLogsCount: data.mileageLogs?.length || 0,
+        travelExpensesCount: data.travelExpenses?.length || 0,
+        payrollRunsCount: data.payrollRuns?.length || 0,
+        invoicesCount: data.invoices?.length || 0,
+        bankTransactionsCount: data.bankTransactions?.length || 0,
+      },
+      {
+        resetAt: new Date().toISOString(),
+      },
+      'Full ledger reset: cleared all expenses, mileage logs, travel expenses, payroll runs, pay stubs, timesheets, invoices, and bank transactions.'
+    );
+
+    const cleanData: AllAppData = {
+      ...data,
+      generalExpenses: [],
+      mileageLogs: [],
+      travelExpenses: [],
+      payrollRuns: [],
+      payStubs: [],
+      timesheets: [],
+      invoices: [],
+      contractorPayments: [],
+      bankTransactions: [],
+      bankBatches: [],
+      complianceTasks: createDefaultComplianceTasks(data.activeTaxYear || 2026),
+      auditLogs: [auditEntry, ...(data.auditLogs || [])],
+    };
+
+    // 1. Immediately update local state
+    setData(cleanData);
+
+    // 2. Immediately persist to PostgreSQL backend
+    if (dbStatus?.connected) {
+      try {
+        const res = await saveServerAppData(cleanData);
+        if (!res.success) {
+          setDbError(res.error || 'Failed to persist ledger reset to PostgreSQL');
+          return { success: false, error: res.error };
+        }
+        return { success: true };
+      } catch (err: any) {
+        setDbError(err.message || 'Network error resetting ledger data');
+        return { success: false, error: err.message };
+      }
+    }
+
+    return { success: true };
+  };
+
   return {
     data,
     setData,
@@ -638,6 +726,10 @@ export function useAppState() {
     handleCreateCustomer,
     handleUpdateInvoiceStatus,
     handleDeleteInvoice,
+    handleResetAllData,
+    toasts,
+    addToast,
+    dismissToast,
   };
 }
 

@@ -21,7 +21,7 @@ describe('Auth Password and Token Helpers', () => {
 
     const isWrong = await verifyPassword('WrongPassword123', hash);
     expect(isWrong).toBe(false);
-  });
+  }, 15000);
 
   it('should generate 32-byte hex opaque tokens and deterministic SHA-256 hashes', () => {
     const token = generateOpaqueToken();

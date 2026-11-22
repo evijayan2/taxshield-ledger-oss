@@ -1,5 +1,5 @@
-import { PrismaClient, RuleStatus, CitationTier, RuleType } from '@prisma/client';
-import { allTaxRuleFixtures } from './fixtures/index';
+import { PrismaClient } from '@prisma/client';
+import { allTaxRuleFixtures } from 'taxshield-ledger-core';
 
 const prisma = new PrismaClient();
 

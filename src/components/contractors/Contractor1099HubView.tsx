@@ -168,37 +168,37 @@ export function Contractor1099HubView({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-            <Users className="w-6 h-6 text-indigo-500" />
-            Contractor W-9 Hub & 1099-NEC
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Users className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-500 shrink-0" />
+            <span>Contractor W-9 Hub & 1099-NEC</span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Collect Form W-9s, monitor the statutory ${statutoryThreshold.toFixed(0)} threshold dynamically, and generate IRS Form 1099-NEC e-file manifests.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={handleOpenAddNewContractor}
-            className="px-3.5 py-2 text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm flex items-center gap-1.5 transition-colors"
+            className="flex-1 sm:flex-initial justify-center px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <UserPlus className="w-4 h-4" /> Add Contractor
           </button>
           <button
             onClick={() => handleOpenInvite()}
-            className="px-3.5 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors"
+            className="flex-1 sm:flex-initial justify-center px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Send className="w-4 h-4" /> Send W-9 Invite
           </button>
           <button
             onClick={() => setShowPaymentDrawer(true)}
-            className="px-3.5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+            className="flex-1 sm:flex-initial justify-center px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <DollarSign className="w-4 h-4" /> Log Payment
           </button>
           <button
             onClick={handleExportIrisCsv}
             disabled={ready1099Count === 0}
-            className="px-4 py-2 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+            className="flex-1 sm:flex-initial justify-center px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" /> Export IRIS CSV
           </button>

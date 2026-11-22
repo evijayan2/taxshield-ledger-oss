@@ -70,19 +70,20 @@ authRouter.get('/bootstrap-status', async (req: Request, res: Response) => {
 
     if (userCount === 0 && activeRuleCount === 0) {
       try {
-        const { syncAllAvailablePackages } = await import('../services/taxPackageClient.js');
         const defaultTaxPackUrl =
           process.env.TAXPACK_SERVER_URL ||
-          process.env.TAX_PACKAGE_SERVER_URL ||
-          'https://tax-rule-packaging-engine.vercel.app';
-        console.log(`[BOOTSTRAP-STATUS] Auto-syncing regulatory tax rules from ${defaultTaxPackUrl}...`);
-        await syncAllAvailablePackages(defaultTaxPackUrl, {
-          actorId: 'system_bootstrap',
-          activateImmediately: true,
-        });
-        activeRuleCount = await prisma.taxRuleVersion.count({
-          where: { status: 'ACTIVE' },
-        });
+          process.env.TAX_PACKAGE_SERVER_URL;
+        if (defaultTaxPackUrl) {
+          const { syncAllAvailablePackages } = await import('../services/taxPackageClient.js');
+          console.log(`[BOOTSTRAP-STATUS] Auto-syncing regulatory tax rules from ${defaultTaxPackUrl}...`);
+          await syncAllAvailablePackages(defaultTaxPackUrl, {
+            actorId: 'system_bootstrap',
+            activateImmediately: true,
+          });
+          activeRuleCount = await prisma.taxRuleVersion.count({
+            where: { status: 'ACTIVE' },
+          });
+        }
       } catch (syncErr: any) {
         console.warn('[BOOTSTRAP-STATUS] Initial tax package sync attempt:', syncErr);
       }
@@ -131,19 +132,20 @@ authRouter.post('/bootstrap', async (req: Request, res: Response) => {
 
     if (activeRuleCount === 0) {
       try {
-        const { syncAllAvailablePackages } = await import('../services/taxPackageClient.js');
         const defaultTaxPackUrl =
           process.env.TAXPACK_SERVER_URL ||
-          process.env.TAX_PACKAGE_SERVER_URL ||
-          'https://tax-rule-packaging-engine.vercel.app';
-        console.log(`[BOOTSTRAP] No active tax rules detected. Auto-syncing from TaxPack server: ${defaultTaxPackUrl}...`);
-        await syncAllAvailablePackages(defaultTaxPackUrl, {
-          actorId: 'system_bootstrap',
-          activateImmediately: true,
-        });
-        activeRuleCount = await prisma.taxRuleVersion.count({
-          where: { status: 'ACTIVE' },
-        });
+          process.env.TAX_PACKAGE_SERVER_URL;
+        if (defaultTaxPackUrl) {
+          const { syncAllAvailablePackages } = await import('../services/taxPackageClient.js');
+          console.log(`[BOOTSTRAP] No active tax rules detected. Auto-syncing from TaxPack server: ${defaultTaxPackUrl}...`);
+          await syncAllAvailablePackages(defaultTaxPackUrl, {
+            actorId: 'system_bootstrap',
+            activateImmediately: true,
+          });
+          activeRuleCount = await prisma.taxRuleVersion.count({
+            where: { status: 'ACTIVE' },
+          });
+        }
       } catch (syncErr: any) {
         console.error('[BOOTSTRAP] Automatic tax package sync failed:', syncErr);
       }
@@ -660,20 +662,15 @@ authRouter.post('/reset-request', resetLimiter, async (req: Request, res: Respon
     }
 
     const cleanEmail = normalizeEmail(email);
-    console.log(`\n================== [TAXSHIELD AUTH: PASSWORD RESET REQUEST] ==================`);
-    console.log(`Requested Email: "${cleanEmail}"`);
 
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
 
     if (!user || !user.isActive) {
-      const allUsers = await prisma.user.findMany({ select: { email: true, isActive: true } });
-      const accountsList = allUsers.map(u => `${u.email} (${u.isActive ? 'active' : 'inactive'})`).join(', ');
-      console.warn(`[TaxShield Auth] WARNING: Account "${cleanEmail}" NOT FOUND or inactive in PostgreSQL database!`);
-      console.warn(`[TaxShield Auth] Existing users in database: [${accountsList}]`);
-      console.warn(`[TaxShield Auth] No reset token was generated because the email does not match any registered user.`);
-      console.log(`================================================================================\n`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[TaxShield Auth] Reset requested for non-existent or inactive user: "${cleanEmail}"`);
+      }
       res.json(genericSuccess);
       return;
     }
@@ -698,9 +695,10 @@ authRouter.post('/reset-request', resetLimiter, async (req: Request, res: Respon
     const origin = req.headers.origin || `http://localhost:${process.env.PORT || 3000}`;
     const resetUrl = `${origin}?token=${rawToken}&action=reset`;
 
-    console.log(`[TaxShield Auth] SUCCESS: Reset token generated for "${user.email}".`);
-    console.log(`[TaxShield Auth] Reset Link: ${resetUrl}`);
-    console.log(`================================================================================\n`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[TaxShield Auth] Reset token generated for "${user.email}".`);
+      console.log(`[TaxShield Auth] Reset Link: ${resetUrl}`);
+    }
 
     const emailProvider = getEmailProvider();
     await emailProvider.send({

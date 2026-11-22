@@ -24,17 +24,17 @@ export function AuditTrailView({ logs }: AuditTrailViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-            Audit Trail & Calculation Logs
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <ShieldCheck className="w-6 sm:w-7 h-6 sm:h-7 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Audit Trail & Calculation Logs</span>
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
             Immutable log of all financial modifications, rule activations, and payroll snapshots.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-xs font-mono">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-xs font-mono self-start sm:self-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           Audit Trail Active
         </div>
@@ -126,8 +126,8 @@ export function AuditTrailView({ logs }: AuditTrailViewProps) {
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
             onClick={() => setSelectedLog(null)}
           />
-          <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex">
-            <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-6 space-y-4">
+          <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex pl-0 sm:pl-10">
+            <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col h-full animate-in slide-in-from-right duration-300 p-4 sm:p-6 space-y-4">
               <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <History className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />

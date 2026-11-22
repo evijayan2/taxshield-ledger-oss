@@ -159,22 +159,22 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
   return (
     <div className="space-y-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Receipt className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Receipt className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600 dark:text-emerald-400 shrink-0" />
             General Expenses & Receipts
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
             Track business operating expenses mapped directly to IRS Schedule C lines.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => !isFutureActiveYear && setShowOcrDrawer(true)}
             disabled={isFutureActiveYear}
             title={isFutureActiveYear ? `Scanning receipts for future tax year (${activeTaxYear}) is locked` : 'Scan Receipt (OCR)'}
-            className={`flex items-center gap-2 px-4 py-2.5 font-medium rounded-xl transition-all ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 font-medium rounded-xl text-xs sm:text-sm transition-all ${
               isFutureActiveYear
                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
                 : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs cursor-pointer'
@@ -187,7 +187,7 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
             onClick={() => !isFutureActiveYear && setShowAddModal(true)}
             disabled={isFutureActiveYear}
             title={isFutureActiveYear ? `Adding expenses for future tax year (${activeTaxYear}) is locked` : 'Add Expense'}
-            className={`flex items-center gap-2 px-5 py-2.5 font-medium rounded-xl transition-all ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 font-medium rounded-xl text-xs sm:text-sm transition-all ${
               isFutureActiveYear
                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer'
@@ -324,9 +324,10 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
         </div>
       </div>
 
-      {/* Expenses Table */}
+      {/* Expenses Table & Mobile Card View */}
       <div className="glass-panel rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View (screens >= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 uppercase text-xs font-semibold border-b border-slate-200 dark:border-slate-800">
               <tr>
@@ -408,6 +409,78 @@ export function ExpenseTrackerView({ expenses, activeTaxYear = 2026, onAddExpens
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cardification (screens < md) */}
+        <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+          {filteredExpenses.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-xs">
+              No business expenses recorded yet. Tap "Add Expense" to log your first transaction.
+            </div>
+          ) : (
+            filteredExpenses.map((exp) => (
+              <div key={`mobile_${exp.id}`} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">{exp.payee}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{exp.description || 'No description'}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-base font-bold font-mono text-slate-900 dark:text-white block">
+                      ${exp.amount.toFixed(2)}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">{exp.expenseDate}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    {exp.scheduleCLine || 'Line 18 - Office Expense'}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded font-mono ${
+                    exp.paidBy === 'LLC_ACCOUNT'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30'
+                      : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30'
+                  }`}>
+                    <Building2 className="w-3 h-3" />
+                    {exp.paidBy === 'LLC_ACCOUNT' ? 'Company Account' : 'Owner Personal'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                  <div className="flex items-center gap-2">
+                    <PerExpenseAuditBadge
+                      auditDetail={evaluateExpenseAudit(exp, false, duplicateExpenseIds.has(exp.id))}
+                      isDuplicate={duplicateExpenseIds.has(exp.id)}
+                    />
+                    {exp.receiptUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReceiptUrl(exp.receiptUrl!)}
+                        className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium py-1 px-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Receipt
+                      </button>
+                    ) : (
+                      <span className={`text-[10px] font-mono ${exp.amount >= 75 ? 'text-rose-500 font-semibold' : 'text-slate-400 italic'}`}>
+                        {exp.amount >= 75 ? 'Receipt Req.' : 'No receipt'}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onDeleteExpense(exp.id)}
+                    className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer min-h-[38px] flex items-center justify-center"
+                    title="Delete expense"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

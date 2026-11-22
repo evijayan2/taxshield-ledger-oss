@@ -143,10 +143,10 @@ export function StaffFormModal({
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex">
+      <div className="fixed inset-y-0 right-0 max-w-2xl w-full flex pl-0 sm:pl-10">
         <div className="w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col h-full animate-in slide-in-from-right duration-300">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50">
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 {employee ? 'Edit Staff Member' : 'Add New Staff Member'}
@@ -165,7 +165,7 @@ export function StaffFormModal({
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-medium px-6 gap-2">
+          <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-medium px-4 sm:px-6 gap-2 overflow-x-auto scrollbar-none">
             {[
               { id: 'personal', label: 'Personal & Contact', icon: User },
               { id: 'pay', label: 'Compensation', icon: DollarSign },
@@ -176,7 +176,7 @@ export function StaffFormModal({
                 key={id}
                 type="button"
                 onClick={() => setActiveTab(id as TabType)}
-                className={`py-2.5 px-3 flex items-center gap-1.5 border-b-2 transition cursor-pointer ${
+                className={`py-2.5 px-3 flex items-center gap-1.5 border-b-2 transition cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === id
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold'
                     : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
@@ -192,7 +192,7 @@ export function StaffFormModal({
           </div>
 
           {/* Form Body */}
-          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 text-xs space-y-4">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1 text-xs space-y-4">
             {topError && (
               <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-medium flex items-center gap-2 animate-in fade-in duration-200">
                 <AlertCircle className="w-4 h-4 shrink-0" />

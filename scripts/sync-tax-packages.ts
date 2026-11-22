@@ -10,7 +10,7 @@ import {
 /**
  * CLI script to ingest regulatory tax rule packages into TaxShield Ledger OSS database.
  * Usage:
- *   pnpm tsx scripts/sync-tax-packages.ts [--server https://tax-rule-packaging-engine.vercel.app] [--confirm] [--dry-run] [--staged]
+ *   pnpm tsx scripts/sync-tax-packages.ts [--server http://localhost:3333] [--confirm] [--dry-run] [--staged]
  */
 async function main() {
   const args = process.argv.slice(2);
@@ -19,11 +19,16 @@ async function main() {
     serverIndex !== -1 && args[serverIndex + 1]
       ? args[serverIndex + 1]
       : process.env.TAXPACK_SERVER_URL ||
-        process.env.TAX_PACKAGE_SERVER_URL ||
-        'https://tax-rule-packaging-engine.vercel.app';
+        process.env.TAX_PACKAGE_SERVER_URL;
   const hasConfirm = args.includes('--confirm');
   const hasDryRun = args.includes('--dry-run');
   const hasStaged = args.includes('--staged');
+
+  if (!serverUrl) {
+    console.error('\n❌ No TaxPack server URL specified.');
+    console.error('   Please provide --server <url> or set TAXPACK_SERVER_URL in your environment.\n');
+    process.exit(1);
+  }
 
   console.log('='.repeat(70));
   console.log(' TaxShield Ledger OSS — Tax Rule Package Sync CLI');

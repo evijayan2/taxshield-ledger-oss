@@ -54,12 +54,12 @@ export function YearEndExportView({ data }: YearEndExportViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
             <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> CPA Financial Package & Tax Prep
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Year-End Accountant Export Package ({activeYear})
           </h1>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
@@ -68,10 +68,10 @@ export function YearEndExportView({ data }: YearEndExportViewProps) {
         </div>
         <button
           onClick={handleExportFullPackage}
-          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer w-full sm:w-auto"
         >
           <Download className="w-4 h-4" />
-          Export Complete Bundle ({activeYear})
+          <span>Export Complete Bundle ({activeYear})</span>
         </button>
       </div>
 

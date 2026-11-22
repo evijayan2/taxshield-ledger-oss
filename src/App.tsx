@@ -3,17 +3,19 @@ import {
   Database, 
   UserCheck, 
   LogOut, 
-  Building2 
+  Building2,
+  Menu
 } from 'lucide-react';
 import { useAuth, AuthProvider } from './context/AuthContext';
 import { AuthGate } from './components/AuthGate';
 import { LLCOnboardingModal } from './components/LLCOnboardingModal';
 import { TaxYearSetupModal } from './components/TaxYearSetupModal';
-import { NavigationSidebar, NavigationTab } from './components/NavigationSidebar';
+import { NavigationSidebar, NavigationTab, OWNER_HUBS, EMPLOYEE_HUBS } from './components/NavigationSidebar';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { FontSizeControl } from './components/FontSizeControl';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { DatabaseOfflineBanner } from './components/DatabaseOfflineBanner';
+import { ToastNotification } from './components/ToastNotification';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { isOrgConfigured } from './utils/storage';
 import { useAppState } from './hooks/useAppState';
@@ -135,11 +137,15 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
     handleCreateCustomer,
     handleUpdateInvoiceStatus,
     handleDeleteInvoice,
+    handleResetAllData,
+    toasts,
+    dismissToast,
   } = state;
 
   const { user, membership, isOwner, isEmployee, isReadOnly, employeeProfile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<NavigationTab>(() => (isEmployee ? 'MY_DOCUMENTS' : 'DASHBOARD'));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTaxYearModal, setShowTaxYearModal] = useState(false);
   
@@ -157,6 +163,12 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
 
   const isDbOffline = !isInitialLoading && Boolean(dbStatus && !dbStatus.connected);
   const currentActiveTaxYear = data.activeTaxYear || 2026;
+  const pendingTaxCount = (data.complianceTasks || []).filter(
+    (t) => getTaskTaxYear(t) === currentActiveTaxYear && t.status !== 'FILED'
+  ).length;
+
+  const currentHubs = isEmployee ? EMPLOYEE_HUBS : OWNER_HUBS;
+  const activeHub = currentHubs.find((hub) => hub.items.some((item) => item.id === activeTab));
 
   React.useEffect(() => {
     const compName = data?.company?.name || data?.org?.name;
@@ -178,10 +190,22 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
         />
       )}
 
+      {/* Sidebar Mobile Backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar Navigation */}
       <NavigationSidebar
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab);
+          setMobileSidebarOpen(false);
+        }}
         org={data.org}
         activeTaxYear={currentActiveTaxYear}
         taxYears={data.taxYears}
@@ -189,25 +213,42 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
         onOpenTaxYearSetup={() => setShowTaxYearModal(true)}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        pendingTaxCount={(data.complianceTasks || []).filter(t => getTaskTaxYear(t) === currentActiveTaxYear && t.status !== 'FILED').length}
+        pendingTaxCount={pendingTaxCount}
         isEmployee={isEmployee}
         isReadOnly={isReadOnly}
+        mobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
       />
 
       {/* Main Content Area */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+      <div className={`flex-1 transition-all duration-300 min-w-0 ml-0 ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
-              <Building2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">{data?.company?.name || data?.org?.name || 'Micro-LLC Setup Pending'}</span>
-              <span className="text-slate-300 dark:text-slate-600">|</span>
-              <span className="text-indigo-600 dark:text-indigo-300 font-bold">Tax Year {currentActiveTaxYear} Active</span>
+        <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              title="Open navigation menu"
+              className="p-1.5 sm:p-2 -ml-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl md:hidden cursor-pointer shrink-0"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 min-w-0">
+              <Building2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[110px] sm:max-w-[200px] md:max-w-xs">
+                {data?.company?.name || data?.org?.name || 'Micro-LLC Setup Pending'}
+              </span>
+              <span className="hidden sm:inline text-slate-300 dark:text-slate-600">|</span>
+              <span className="hidden sm:inline text-indigo-600 dark:text-indigo-300 font-bold shrink-0">
+                TY {currentActiveTaxYear}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Theme Switcher Toggle */}
             <ThemeSwitcher />
 
@@ -215,18 +256,18 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
             <FontSizeControl />
 
             {/* Postgres Connection Status */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs font-mono">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs font-mono">
               <Database className={`w-3.5 h-3.5 ${dbStatus?.connected ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`} />
               <span className={dbStatus?.connected ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-rose-600 dark:text-rose-400 font-semibold'}>
-                {dbStatus?.connected ? 'Postgres Connected' : 'Postgres Offline'}
+                {dbStatus?.connected ? 'Postgres' : 'Offline'}
               </span>
             </div>
 
             {/* User Profile / Logout */}
-            <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                <UserCheck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                <span className="hidden sm:inline" title={user?.email || 'Logged In User'}>
+            <div className="flex items-center gap-1.5 sm:gap-3 border-l border-slate-200 dark:border-slate-800 pl-2 sm:pl-3">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                <UserCheck className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                <span className="hidden xl:inline truncate max-w-[120px]" title={user?.email || 'Logged In User'}>
                   {displayUserEmail}
                 </span>
               </div>
@@ -241,11 +282,48 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
           </div>
         </header>
 
+        {/* Contextual Sub-Navigation Pill Bar */}
+        {activeHub && activeHub.items.length > 1 && (
+          <nav
+            aria-label="Contextual Sub Navigation"
+            className="sticky top-[49px] sm:top-[57px] z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-3 sm:px-6 py-2 overflow-x-auto no-scrollbar flex items-center gap-1.5 sm:gap-2 shadow-2xs"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 sm:mr-2 shrink-0 hidden sm:flex">
+              <span>{activeHub.category}</span>
+              <span>•</span>
+            </div>
+            {activeHub.items.map((item) => {
+              const isSubActive = activeTab === item.id;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`min-h-[38px] sm:min-h-[34px] px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                    isSubActive
+                      ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+                  <span>{item.shortLabel || item.label}</span>
+                  {item.id === 'COMPLIANCE' && pendingTaxCount > 0 && (
+                    <span className="px-1.5 py-0.2 text-[9px] font-mono font-black rounded bg-amber-500 text-slate-950">
+                      {pendingTaxCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        )}
+
         {/* Onboarding Banner if not configured */}
         {!isConfigured && !isInitialLoading && (
-          <div className="mx-6 mt-6 p-4 rounded-2xl bg-emerald-950/90 dark:bg-slate-900 border border-emerald-500/30 text-white flex items-center justify-between shadow-sm">
+          <div className="mx-3 sm:mx-6 mt-4 sm:mt-6 p-4 rounded-2xl bg-emerald-950/90 dark:bg-slate-900 border border-emerald-500/30 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <Building2 className="w-6 h-6 text-emerald-400" />
+              <Building2 className="w-6 h-6 text-emerald-400 shrink-0" />
               <div>
                 <h4 className="font-bold text-sm">LLC & Tax Year Configuration Required</h4>
                 <p className="text-xs text-slate-300">Set up your Pennsylvania LLC EIN, owner classification, and active Tax Year to start automated payroll & filings.</p>
@@ -253,7 +331,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
             </div>
             <button
               onClick={() => setShowOnboarding(true)}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all"
+              className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all shrink-0"
             >
               Configure LLC & Tax Year
             </button>
@@ -261,7 +339,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
         )}
 
         {/* Dynamic Content Views with Suspense */}
-        <main className="p-6">
+        <main className="p-3 sm:p-4 md:p-6 overflow-x-hidden min-w-0">
           <ErrorBoundary>
             <Suspense fallback={<ViewLoadingSkeleton />}>
             {activeTab === 'DASHBOARD' && (
@@ -653,7 +731,8 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
                 allData={data}
                 onSaveOrg={handleSaveOrg}
                 onSaveEmployees={(newEmployees) => setData(prev => ({ ...prev, employees: newEmployees }))}
-                onResetAllData={() => setData(prev => ({ ...prev, generalExpenses: [], mileageLogs: [], travelExpenses: [], payrollRuns: [], payStubs: [], timesheets: [], auditLogs: [] }))}
+                onResetAllData={handleResetAllData}
+                onNavigateTab={(tab) => setActiveTab(tab as NavigationTab)}
                 onExportJSON={() => {
                   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                   const url = URL.createObjectURL(blob);
@@ -699,6 +778,9 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
         }}
         onClose={() => setShowTaxYearModal(false)}
       />
+
+      {/* Global In-App Toast Notifications */}
+      <ToastNotification toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

@@ -253,32 +253,32 @@ export function ReconciliationView({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl glass-panel shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl glass-panel shadow-sm">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Bank Statement Reconciliation
             </h1>
             <span className="badge-emerald font-semibold text-xs">
               {stats.reconciliationRate}% Reconciled
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Universal 4-way matching across Expenses, Invoices, Payroll, and 1099 Contractor Payments.
           </p>
         </div>
 
         <button
           onClick={() => setIsUploadDrawerOpen(true)}
-          className="px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-sm flex items-center gap-2 transition-colors self-start md:self-auto"
+          className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto cursor-pointer"
         >
           <Upload className="w-4 h-4" />
-          Import Bank CSV
+          <span>Import Bank CSV</span>
         </button>
       </div>
 
       {/* KPI Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="p-4 rounded-xl glass-card border border-slate-200 dark:border-slate-800">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Total Statement Rows
@@ -356,15 +356,15 @@ export function ReconciliationView({
         </div>
 
         {/* Search and Polarity Filter */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-initial">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search payee or amount..."
-              className="glass-input pl-9 pr-3 py-1.5 text-xs rounded-lg w-48 sm:w-60"
+              className="glass-input pl-9 pr-3 py-1.5 text-xs rounded-lg w-full sm:w-60"
             />
           </div>
 

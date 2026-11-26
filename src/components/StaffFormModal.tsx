@@ -102,7 +102,7 @@ export function StaffFormModal({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const allErrors = validateEmployeeForm(formData);
     const errorKeys = Object.keys(allErrors);
@@ -118,13 +118,49 @@ export function StaffFormModal({
       return;
     }
 
+    const plainSsn = String((formData as any)._plainSsn || '').trim();
+    let ssnEncrypted = formData.ssnEncrypted;
+    let ssnLastFour = formData.ssnLastFour;
+
+    if (plainSsn) {
+      const ssnDigits = plainSsn.replace(/\D/g, '');
+      if (ssnDigits.length !== 9) {
+        setTopError('Full SSN must be exactly 9 digits (XXX-XX-XXXX).');
+        setActiveTab('personal');
+        return;
+      }
+      try {
+        const encRes = await fetch('/api/employees/encrypt-ssn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ssn: ssnDigits }),
+        });
+        const encData = await encRes.json();
+        if (!encRes.ok || !encData.success) {
+          setTopError(encData.error || 'Failed to encrypt SSN.');
+          setActiveTab('personal');
+          return;
+        }
+        ssnEncrypted = encData.ssnEncrypted;
+        ssnLastFour = encData.ssnLastFour;
+      } catch (err: any) {
+        setTopError(err.message || 'Network error encrypting SSN.');
+        setActiveTab('personal');
+        return;
+      }
+    }
+
+    const { _plainSsn: _removed, ...cleanFormData } = formData as any;
+
     const masked = formData.accountNumber && formData.accountNumber.length >= 4
       ? `•••• ${formData.accountNumber.slice(-4)}`
       : formData.bankAccountMasked || undefined;
 
     const finalEmployee: Employee = {
       id: employee?.id || `emp_${Date.now()}`,
-      ...formData,
+      ...cleanFormData,
+      ssnLastFour,
+      ssnEncrypted,
       email: formData.email.trim().toLowerCase(),
       phone: formData.phone ? formatPhoneNumber(formData.phone) : '',
       bankAccountMasked: masked,

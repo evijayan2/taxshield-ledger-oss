@@ -153,6 +153,10 @@ export function AssistedPayrollView({
       .filter(t => t.employeeId === emp.id && t.status === 'APPROVED' && !t.linkedPayStubId)
       .reduce((sum, t) => sum + t.amount, 0);
 
+    const priorYtdWages = yearPayStubs
+      .filter(s => s.employeeId === emp.id)
+      .reduce((sum, s) => sum + (s.grossEarnings || 0), 0);
+
     const calc = calculateGrossToNet(
       emp,
       hours.regular,
@@ -166,7 +170,8 @@ export function AssistedPayrollView({
       undefined,
       emp.benefitElections,
       org.taxSettings,
-      org.entityType
+      org.entityType,
+      priorYtdWages
     );
 
     return {
@@ -234,6 +239,7 @@ export function AssistedPayrollView({
       employerSocialSecurity: sp.employerSocialSecurity,
       employerMedicare: sp.employerMedicare,
       employerPaUc: sp.employerPaUc,
+      employerFuta: sp.employerFuta,
       totalEmployerTaxes: sp.totalEmployerTaxes,
       totalCompanyCost: sp.totalCompanyCost,
       disbursementMethod: 'ACH',

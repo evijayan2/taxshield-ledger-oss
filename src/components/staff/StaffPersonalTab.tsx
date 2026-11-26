@@ -139,7 +139,7 @@ export function StaffPersonalTab({
           <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Age</label>
           <input
             type="number"
-            min="16"
+            min="1"
             max="100"
             value={formData.age ?? ''}
             onChange={(e) => onChange('age', parseInt(e.target.value, 10) || undefined)}
@@ -150,7 +150,14 @@ export function StaffPersonalTab({
           {renderInlineError('age')}
         </div>
         <div>
-          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">SSN Last 4</label>
+          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
+            SSN Last 4
+            {formData.ssnEncrypted && (
+              <span className="ml-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                (9-digit encrypted)
+              </span>
+            )}
+          </label>
           <input
             type="text"
             maxLength={4}
@@ -189,6 +196,29 @@ export function StaffPersonalTab({
           <option value="SPOUSE">Spouse — SUTA Exempt (Sole Prop / Partnership only)</option>
           <option value="PARENT">Parent — SUTA Exempt (Sole Prop / Partnership only)</option>
         </select>
+      </div>
+
+      {/* Full SSN (Encrypted at rest for SSA EFW2 / W-2) */}
+      <div>
+        <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
+          Full SSN (Optional — AES-256 Encrypted for W-2 / SSA EFW2)
+        </label>
+        <input
+          type="password"
+          maxLength={11}
+          autoComplete="off"
+          value={(formData as any)._plainSsn || ''}
+          onChange={(e) => {
+            const raw = e.target.value;
+            onChange('_plainSsn' as any, raw);
+            const digits = raw.replace(/\D/g, '');
+            if (digits.length === 9) {
+              onChange('ssnLastFour', digits.slice(-4));
+            }
+          }}
+          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
+          placeholder={formData.ssnEncrypted ? '••••••••• (Encrypted on file — enter to replace)' : '123-45-6789'}
+        />
       </div>
 
       {/* Home Address Section */}

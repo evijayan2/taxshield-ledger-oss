@@ -45,6 +45,26 @@ export function ConciergeStateCard({ remittances, onSettle }: ConciergeStateCard
         </span>
       </div>
 
+      <div className="p-3 rounded-lg bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60 space-y-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+        <p className="font-bold text-teal-900 dark:text-teal-200">
+          How to Pay PA State &amp; Local Taxes Manually Using Mercury (ACH Debit):
+        </p>
+        <ol className="list-decimal pl-4 space-y-1">
+          <li>
+            <strong>PA PIT (3.07%):</strong> Click <strong>Portal</strong> (<code>mypath.pa.gov</code>) → <strong>Employer Withholding</strong> → <strong>Make a Payment</strong> → pay via ACH Debit using your Mercury checking routing &amp; account number.
+          </li>
+          <li>
+            <strong>PA UC (SUTA / 0.07% EE):</strong> Click <strong>Portal</strong> (<code>uctax.pa.gov</code>) → file quarterly <strong>UC-2/UC-2A</strong> → pay via ACH Debit from Mercury.
+          </li>
+          <li>
+            <strong>Local EIT / LST (Act 32):</strong> Log into your county Tax Collector (e.g., Berkheimer, Keystone, Jordan) → file quarterly return for your PSD code → pay via ACH Debit from Mercury.
+          </li>
+          <li>
+            Paste each portal&apos;s <strong>Confirmation #</strong> below and click <strong>Mark Paid</strong>.
+          </li>
+        </ol>
+      </div>
+
       <div className="divide-y divide-slate-200 dark:divide-slate-800 pt-1">
         {remittances.length === 0 ? (
           <p className="text-[11px] text-slate-400 py-2">No state or local taxes due for this run.</p>

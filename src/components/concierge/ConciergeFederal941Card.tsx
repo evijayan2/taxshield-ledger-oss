@@ -61,7 +61,7 @@ export function ConciergeFederal941Card({ bundle, onSettle }: ConciergeFederal94
           {bundle?.txpAddenda && (
             <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
               <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-                <span>EFTPS CCD+ TXP Addenda String</span>
+                <span>EFTPS CCD+ TXP Addenda String (Optional for Bank ACH Credit)</span>
                 <button
                   type="button"
                   onClick={copyTXP}
@@ -76,6 +76,27 @@ export function ConciergeFederal941Card({ bundle, onSettle }: ConciergeFederal94
               </p>
             </div>
           )}
+
+          {/* Step-by-Step Manual Payment Guide */}
+          <div className="p-3 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 space-y-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+            <p className="font-bold text-indigo-900 dark:text-indigo-200">
+              How to Pay Manually Using Your Mercury Checking Account:
+            </p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>
+                Open <strong>EFTPS.gov</strong> and sign in with your EIN, PIN, and password (link your Mercury checking routing &amp; account number once under Bank Information).
+              </li>
+              <li>
+                Click <strong>Make a Payment</strong> → select <strong>941 (Employer&apos;s Quarterly Federal Tax Return)</strong> → choose <strong>Tax Deposit</strong>.
+              </li>
+              <li>
+                Select the tax quarter, enter <strong className="font-mono">${bundle?.totalAmount.toFixed(2) || '0.00'}</strong>, pick your settlement date, and submit (ACH Debit pulls directly from Mercury).
+              </li>
+              <li>
+                Copy the <strong>EFTPS Confirmation #</strong>, paste it below, and click <strong>Mark Settled</strong>.
+              </li>
+            </ol>
+          </div>
           <div className="flex items-center gap-2">
             <a
               href="https://www.eftps.gov/eftps/"

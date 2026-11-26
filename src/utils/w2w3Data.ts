@@ -1,5 +1,6 @@
 import { Employee, Organization, PayStub } from '../types';
 import { findDistrictByPsdCode } from './paSchoolDistricts';
+import { getActiveRates } from 'taxshield-ledger-core';
 
 export interface W2BoxValues {
   box1Wages: number;
@@ -100,8 +101,8 @@ export function calculateEmployeeW2(
   let localFlat = empStubs.reduce((sum, s) => sum + (s.localFlatTax ?? s.paLst ?? 0), 0);
 
 
-  const ssCap = 168600;
-  const ssWages = Math.min(gross, ssCap);
+  const ssCap = getActiveRates(new Date(year, 6, 1)).socialSecurityWageCap;
+  const ssWages = ssCap !== undefined ? Math.min(gross, ssCap) : gross;
 
   const empState = (employee.state || employee.workState || org.state || 'PA').toUpperCase();
 
@@ -154,7 +155,7 @@ export function calculateEmployeeW2(
       box13ThirdPartySick: false,
       box14Other: box14Parts.join(' | ') || '',
       box15State: empState,
-      box15StateId: org.stateTaxId || '77-88990',
+      box15StateId: org.stateTaxId || '',
       box16StateWages: gross,
       box17StateTax: stateTax,
       box18LocalWages: gross,

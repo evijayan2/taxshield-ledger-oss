@@ -274,7 +274,8 @@ export function calculateGrossToNet(
   effectiveDate?: Date,
   benefitDeductions?: EmployeeBenefitElection[],
   companyTaxSettings?: CompanyTaxSetting[],
-  companyEntityType?: CompanyEntityType
+  companyEntityType?: CompanyEntityType,
+  priorCumulativeWages: number = 0
 ) {
   const isDate6th = residenceHistoryOrEffectiveDate instanceof Date;
   const actualEffectiveDate = isDate6th ? residenceHistoryOrEffectiveDate : effectiveDate;
@@ -293,7 +294,8 @@ export function calculateGrossToNet(
     actualEffectiveDate,
     benefitDeductions,
     companyTaxSettings,
-    companyEntityType
+    companyEntityType,
+    priorCumulativeWages
   );
 }
 

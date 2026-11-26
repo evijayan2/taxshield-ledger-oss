@@ -1,15 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getPostgresConnectionString } from './db.js';
+import { getPostgresConnectionString, resolvePostgresUrl } from './db.js';
 
 describe('PostgreSQL Connection Configuration', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    delete process.env.VERCEL_ENV;
     delete process.env.POSTGRES_URL;
     delete process.env.DATABASE_URL;
     delete process.env.POSTGRES_PRISMA_URL;
     delete process.env.POSTGRES_URL_NON_POOLING;
     delete process.env.LOCAL_POSTGRES_URL;
+    delete process.env.PREVIEW_POSTGRES_URL;
+    delete process.env.PREVIEW_DATABASE_URL;
+    delete process.env.PREVIEW_POSTGRES_PRISMA_URL;
+    delete process.env.PREVIEW_POSTGRES_URL_NON_POOLING;
   });
 
   afterEach(() => {
@@ -38,6 +43,24 @@ describe('PostgreSQL Connection Configuration', () => {
 
   it('should return null in production mode when no environment variables are set', () => {
     process.env.NODE_ENV = 'production';
+    expect(getPostgresConnectionString()).toBeNull();
+  });
+
+  it('should prioritize PREVIEW_POSTGRES_URL and PREVIEW_DATABASE_URL when VERCEL_ENV is preview', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.VERCEL_ENV = 'preview';
+    process.env.DATABASE_URL = 'postgres://prod:pass@prodhost:5432/proddb';
+    process.env.PREVIEW_POSTGRES_URL = 'postgres://prev:pass@prevhost:5432/prevdb?sslmode=require';
+    process.env.PREVIEW_DATABASE_URL = 'postgres://prev:pass@prevhost:5432/prevdb-prisma?sslmode=require';
+
+    expect(getPostgresConnectionString()).toBe('postgres://prev:pass@prevhost:5432/prevdb?sslmode=require');
+    expect(resolvePostgresUrl(true)).toBe('postgres://prev:pass@prevhost:5432/prevdb-prisma?sslmode=require');
+  });
+
+  it('should ignore PREVIEW_* variables when VERCEL_ENV is not preview', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.VERCEL_ENV = 'production';
+    process.env.PREVIEW_POSTGRES_URL = 'postgres://prev:pass@prevhost:5432/prevdb?sslmode=require';
     expect(getPostgresConnectionString()).toBeNull();
   });
 });

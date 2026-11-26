@@ -3,13 +3,48 @@ const { Pool } = pg;
 
 let pool: pg.Pool | null = null;
 
+/**
+ * Resolves the PostgreSQL connection string from environment variables.
+ * On Vercel preview deployments (`VERCEL_ENV === 'preview'`), `PREVIEW_*`
+ * prefixed variables are checked first so preview builds connect to the
+ * isolated preview database.
+ */
+export function resolvePostgresUrl(preferPrisma = false): string | undefined {
+  const isPreview = process.env.VERCEL_ENV === 'preview';
+  const previewUrl = isPreview
+    ? preferPrisma
+      ? process.env.PREVIEW_DATABASE_URL ||
+        process.env.PREVIEW_POSTGRES_PRISMA_URL ||
+        process.env.PREVIEW_POSTGRES_URL ||
+        process.env.PREVIEW_POSTGRES_URL_NON_POOLING
+      : process.env.PREVIEW_POSTGRES_URL ||
+        process.env.PREVIEW_DATABASE_URL ||
+        process.env.PREVIEW_POSTGRES_PRISMA_URL ||
+        process.env.PREVIEW_POSTGRES_URL_NON_POOLING
+    : undefined;
+
+  if (previewUrl) {
+    return previewUrl;
+  }
+
+  return preferPrisma
+    ? process.env.DATABASE_URL ||
+        process.env.POSTGRES_PRISMA_URL ||
+        process.env.POSTGRES_URL ||
+        process.env.POSTGRES_URL_NON_POOLING ||
+        process.env.LOCAL_POSTGRES_URL
+    : process.env.POSTGRES_URL ||
+        process.env.DATABASE_URL ||
+        process.env.POSTGRES_PRISMA_URL ||
+        process.env.POSTGRES_URL_NON_POOLING ||
+        process.env.LOCAL_POSTGRES_URL;
+}
+
+/**
+ * Returns the active PostgreSQL connection string or a local dev fallback.
+ */
 export function getPostgresConnectionString(): string | null {
-  const explicitUrl =
-    process.env.POSTGRES_URL ||
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.LOCAL_POSTGRES_URL;
+  const explicitUrl = resolvePostgresUrl(false);
 
   if (explicitUrl) {
     return explicitUrl;

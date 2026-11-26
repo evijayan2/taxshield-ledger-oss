@@ -62,4 +62,28 @@ describe('vercel-preview-migrate', () => {
       }),
     );
   });
+
+  it('syncs TaxPack rules after migrating when TAXPACK_SERVER_URL is set', () => {
+    const env = {
+      VERCEL_ENV: 'preview',
+      PREVIEW_POSTGRES_URL_NON_POOLING: 'postgres://direct@host/prevdb',
+      TAXPACK_SERVER_URL: 'https://tax-rule-packaging-engine.vercel.app',
+    };
+    const runCommand = vi.fn();
+
+    const result = runPreviewMigrations({ env, runCommand });
+
+    expect(result).toEqual({ executed: true });
+    expect(runCommand).toHaveBeenCalledTimes(2);
+    expect(runCommand).toHaveBeenNthCalledWith(
+      2,
+      'pnpm exec tsx scripts/sync-tax-packages.ts --server "https://tax-rule-packaging-engine.vercel.app" --confirm',
+      expect.objectContaining({
+        stdio: 'inherit',
+        env: expect.objectContaining({
+          DATABASE_URL: 'postgres://direct@host/prevdb',
+        }),
+      }),
+    );
+  });
 });

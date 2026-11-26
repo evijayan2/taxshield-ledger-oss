@@ -60,6 +60,15 @@ function runPreviewMigrations(options = {}) {
     }
   }
 
+  const taxPackUrl = env.TAXPACK_SERVER_URL || env.TAX_PACKAGE_SERVER_URL;
+  if (taxPackUrl) {
+    console.log(`[vercel-preview-migrate] Syncing TaxPack rules from ${taxPackUrl}...`);
+    runCommand(`pnpm exec tsx scripts/sync-tax-packages.ts --server "${taxPackUrl}" --confirm`, {
+      stdio: 'inherit',
+      env: migrateEnv,
+    });
+  }
+
   return { executed: true };
 }
 

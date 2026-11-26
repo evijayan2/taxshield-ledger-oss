@@ -153,7 +153,21 @@ export function AssistedPayrollView({
       .filter(t => t.employeeId === emp.id && t.status === 'APPROVED' && !t.linkedPayStubId)
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const calc = calculateGrossToNet(emp, hours.regular, hours.overtime, empMileage, empTravel);
+    const calc = calculateGrossToNet(
+      emp,
+      hours.regular,
+      hours.overtime,
+      empMileage,
+      empTravel,
+      [],
+      periodStart,
+      periodEnd,
+      [],
+      undefined,
+      emp.benefitElections,
+      org.taxSettings,
+      org.entityType
+    );
 
     return {
       employee: emp,
@@ -211,6 +225,7 @@ export function AssistedPayrollView({
       paStateTax: sp.paStateTax,
       paLocalEit: sp.paLocalEit,
       paLst: sp.paLst,
+      employeePaUc: sp.employeePaUc,
       totalEmployeeTaxes: sp.totalEmployeeTaxes,
       mileageReimbursement: sp.approvedMileageReimbursement,
       travelExpensesReimbursement: sp.approvedTravelReimbursement,

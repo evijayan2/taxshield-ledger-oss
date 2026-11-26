@@ -184,10 +184,10 @@ export function StaffPersonalTab({
           className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white"
         >
           <option value="NONE">Standard W-2 Employee (Unrelated)</option>
-          <option value="CHILD_UNDER_18">Child (Under 18) — FICA & SUTA Exempt</option>
-          <option value="CHILD_18_TO_20">Child (18–20) — SUTA Exempt</option>
-          <option value="SPOUSE">Spouse — SUTA Exempt</option>
-          <option value="PARENT">Parent — SUTA Exempt</option>
+          <option value="CHILD_UNDER_18">Child (Under 18) — FICA & SUTA Exempt (Sole Prop / Partnership only)</option>
+          <option value="CHILD_18_TO_20">Child (18–20) — SUTA Exempt (Sole Prop / Partnership only)</option>
+          <option value="SPOUSE">Spouse — SUTA Exempt (Sole Prop / Partnership only)</option>
+          <option value="PARENT">Parent — SUTA Exempt (Sole Prop / Partnership only)</option>
         </select>
       </div>
 

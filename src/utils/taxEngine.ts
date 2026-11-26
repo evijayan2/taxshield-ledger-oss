@@ -1,7 +1,7 @@
 import { Employee, MileageLog, ComplianceTask } from '../types';
 import { resolveActiveRuleSync, computeFederalWithholdingFromRule } from '../server/rules-engine/taxRulesEngine';
 import { findDistrictByPsdCode } from './paSchoolDistricts';
-import { calculateGrossToNet as coreCalculateGrossToNet, EmployeeBenefitElection, CompanyTaxSetting } from 'taxshield-ledger-core';
+import { calculateGrossToNet as coreCalculateGrossToNet, EmployeeBenefitElection, CompanyTaxSetting, CompanyEntityType } from 'taxshield-ledger-core';
 
 /**
  * Get current system calendar year.
@@ -273,7 +273,8 @@ export function calculateGrossToNet(
   workLocationHistory: any[] = [],
   effectiveDate?: Date,
   benefitDeductions?: EmployeeBenefitElection[],
-  companyTaxSettings?: CompanyTaxSetting[]
+  companyTaxSettings?: CompanyTaxSetting[],
+  companyEntityType?: CompanyEntityType
 ) {
   const isDate6th = residenceHistoryOrEffectiveDate instanceof Date;
   const actualEffectiveDate = isDate6th ? residenceHistoryOrEffectiveDate : effectiveDate;
@@ -291,7 +292,8 @@ export function calculateGrossToNet(
     workLocationHistory,
     actualEffectiveDate,
     benefitDeductions,
-    companyTaxSettings
+    companyTaxSettings,
+    companyEntityType
   );
 }
 

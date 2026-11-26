@@ -446,7 +446,26 @@ export function SettingsView({
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Entity Tax Classification</label>
+                  <select
+                    value={orgForm.entityType || 'LLC_SINGLE_MEMBER'}
+                    onChange={(e) => setOrgForm({ ...orgForm, entityType: e.target.value as any })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="LLC_SINGLE_MEMBER">Single-Member LLC (Disregarded / Sole Prop)</option>
+                    <option value="SOLE_PROP">Sole Proprietorship</option>
+                    <option value="PARTNERSHIP">Partnership / Multi-Member LLC</option>
+                    <option value="S_CORP">LLC Taxed as S-Corp / S-Corporation</option>
+                    <option value="C_CORP">C-Corporation</option>
+                  </select>
+                </div>
               </div>
+              {(orgForm.entityType === 'S_CORP' || orgForm.entityType === 'C_CORP') && (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-200">
+                  <strong>Corporate Tax Rule:</strong> S-Corps and C-Corps do <strong>not</strong> qualify for family FICA, FUTA, or PA UC exemptions—spouse and minor child wages are subject to full payroll taxes.
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div>

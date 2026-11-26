@@ -139,5 +139,60 @@ describe('ensureSharedCore helper', () => {
       'junction'
     );
   });
+
+  it('clones the matching VERCEL_GIT_COMMIT_REF branch when available', () => {
+    const parentPath = path.resolve('/mock/workspace/shared-core');
+    const localPath = path.resolve('/mock/workspace/taxshield-ledger-oss/shared-core');
+    let hasCloned = false;
+    const mockFileExists = vi.fn((filePath: string) => {
+      return filePath === path.join(parentPath, 'src/index.ts') && hasCloned;
+    });
+    const mockRunCommand = vi.fn(() => {
+      hasCloned = true;
+    });
+
+    const result = ensureSharedCore({
+      parentSharedCore: parentPath,
+      localSharedCore: localPath,
+      env: { VERCEL_GIT_COMMIT_REF: 'fix/pa-family-payroll-readiness' },
+      fileExists: mockFileExists,
+      runCommand: mockRunCommand,
+    });
+
+    expect(result.status).toBe('cloned');
+    expect(mockRunCommand).toHaveBeenCalledWith(
+      expect.stringContaining('--branch "fix/pa-family-payroll-readiness"')
+    );
+  });
+
+  it('falls back to default branch when the target branch does not exist in shared-core', () => {
+    const parentPath = path.resolve('/mock/workspace/shared-core');
+    const localPath = path.resolve('/mock/workspace/taxshield-ledger-oss/shared-core');
+    let hasCloned = false;
+    const mockFileExists = vi.fn((filePath: string) => {
+      return filePath === path.join(parentPath, 'src/index.ts') && hasCloned;
+    });
+    const mockRunCommand = vi.fn((cmd: string) => {
+      if (cmd.includes('--branch')) {
+        throw new Error('Remote branch not found');
+      }
+      hasCloned = true;
+    });
+
+    const result = ensureSharedCore({
+      parentSharedCore: parentPath,
+      localSharedCore: localPath,
+      env: { VERCEL_GIT_COMMIT_REF: 'feat/oss-only-branch' },
+      fileExists: mockFileExists,
+      runCommand: mockRunCommand,
+    });
+
+    expect(result.status).toBe('cloned');
+    expect(result.source).toBe('parent');
+    expect(mockRunCommand).toHaveBeenCalledTimes(2);
+    expect(mockRunCommand).toHaveBeenLastCalledWith(
+      `git clone --depth 1 https://github.com/evijayan2/taxshield-ledger-core.git "${parentPath}"`
+    );
+  });
 });
 

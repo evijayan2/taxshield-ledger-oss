@@ -3,7 +3,7 @@
   "version": 2,
   "outputDirectory": "dist",
   "installCommand": "node scripts/ensure-shared-core.cjs && (corepack enable pnpm || true) && (pnpm install --no-frozen-lockfile || npm install)",
-  "buildCommand": "pnpm build || npm run build",
+  "buildCommand": "node scripts/vercel-preview-migrate.cjs && (pnpm build || npm run build)",
   "functions": {
     "api/index.ts": {
       "maxDuration": 60

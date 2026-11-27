@@ -129,6 +129,7 @@ export async function loadAllDataFromPostgres(): Promise<any | null> {
         email: e.email,
         phone: e.phone,
         ssnLastFour: e.ssn_last_four,
+        ssnEncrypted: e.ssn_encrypted || undefined,
         streetAddress: e.street_address || undefined,
         city: e.city || undefined,
         state: e.state || undefined,
@@ -511,7 +512,7 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
 
         await client.query(
           `INSERT INTO employees (
-            id, company_id, first_name, last_name, age, email, phone, ssn_last_four, 
+            id, company_id, first_name, last_name, age, email, phone, ssn_last_four, ssn_encrypted,
             street_address, city, state, zip,
             employment_type, pay_rate, pay_frequency, w4_filing_status, 
             w4_multiple_jobs, w4_dependent_credit, w4_other_income, 
@@ -519,7 +520,7 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
             state_allowances, local_tax_jurisdiction_code, local_tax_jurisdiction_name,
             local_tax_rate, local_flat_tax_annual, local_flat_tax_exempt, tax_attributes,
             bank_name, account_type, routing_number, account_number, bank_account_masked, is_active
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37)`,
           [
             emp.id,
             (emp.companyId && validCompIds.has(emp.companyId)) ? emp.companyId : fallbackCompId,
@@ -529,6 +530,7 @@ export async function saveAllDataToPostgres(data: any): Promise<{ success: boole
             emp.email || '',
             emp.phone || '',
             emp.ssnLastFour || '',
+            emp.ssnEncrypted || null,
             emp.streetAddress || null,
             emp.city || null,
             emp.state || null,

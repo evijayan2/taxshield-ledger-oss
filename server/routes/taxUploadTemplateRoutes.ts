@@ -288,10 +288,12 @@ taxUploadTemplateRouter.post(
 
       const rawEmployees = employees.length > 0 ? employees : fallbackEmployees;
       const resolvedEmployees = rawEmployees.map((emp: any) => {
-        let ssn = emp?.ssn;
-        if (!ssn && emp?.ssnEncrypted) {
+        const fallbackEmp = fallbackEmployees.find((f: any) => f?.id === emp?.id);
+        let ssn = emp?.ssn || fallbackEmp?.ssn;
+        const encryptedSsn = emp?.ssnEncrypted || fallbackEmp?.ssnEncrypted;
+        if (!ssn && encryptedSsn) {
           try {
-            ssn = decryptTIN(emp.ssnEncrypted);
+            ssn = decryptTIN(encryptedSsn);
           } catch {
             // Fall back to ssnLastFour if decryption key is unavailable or payload is invalid
           }

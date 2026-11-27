@@ -65,17 +65,35 @@ export function PaymentConciergeDrawer({
     setFederalBundle(fallbackSummary.federalBundle);
     setStateRemittances(fallbackSummary.stateRemittances);
 
-    fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/liabilities`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          if (data.federalBundle) setFederalBundle(data.federalBundle);
-          if (Array.isArray(data.stateRemittances)) setStateRemittances(data.stateRemittances);
-        } else if (data.error) {
-          setFeedback({ type: 'error', message: data.error });
-        }
-      })
-      .catch((err) => setFeedback({ type: 'error', message: err.message }));
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const loadLiabilities = (attempt: number) => {
+      fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/liabilities`)
+        .then(async (res) => ({ status: res.status, data: await res.json() }))
+        .then(({ status, data }) => {
+          if (cancelled) return;
+          if (data.success) {
+            if (data.federalBundle) setFederalBundle(data.federalBundle);
+            if (Array.isArray(data.stateRemittances)) setStateRemittances(data.stateRemittances);
+          } else if (status === 404 && attempt < 3) {
+            // Newly created runs are persisted via an 800ms debounced save; retry briefly before surfacing 404.
+            retryTimer = setTimeout(() => loadLiabilities(attempt + 1), 1000);
+          } else if (data.error) {
+            setFeedback({ type: 'error', message: data.error });
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) setFeedback({ type: 'error', message: err.message });
+        });
+    };
+
+    loadLiabilities(0);
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, [isOpen, payrollRun, company.id, fallbackSummary]);
 
   if (!isOpen || !payrollRun) return null;

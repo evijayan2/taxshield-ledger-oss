@@ -19,6 +19,8 @@ interface PayStubModalProps {
 }
 
 export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps) {
+  const isSalaried = employee.employmentType === 'W2_SALARY';
+
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Dark backdrop blur */}
@@ -126,27 +128,35 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
             </div>
           </div>
 
-          {/* Earnings & Hours */}
+          {/* Earnings & Hours / Compensation */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Earnings & Hours</h4>
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+              {isSalaried ? 'Earnings & Compensation' : 'Earnings & Hours'}
+            </h4>
             <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden bg-white dark:bg-slate-900">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
                   <tr>
                     <th className="p-2.5">Earnings Type</th>
-                    <th className="p-2.5 text-right">Hours</th>
-                    <th className="p-2.5 text-right">Hourly Rate</th>
+                    <th className="p-2.5 text-right">{isSalaried ? 'Pay Basis' : 'Hours'}</th>
+                    <th className="p-2.5 text-right">{isSalaried ? 'Period Salary' : 'Hourly Rate'}</th>
                     <th className="p-2.5 text-right">Total Gross</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   <tr>
-                    <td className="p-2.5 text-slate-900 dark:text-white font-medium">Regular Base Wages</td>
-                    <td className="p-2.5 text-right font-mono">{stub.hoursWorked.toFixed(2)}</td>
-                    <td className="p-2.5 text-right font-mono">${stub.hourlyRate.toFixed(2)}</td>
+                    <td className="p-2.5 text-slate-900 dark:text-white font-medium">
+                      {isSalaried ? 'Regular Base Salary' : 'Regular Base Wages'}
+                    </td>
+                    <td className="p-2.5 text-right font-mono">
+                      {isSalaried ? 'Fixed Salary' : stub.hoursWorked.toFixed(2)}
+                    </td>
+                    <td className="p-2.5 text-right font-mono">
+                      ${(isSalaried ? stub.grossEarnings : stub.hourlyRate).toFixed(2)}
+                    </td>
                     <td className="p-2.5 text-right font-mono font-bold text-slate-900 dark:text-white">${stub.grossEarnings.toFixed(2)}</td>
                   </tr>
-                  {stub.overtimeHours > 0 && (
+                  {!isSalaried && stub.overtimeHours > 0 && (
                     <tr>
                       <td className="p-2.5 text-slate-900 dark:text-white font-medium">Overtime (1.5x)</td>
                       <td className="p-2.5 text-right font-mono">{stub.overtimeHours.toFixed(2)}</td>

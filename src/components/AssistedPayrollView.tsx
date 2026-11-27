@@ -39,7 +39,7 @@ interface AssistedPayrollViewProps {
   onCreatePayrollRun: (
     runData: Omit<PayrollRun, 'id' | 'createdAt'>,
     stubsData: Omit<PayStub, 'id' | 'payrollRunId' | 'createdAt'>[]
-  ) => void;
+  ) => PayrollRun | void;
   onUpdateStubDisbursement: (stubId: string, achRef: string) => void;
 }
 
@@ -260,7 +260,7 @@ export function AssistedPayrollView({
       stubsCount: stubsToSave.length,
     };
 
-    onCreatePayrollRun(runPayload, stubsToSave);
+    const createdRun = onCreatePayrollRun(runPayload, stubsToSave);
 
     confetti({
       particleCount: 80,
@@ -269,11 +269,13 @@ export function AssistedPayrollView({
     });
 
     setShowRunModal(false);
-    setSelectedRunForConcierge({
-      ...runPayload,
-      id: `run_${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    });
+    setSelectedRunForConcierge(
+      createdRun || {
+        ...runPayload,
+        id: `run_${Date.now()}`,
+        createdAt: new Date().toISOString(),
+      }
+    );
   };
 
   const copyAchInfo = (emp: Employee, amount: number, id: string) => {

@@ -20,7 +20,9 @@ import { TaxRemittanceSummaryCards } from './TaxRemittanceSummaryCards';
 import { TaxPaymentInstructionsDrawer } from './TaxPaymentInstructionsDrawer';
 import { calculateW2Summaries, calculateW3Summary } from '../utils/w2w3Data';
 import { generateW2W3BundlePdf, downloadPdfDocument } from '../utils/w2w3PdfBuilder';
+import { generateForm941DraftPdf, generateForm940DraftPdf } from '../utils/form941And940PdfBuilder';
 import { getRecordYear, getTaskTaxYear, createDefaultComplianceTasks, isFutureYear } from '../utils/taxEngine';
+import { buildForm941Worksheet, buildForm940Worksheet, generateEfw2Batch } from 'taxshield-ledger-core';
 
 interface ComplianceFilingsViewProps {
   complianceTasks: ComplianceTask[];
@@ -188,6 +190,43 @@ export function ComplianceFilingsView({
     downloadPdfDocument(bundleDoc, `Official_W2_W3_Bundle_${org.name.replace(/\s+/g, '_')}_2026.pdf`);
   };
 
+  const handleDownloadForm941Pdf = () => {
+    const currentQuarter = (Math.floor(new Date().getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
+    const ws = buildForm941Worksheet(org, yearPayStubs, activeTaxYear, currentQuarter);
+    const doc = generateForm941DraftPdf(ws);
+    downloadPdfDocument(doc, `Form_941_Draft_${activeTaxYear}_Q${currentQuarter}_${org.name.replace(/\s+/g, '_')}.pdf`);
+  };
+
+  const handleDownloadForm940Pdf = () => {
+    const ws = buildForm940Worksheet(org, employees, yearPayStubs, activeTaxYear);
+    const doc = generateForm940DraftPdf(ws);
+    downloadPdfDocument(doc, `Form_940_Draft_${activeTaxYear}_${org.name.replace(/\s+/g, '_')}.pdf`);
+  };
+
+  const handleDownloadEfw2 = async () => {
+    let content = '';
+    try {
+      const res = await fetch('/api/compliance/efw2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ org, employees, payStubs: yearPayStubs, taxYear: activeTaxYear }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.content) {
+        content = data.content;
+      }
+    } catch {
+      // Fallback to client-side generation if offline
+    }
+    if (!content) {
+      content = generateEfw2Batch(org, employees, yearPayStubs, activeTaxYear).content;
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=ascii;' }));
+    link.download = `W2_SSA_EFW2_${activeTaxYear}_${org.name.replace(/\s+/g, '_')}.txt`;
+    link.click();
+  };
+
   const isFutureActiveYear = isFutureYear(activeTaxYear);
 
   return (
@@ -228,6 +267,33 @@ export function ComplianceFilingsView({
           >
             {isFutureActiveYear ? <Lock className="w-3.5 h-3.5 text-amber-500" /> : <Sparkles className="w-3.5 h-3.5" />}
             <span>Generate W-2 / W-3 PDFs</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadForm941Pdf}
+            disabled={isFutureActiveYear}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-500/25 disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>941 Draft PDF</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadForm940Pdf}
+            disabled={isFutureActiveYear}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-500/25 disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>940 Draft PDF</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadEfw2}
+            disabled={isFutureActiveYear}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>SSA EFW2 (.txt)</span>
           </button>
           <a href="https://mypath.pa.gov" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 flex items-center gap-1">
             <span>PA myPATH</span>

@@ -7,6 +7,7 @@ import {
   Download, 
   Upload, 
   CheckCircle2,
+  AlertCircle,
   Sparkles,
   Pencil,
   ShieldCheck,
@@ -25,6 +26,7 @@ import { useAuth } from '../context/AuthContext';
 import { AccountSecuritySection } from './AccountSecuritySection';
 import { EmployeeSecurityRoster } from './EmployeeSecurityRoster';
 import { ResetLedgerConfirmDrawer } from './ResetLedgerConfirmDrawer';
+import { SutaSettingsDrawer } from './SutaSettingsDrawer';
 
 interface SettingsViewProps {
   org: Organization;
@@ -52,6 +54,7 @@ export function SettingsView({
   onClearToFreshSlate,
   onExportJSON,
   onImportJSON,
+  onSyncToPostgres,
   isOwner = true,
   isEmployee = false,
   onNavigateTab,
@@ -63,6 +66,7 @@ export function SettingsView({
   const [testingMercury, setTestingMercury] = useState(false);
   const [mercuryTestResult, setMercuryTestResult] = useState<{ success: boolean; message: string; accounts?: any[] } | null>(null);
   const [showResetConfirmDrawer, setShowResetConfirmDrawer] = useState(false);
+  const [showSutaDrawer, setShowSutaDrawer] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -316,6 +320,25 @@ export function SettingsView({
                   Resolved from the active TaxRuleVersion per trip date
                 </p>
               </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800/60 space-y-2 col-span-full">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> State Unemployment (SUTA) Experience Ratings
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSutaDrawer(true)}
+                    className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Manage Rates & DOL Notices</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Record company-assigned state unemployment contribution rates (e.g. PA Form UC-657) with statutory bounds validation.
+                </p>
+              </div>
             </div>
           </div>
         ) : (
@@ -423,7 +446,26 @@ export function SettingsView({
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Entity Tax Classification</label>
+                  <select
+                    value={orgForm.entityType || 'LLC_SINGLE_MEMBER'}
+                    onChange={(e) => setOrgForm({ ...orgForm, entityType: e.target.value as any })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="LLC_SINGLE_MEMBER">Single-Member LLC (Disregarded / Sole Prop)</option>
+                    <option value="SOLE_PROP">Sole Proprietorship</option>
+                    <option value="PARTNERSHIP">Partnership / Multi-Member LLC</option>
+                    <option value="S_CORP">LLC Taxed as S-Corp / S-Corporation</option>
+                    <option value="C_CORP">C-Corporation</option>
+                  </select>
+                </div>
               </div>
+              {(orgForm.entityType === 'S_CORP' || orgForm.entityType === 'C_CORP') && (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-200">
+                  <strong>Corporate Tax Rule:</strong> S-Corps and C-Corps do <strong>not</strong> qualify for family FICA, FUTA, or PA UC exemptions—spouse and minor child wages are subject to full payroll taxes.
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div>
@@ -716,6 +758,15 @@ export function SettingsView({
           invoices: allData?.invoices?.length,
           bankTx: allData?.bankTransactions?.length,
         }}
+      />
+
+      {/* Slide-over Drawer for SUTA Experience Ratings */}
+      <SutaSettingsDrawer
+        isOpen={showSutaDrawer}
+        onClose={() => setShowSutaDrawer(false)}
+        companyId={org.id}
+        companyState={org.state || 'PA'}
+        onSaved={onSyncToPostgres}
       />
     </div>
   );

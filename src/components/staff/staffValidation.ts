@@ -29,7 +29,11 @@ export function validateEmployeeField(field: string, value: any, _allData?: Reco
   if (field === 'age') {
     if (value === undefined || value === null || value === '') return null;
     const num = Number(value);
-    return isNaN(num) || num < 16 || num > 100 ? 'Age must be between 16 and 100.' : null;
+    const isChild = _allData?.relationshipToOwner === 'CHILD_UNDER_18';
+    const minAge = isChild ? 1 : 16;
+    return isNaN(num) || num < minAge || num > 100
+      ? `Age must be between ${minAge} and 100.`
+      : null;
   }
   if (field === 'ssnLastFour') {
     if (!value || !String(value).trim()) return null;
@@ -89,7 +93,7 @@ export function validateEmployeeForm(data: Record<string, any>): Record<string, 
   ];
 
   for (const field of fieldsToCheck) {
-    const error = validateEmployeeField(field, data[field]);
+    const error = validateEmployeeField(field, data[field], data);
     if (error) {
       errors[field] = error;
     }

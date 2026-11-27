@@ -673,6 +673,7 @@ function MainAppContent({ state }: { state: ReturnType<typeof useAppState> }) {
                     payrollRuns: [newRun, ...prev.payrollRuns],
                     payStubs: [...newStubs, ...prev.payStubs]
                   }));
+                  return newRun;
                 }}
                 onUpdateStubDisbursement={(stubId, zelleRef) => {
                   setData(prev => ({

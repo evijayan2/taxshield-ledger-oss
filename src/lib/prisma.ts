@@ -9,15 +9,23 @@ declare global {
 
 const isBrowser = typeof window !== 'undefined' || typeof process === 'undefined' || !process.env;
 
+const isPreview = !isBrowser && process.env.VERCEL_ENV === 'preview';
+
 const databaseUrl = !isBrowser
-  ? process.env.DATABASE_URL ||
+  ? (isPreview
+      ? process.env.PREVIEW_DATABASE_URL ||
+        process.env.PREVIEW_POSTGRES_PRISMA_URL ||
+        process.env.PREVIEW_POSTGRES_URL ||
+        process.env.PREVIEW_POSTGRES_URL_NON_POOLING
+      : undefined) ||
+    process.env.DATABASE_URL ||
     process.env.POSTGRES_PRISMA_URL ||
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_URL_NON_POOLING ||
     process.env.LOCAL_POSTGRES_URL
   : undefined;
 
-if (!isBrowser && databaseUrl && !process.env.DATABASE_URL) {
+if (!isBrowser && databaseUrl && (!process.env.DATABASE_URL || isPreview)) {
   process.env.DATABASE_URL = databaseUrl;
 }
 

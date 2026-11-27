@@ -6,6 +6,17 @@ This file tells any coding agent (Antigravity, Claude Code, Cursor, etc.) how to
 
 ---
 
+## Always Use CodeGraph
+
+This repository is indexed by CodeGraph (`.codegraph/` at the repo root). **Always reach for CodeGraph first** before using `grep`, `rg`, `find`, or manually reading files whenever you need to locate symbols, understand how code works, or trace call paths and dependencies:
+
+- **MCP tool (preferred):** Call `codegraph_explore` with the symbol names, file names, or question. It returns verbatim, line-numbered source code, call paths, and blast-radius callers/tests in a single call.
+- **Shell fallback:** Run `codegraph explore "<symbol names or question>"`.
+
+Do not skip CodeGraph in favor of manual file-by-file searches when exploring the codebase.
+
+---
+
 ## What this project is
 
 TaxShield Ledger is a tax-year-aware financial ledger for a micro-LLC: expenses, mileage, payroll, reimbursements, and a full audit trail — designed so every tax calculation can be traced back to the exact rule and source document that produced it. It's being built solo, PA-first, with multi-state support as a required (not optional) feature since the project will be open-sourced for users in other states. Single-owner access only — no multi-user roles, no shared logins; CPA handoff is via PDF/Excel export, not portal access.

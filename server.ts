@@ -8,6 +8,10 @@ import { createServer as createViteServer } from 'vite';
 import { getPool, initPostgresTables, getPostgresConnectionString } from './server/db.js';
 import { loadAllDataFromPostgres, saveAllDataToPostgres } from './server/dataService.js';
 import { authRouter } from './server/auth/routes.js';
+import { sutaRouter } from './server/routes/sutaRoutes.js';
+import { nachaRouter } from './server/routes/nachaRoutes.js';
+import { payrollLiabilityRouter } from './server/routes/payrollLiabilityRoutes.js';
+import { providerAuditRouter } from './server/routes/providerAuditRoutes.js';
 import { requireAuth, requireOwner, type AuthenticatedRequest } from './server/auth/middleware.js';
 
 const getCurrentDirname = () => {
@@ -36,6 +40,10 @@ export function createServerApp(): express.Express {
 
   // Authentication Endpoints
   app.use('/api/auth', authRouter);
+  app.use('/api', sutaRouter);
+  app.use('/api', nachaRouter);
+  app.use('/api', payrollLiabilityRouter);
+  app.use('/api', providerAuditRouter);
 
   // Serve favicon gracefully
   app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {
@@ -198,6 +206,129 @@ export function createServerApp(): express.Express {
       return res.json({ success: true, ...result });
     } catch (err: any) {
       return res.status(400).json({ success: false, error: err.message });
+    }
+  });
+
+  // Encrypt Employee Full 9-Digit SSN at rest (Owner Only)
+  app.post('/api/employees/encrypt-ssn', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { ssn } = req.body;
+      const { encryptTIN, isValidTIN, normalizeTIN } = await import('taxshield-ledger-core');
+      const clean = normalizeTIN(String(ssn || ''));
+      if (!isValidTIN(clean)) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid 9-digit SSN (XXX-XX-XXXX).' });
+      }
+      const ssnEncrypted = encryptTIN(clean);
+      return res.json({ success: true, ssnEncrypted, ssnLastFour: clean.slice(-4) });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, error: err.message || 'Failed to encrypt SSN.' });
+    }
+  });
+
+  // Generate SSA EFW2 512-byte W-2 Batch with Server-Side Decrypted SSNs (Owner Only)
+  app.post('/api/compliance/efw2', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { org, employees, payStubs, taxYear } = req.body;
+      const { decryptTIN, generateEfw2Batch } = await import('taxshield-ledger-core');
+      const decryptedSsnMap: Record<string, string> = {};
+      for (const emp of employees || []) {
+        if (emp?.id && emp?.ssnEncrypted) {
+          try {
+            decryptedSsnMap[emp.id] = decryptTIN(emp.ssnEncrypted);
+          } catch {
+            // Leave unmapped so efw2Generator emits a clear warning for this employee
+          }
+        }
+      }
+      const batch = generateEfw2Batch(org, employees || [], payStubs || [], Number(taxYear) || new Date().getFullYear(), decryptedSsnMap);
+      return res.json({ success: true, ...batch });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, error: err.message || 'Failed to generate EFW2 batch.' });
+    }
+  });
+
+  app.post('/api/mercury/disburse-salary', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { apiKey, environment, accountId, payStubId, employeeName, routingNumber, accountNumber, accountType, amount, paymentReference } = req.body;
+      if (!apiKey || !amount || Number(amount) <= 0) {
+        return res.status(400).json({ success: false, error: 'Mercury API key and positive salary amount are required.' });
+      }
+      if (!routingNumber || !accountNumber) {
+        return res.status(400).json({ success: false, error: `Employee ${employeeName || ''} is missing bank routing or account number.` });
+      }
+
+      const { disburseMercurySalaryPayment } = await import('./server/services/mercuryService.js');
+      const { recordAuditLog } = await import('./src/lib/audit.js');
+
+      const result = await disburseMercurySalaryPayment(apiKey, environment || 'SANDBOX', {
+        accountId,
+        amount: Number(amount),
+        paymentMethod: 'ach',
+        recipientName: employeeName || 'Employee Payroll',
+        recipientRoutingNumber: String(routingNumber),
+        recipientAccountNumber: String(accountNumber),
+        recipientAccountType: accountType === 'SAVINGS' ? 'personalSavings' : 'personalChecking',
+        paymentReference: paymentReference || 'Payroll Net Pay',
+      });
+
+      const companyId = req.membership!.companyId;
+      await recordAuditLog({
+        companyId,
+        actorId: req.user!.id,
+        action: 'UPDATE',
+        entityType: 'PayStub',
+        entityId: payStubId || result.transferId,
+        newState: {
+          event: 'MERCURY_SALARY_DISBURSED',
+          transferId: result.transferId,
+          status: result.status,
+          amount: result.amount,
+          employeeName: employeeName || 'Employee Payroll',
+        },
+        reason: 'Employee net pay disbursed via Mercury ACH API',
+      });
+
+      return res.json({ success: true, ...result });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, error: err.message });
+    }
+  });
+
+  // Encrypt Employee Full 9-Digit SSN at rest (Owner Only)
+  app.post('/api/employees/encrypt-ssn', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { ssn } = req.body;
+      const { encryptTIN, isValidTIN, normalizeTIN } = await import('taxshield-ledger-core');
+      const clean = normalizeTIN(String(ssn || ''));
+      if (!isValidTIN(clean)) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid 9-digit SSN (XXX-XX-XXXX).' });
+      }
+      const ssnEncrypted = encryptTIN(clean);
+      return res.json({ success: true, ssnEncrypted, ssnLastFour: clean.slice(-4) });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, error: err.message || 'Failed to encrypt SSN.' });
+    }
+  });
+
+  // Generate SSA EFW2 512-byte W-2 Batch with Server-Side Decrypted SSNs (Owner Only)
+  app.post('/api/compliance/efw2', requireAuth, requireOwner, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { org, employees, payStubs, taxYear } = req.body;
+      const { decryptTIN, generateEfw2Batch } = await import('taxshield-ledger-core');
+      const decryptedSsnMap: Record<string, string> = {};
+      for (const emp of employees || []) {
+        if (emp?.id && emp?.ssnEncrypted) {
+          try {
+            decryptedSsnMap[emp.id] = decryptTIN(emp.ssnEncrypted);
+          } catch {
+            // Leave unmapped so efw2Generator emits a clear warning for this employee
+          }
+        }
+      }
+      const batch = generateEfw2Batch(org, employees || [], payStubs || [], Number(taxYear) || new Date().getFullYear(), decryptedSsnMap);
+      return res.json({ success: true, ...batch });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, error: err.message || 'Failed to generate EFW2 batch.' });
     }
   });
 

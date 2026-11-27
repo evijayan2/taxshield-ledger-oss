@@ -1,18 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import { resolvePostgresUrl } from './db.js';
 
 declare global {
   // eslint-disable-next-line no-var
   var globalServerPrisma: PrismaClient | undefined;
 }
 
-const databaseUrl =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.LOCAL_POSTGRES_URL;
+const databaseUrl = resolvePostgresUrl(true);
 
-if (databaseUrl && !process.env.DATABASE_URL) {
+if (databaseUrl && (!process.env.DATABASE_URL || process.env.VERCEL_ENV === 'preview')) {
   process.env.DATABASE_URL = databaseUrl;
 }
 

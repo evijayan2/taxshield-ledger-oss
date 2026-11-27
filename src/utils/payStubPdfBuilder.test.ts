@@ -150,4 +150,36 @@ describe('payStubPdfBuilder', () => {
     const filePath = path.resolve(process.cwd(), expectedName);
     expect(fs.existsSync(filePath)).toBe(false);
   });
+
+  it('should render Period Salary / Fixed Salary and fold long State/Locality for W2_SALARY employees', () => {
+    const salariedEmployee: Employee = {
+      ...mockEmployee,
+      employmentType: 'W2_SALARY',
+      payRate: 800,
+      paPsdCode: '150202',
+      paPsdName: 'East Brandywine Township (Downingtown Area SD)',
+      localTaxJurisdictionName: 'East Brandywine Township (Downingtown Area SD)',
+    };
+    const salariedStub: PayStub = {
+      ...mockStub,
+      hoursWorked: 40,
+      overtimeHours: 0,
+      hourlyRate: 800,
+      grossEarnings: 800,
+      localityName: 'East Brandywine Township (Downingtown Area SD)',
+    };
+
+    const doc = generatePayStubPdf(salariedStub, salariedEmployee, mockOrg);
+    const rawPage = (doc.internal.pages as unknown as Record<number, string[] | undefined>)[1];
+    const pageContent = (Array.isArray(rawPage) ? rawPage : []).join('\n');
+
+    expect(pageContent).toContain('Period Salary');
+    expect(pageContent).toContain('Fixed Salary');
+    expect(pageContent).toContain('Regular Base Salary');
+    expect(pageContent).not.toContain('Hourly Rate');
+    expect(pageContent).not.toContain('Regular Base Wages');
+    // Long locality should be folded across multiple lines in the PDF stream
+    expect(pageContent).toContain('PA - East Brandywine Township');
+    expect(pageContent).toContain('Downingtown Area SD');
+  });
 });

@@ -96,6 +96,14 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
     e.preventDefault();
     setError(null);
 
+    const entityTypeMap: Record<string, Organization['entityType']> = {
+      DISREGARDED_SINGLE_MEMBER: 'LLC_SINGLE_MEMBER',
+      S_CORP_ELECTION: 'S_CORP',
+      PARTNERSHIP: 'PARTNERSHIP',
+      SOLE_PROP: 'SOLE_PROP',
+      C_CORP: 'C_CORP',
+    };
+
     const formattedEin = formatEin(ein);
     const updatedOrg: Organization = {
       id: initialOrg?.id || 'org_main',
@@ -109,6 +117,7 @@ export const LLCOnboardingModal: React.FC<LLCOnboardingModalProps> = ({
       ownerName: ownerName.trim(),
       ownerEmail: ownerEmail.trim() || 'owner@example.com',
       ownerTaxBracket: ownerTaxBracket === '' ? undefined : ownerTaxBracket,
+      entityType: entityTypeMap[taxClassification] || 'LLC_SINGLE_MEMBER',
       stateFilingFrequency,
       filingFrequencyPA: stateFilingFrequency,
       payFrequency,

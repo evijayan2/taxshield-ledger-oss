@@ -223,32 +223,26 @@ export function TaxPaymentInstructionsDrawer({
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <button
-                type="button"
-                onClick={handlePayMercury}
-                disabled={isPayingMercury || !org?.mercuryApiKey || isAlreadyPaid}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-md ${
-                  isAlreadyPaid
-                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 cursor-not-allowed'
-                    : org?.mercuryApiKey
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 cursor-pointer'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                }`}
-                title={isAlreadyPaid ? 'Tax return is already paid & filed' : org?.mercuryApiKey ? `Pay ${guide.formIdentifier} via Mercury ACH API` : 'Configure Mercury API key in Company Setup first'}
-              >
-                {isAlreadyPaid ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <CreditCard className="w-4 h-4" />}
-                <span>{isAlreadyPaid ? 'Already Disbursed & Paid' : isPayingMercury ? 'Transmitting ACH...' : `Pay ${guide.formIdentifier.replace('_', ' ')} via Mercury ACH (${org?.mercuryEnvironment || 'SANDBOX'})`}</span>
-              </button>
-
               <a
                 href={guide.portalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Manual Portal ({portalShortName})</span>
+                <span>Pay Manually on {portalShortName}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
+            </div>
+          </div>
+
+          {/* Mercury API Scope Note */}
+          <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="font-bold block">Manual Tax Payment Required (Mercury ACH Debit)</strong>
+              <p className="text-[11px] text-blue-800 dark:text-blue-300/90 mt-0.5">
+                Mercury API handles free employee/vendor ACH transfers, not direct IRS/State tax remittances. Follow the steps below to pay on <strong>{guide.portalName}</strong> using your Mercury checking routing &amp; account number (ACH Debit), then enter your confirmation # at the bottom.
+              </p>
             </div>
           </div>
 
@@ -349,7 +343,7 @@ export function TaxPaymentInstructionsDrawer({
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
               {guide.stepByStepInstructions.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-3 text-xs">
-                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-slate-900 font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
                     {idx + 1}
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{step}</p>

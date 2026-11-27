@@ -20,7 +20,10 @@ export function TaxRemittanceSummaryCards({
   const totalFed941Liability = Math.round((totalFIT + totalEESS + totalERSS + totalEEMed + totalERMed) * 100) / 100;
 
   const totalPATax = Math.round(payStubs.reduce((sum, s) => sum + (s.paStateTax || 0), 0) * 100) / 100;
-  const totalEmployerUC = Math.round(payStubs.reduce((sum, s) => sum + (s.employerPaUc || 0), 0) * 100) / 100;
+  const totalEmployerUC = Math.round(payStubs.reduce((sum, s) => sum + (s.employerPaUc ?? s.employerStateUnemployment ?? 0), 0) * 100) / 100;
+  const totalEmployeeUC = Math.round(payStubs.reduce((sum, s) => sum + (s.employeePaUc || 0), 0) * 100) / 100;
+  const totalPAUC = Math.round((totalEmployerUC + totalEmployeeUC) * 100) / 100;
+  const allPaUcExempt = payStubs.length > 0 && payStubs.every((s) => s.isPaUcExempt);
   const totalLocalEIT = Math.round(payStubs.reduce((sum, s) => sum + (s.paLocalEit || 0), 0) * 100) / 100;
   const totalLST = Math.round(payStubs.reduce((sum, s) => sum + (s.paLst || 0), 0) * 100) / 100;
   const totalLocalLiability = Math.round((totalLocalEIT + totalLST) * 100) / 100;
@@ -55,8 +58,10 @@ export function TaxRemittanceSummaryCards({
       formNumber: 'FORM UC-2',
       title: 'PA Unemployment Tax (Form UC-2 / UC-2A)',
       agency: 'PA Dept of Labor & Industry • Form UC-2 Quarterly',
-      amount: totalEmployerUC,
-      details: `Employer UC Contribution (3.822%) + Employee UC Withholding`,
+      amount: totalPAUC,
+      details: allPaUcExempt
+        ? `Exempt (Family-member / non-covered PA UC wages)`
+        : `Employer UC (${fmt(totalEmployerUC)}) + Employee UC (${fmt(totalEmployeeUC)})`,
       portalUrl: 'https://www.uc.pa.gov',
       portalLabel: 'PA UC Portal',
       badgeColor: 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700',

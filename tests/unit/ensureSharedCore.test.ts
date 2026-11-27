@@ -17,6 +17,7 @@ describe('ensureSharedCore helper', () => {
     const result = ensureSharedCore({
       parentSharedCore: parentPath,
       localSharedCore: localPath,
+      env: {},
       fileExists: mockFileExists,
       runCommand: mockRunCommand,
     });
@@ -38,6 +39,7 @@ describe('ensureSharedCore helper', () => {
     const result = ensureSharedCore({
       parentSharedCore: parentPath,
       localSharedCore: localPath,
+      env: {},
       fileExists: mockFileExists,
       runCommand: mockRunCommand,
     });
@@ -65,6 +67,7 @@ describe('ensureSharedCore helper', () => {
     const result = ensureSharedCore({
       parentSharedCore: parentPath,
       localSharedCore: localPath,
+      env: {},
       fileExists: mockFileExists,
       runCommand: mockRunCommand,
     });
@@ -97,6 +100,7 @@ describe('ensureSharedCore helper', () => {
     const result = ensureSharedCore({
       parentSharedCore: parentPath,
       localSharedCore: localPath,
+      env: {},
       fileExists: mockFileExists,
       runCommand: mockRunCommand,
     });

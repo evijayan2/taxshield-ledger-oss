@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Sparkles, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  decomposePayStubsToLiabilities,
+  buildFederal941Bundle,
+  buildStateRemittanceSummaries,
+} from 'taxshield-ledger-core';
 import {
   PayrollRun,
   PayStub,
@@ -37,18 +42,41 @@ export function PaymentConciergeDrawer({
   const [federalBundle, setFederalBundle] = useState<Federal941BundleSummary | null>(null);
   const [stateRemittances, setStateRemittances] = useState<StateRemittanceSummary[]>([]);
 
+  const fallbackSummary = useMemo(() => {
+    if (!payrollRun) return { federalBundle: null, stateRemittances: [] as StateRemittanceSummary[] };
+    const runStubs = payStubs.filter((s) => s.payrollRunId === payrollRun.id);
+    const decomposed = decomposePayStubsToLiabilities({
+      companyId: company.id,
+      payrollRunId: payrollRun.id,
+      payDate: payrollRun.payDate,
+      periodEnd: payrollRun.periodEnd,
+      companyState: company.state,
+      payStubs: runStubs as any,
+    });
+    return {
+      federalBundle: buildFederal941Bundle(decomposed, company.ein || '', payrollRun.periodEnd),
+      stateRemittances: buildStateRemittanceSummaries(decomposed, { stateTaxId: company.stateTaxId }),
+    };
+  }, [payrollRun, payStubs, company.id, company.state, company.ein, company.stateTaxId]);
+
   useEffect(() => {
     if (!isOpen || !payrollRun) return;
+    setFeedback(null);
+    setFederalBundle(fallbackSummary.federalBundle);
+    setStateRemittances(fallbackSummary.stateRemittances);
+
     fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/liabilities`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setFederalBundle(data.federalBundle);
-          setStateRemittances(data.stateRemittances || []);
+          if (data.federalBundle) setFederalBundle(data.federalBundle);
+          if (Array.isArray(data.stateRemittances)) setStateRemittances(data.stateRemittances);
+        } else if (data.error) {
+          setFeedback({ type: 'error', message: data.error });
         }
       })
       .catch((err) => setFeedback({ type: 'error', message: err.message }));
-  }, [isOpen, payrollRun, company.id]);
+  }, [isOpen, payrollRun, company.id, fallbackSummary]);
 
   if (!isOpen || !payrollRun) return null;
 

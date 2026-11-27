@@ -145,18 +145,20 @@ payrollLiabilityRouter.get(
 
       // Auto-decompose and persist if not yet stored
       if (liabilities.length === 0 && payrollRun.payStubs.length > 0) {
-        const taxYearId = (await resolveTaxYearId(companyId, payrollRun.payDate)) || 'default';
+        const taxYearId = await resolveTaxYearId(companyId, payrollRun.payDate);
         liabilities = decomposePayStubsToLiabilities({
           companyId,
           payrollRunId: runId,
-          taxYearId,
+          taxYearId: taxYearId || undefined,
           payDate: payrollRun.payDate,
           periodEnd: payrollRun.periodEnd,
           companyState: company.state,
           payStubs: payrollRun.payStubs as unknown as PayStub[],
         });
-        const actorId = req.user?.id || 'system';
-        await persistGeneratedLiabilities(companyId, runId, taxYearId, actorId, liabilities);
+        if (taxYearId) {
+          const actorId = req.user?.id || 'system';
+          await persistGeneratedLiabilities(companyId, runId, taxYearId, actorId, liabilities);
+        }
       }
 
       const federalBundle = buildFederal941Bundle(liabilities, company.ein, payrollRun.periodEnd);

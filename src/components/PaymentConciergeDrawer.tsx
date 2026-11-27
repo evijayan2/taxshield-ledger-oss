@@ -101,34 +101,7 @@ export function PaymentConciergeDrawer({
       })
       .catch(() => {});
 
-    const handleDownloadUploadExport = async (portalKey: string) => {
-    const runStubs = payStubs.filter((s) => s.payrollRunId === payrollRun.id);
-    const res = await fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/upload-export/${portalKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        payrollRun,
-        payStubs: runStubs,
-        employees,
-      }),
-    });
-    const data = await res.json();
-    if (!data.success) {
-      setFeedback({ type: 'error', message: data.error || 'Failed to generate upload file.' });
-      return;
-    }
-    const blob = new Blob([data.content], { type: data.mimeType || 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = data.fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-    const warnText = Array.isArray(data.warnings) && data.warnings.length > 0 ? ` (${data.warnings[0]})` : '';
-    setFeedback({ type: 'success', message: `Downloaded ${data.fileName}${warnText}` });
-  };
-
-  return () => {
+    return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
     };

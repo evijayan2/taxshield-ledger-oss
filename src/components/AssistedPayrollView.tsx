@@ -239,6 +239,7 @@ export function AssistedPayrollView({
       employerSocialSecurity: sp.employerSocialSecurity,
       employerMedicare: sp.employerMedicare,
       employerPaUc: sp.employerPaUc,
+      isPaUcExempt: sp.isPaUcExempt,
       employerFuta: sp.employerFuta,
       totalEmployerTaxes: sp.totalEmployerTaxes,
       totalCompanyCost: sp.totalCompanyCost,

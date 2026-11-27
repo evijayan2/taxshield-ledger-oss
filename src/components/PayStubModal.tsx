@@ -199,6 +199,14 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
                 <span className="text-slate-500 dark:text-slate-400">Local Flat Tax</span>
                 <span className="font-mono font-bold text-slate-900 dark:text-white">${(stub.localFlatTax ?? stub.paLst ?? 0).toFixed(2)}</span>
               </div>
+              {(stub.stateCode || employee.state || org.state || 'PA') === 'PA' && (
+                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-xs">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    PA UC Tax {stub.isPaUcExempt ? '(Exempt)' : '(0.07%)'}
+                  </span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">${(stub.employeePaUc ?? 0).toFixed(2)}</span>
+                </div>
+              )}
             </div>
             <div className="flex justify-between items-center p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold">
               <span className="text-slate-700 dark:text-slate-300">Total Statutory Taxes Withheld:</span>
@@ -248,7 +256,7 @@ export function PayStubModal({ stub, employee, org, onClose }: PayStubModalProps
 
           {/* Employer Tax Contributions (Informational) */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap justify-between gap-2">
-            <span>Employer Match: FICA SS ${stub.employerSocialSecurity.toFixed(2)} | Medicare ${stub.employerMedicare.toFixed(2)} | SUTA ({stub.stateCode || employee.state || org.state || 'PA'}) ${(stub.employerStateUnemployment ?? stub.employerPaUc ?? 0).toFixed(2)}</span>
+            <span>Employer Match: FICA SS ${stub.employerSocialSecurity.toFixed(2)} | Medicare ${stub.employerMedicare.toFixed(2)} | SUTA ({stub.stateCode || employee.state || org.state || 'PA'}) ${(stub.employerStateUnemployment ?? stub.employerPaUc ?? 0).toFixed(2)}{stub.isPaUcExempt ? ' (Exempt)' : ''}</span>
             <span className="text-slate-700 dark:text-slate-300 font-medium">Total Company Cost for Employee: ${stub.totalCompanyCost.toFixed(2)}</span>
           </div>
         </div>

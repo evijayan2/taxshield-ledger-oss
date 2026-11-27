@@ -68,7 +68,8 @@ export function ComplianceFilingsView({
     const totalLST = Math.round(yearPayStubs.reduce((sum, s) => sum + (s.paLst || 0), 0) * 100) / 100;
     const totalEmployerSS = Math.round(yearPayStubs.reduce((sum, s) => sum + (s.employerSocialSecurity || 0), 0) * 100) / 100;
     const totalEmployerMed = Math.round(yearPayStubs.reduce((sum, s) => sum + (s.employerMedicare || 0), 0) * 100) / 100;
-    const totalEmployerUC = Math.round(yearPayStubs.reduce((sum, s) => sum + (s.employerPaUc || 0), 0) * 100) / 100;
+    const totalEmployerUC = Math.round(yearPayStubs.reduce((sum, s) => sum + (s.employerPaUc ?? s.employerStateUnemployment ?? 0), 0) * 100) / 100;
+    const totalEmployeeUC = Math.round(yearPayStubs.reduce((sum, s) => sum + (s.employeePaUc || 0), 0) * 100) / 100;
 
     const fmt = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -101,13 +102,14 @@ export function ComplianceFilingsView({
     }
 
     if (task.formIdentifier === 'PA_UC_2') {
+      const totalUC = Math.round((totalEmployerUC + totalEmployeeUC) * 100) / 100;
       return {
         ...task,
-        amountDue: totalEmployerUC,
+        amountDue: totalUC,
         boxValues: {
           'total_wages': { label: 'Gross PA UC Covered Wages', value: fmt(totalGross) },
-          'employer_contribution': { label: 'Employer UC Contribution (3.822%)', value: fmt(totalEmployerUC) },
-          'employee_withholding': { label: 'Employee UC Tax Withholding (0.07%)', value: fmt(totalGross * 0.0007) }
+          'employer_contribution': { label: 'Employer UC Contribution', value: fmt(totalEmployerUC) },
+          'employee_withholding': { label: 'Employee UC Tax Withholding (0.07%)', value: fmt(totalEmployeeUC) }
         }
       };
     }
@@ -551,7 +553,7 @@ export function ComplianceFilingsView({
             const totalEEMed = (payStubs || []).reduce((sum, s) => sum + (s.medicareTax || 0), 0);
             const totalERMed = (payStubs || []).reduce((sum, s) => sum + (s.employerMedicare || 0), 0);
             const totalFed = totalFIT + totalEESS + totalERSS + totalEEMed + totalERMed;
-            const totalUC = (payStubs || []).reduce((sum, s) => sum + (s.employerPaUc || 0), 0);
+            const totalUC = (payStubs || []).reduce((sum, s) => sum + (s.employerPaUc ?? s.employerStateUnemployment ?? 0) + (s.employeePaUc || 0), 0);
             const totalLocal = (payStubs || []).reduce((sum, s) => sum + (s.paLocalEit || 0) + (s.paLst || 0), 0);
 
             if (activeDrawerGuideKey === 'PA_SIT_REV1667') {

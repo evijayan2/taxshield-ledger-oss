@@ -70,7 +70,7 @@ export function DashboardOverviewView({ data, onNavigateTab }: DashboardOverview
 
   // PA State Tax Breakdown (REV-1667 & UC-2)
   const totalPATax = Math.round(payStubs.reduce((sum, s) => sum + (s.paStateTax || 0), 0) * 100) / 100;
-  const totalEmployerUC = Math.round(payStubs.reduce((sum, s) => sum + (s.employerPaUc || 0), 0) * 100) / 100;
+  const totalEmployerUC = Math.round(payStubs.reduce((sum, s) => sum + ((s.employerPaUc ?? s.employerStateUnemployment ?? 0) + (s.employeePaUc || 0)), 0) * 100) / 100;
   const totalStateLiability = Math.round((totalPATax + totalEmployerUC) * 100) / 100;
 
   // Local Tax Breakdown (PA Act 32 EIT & LST)

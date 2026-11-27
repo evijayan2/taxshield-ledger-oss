@@ -102,8 +102,15 @@ export function PaymentConciergeDrawer({
       .catch(() => {});
 
     const handleDownloadUploadExport = async (portalKey: string) => {
+    const runStubs = payStubs.filter((s) => s.payrollRunId === payrollRun.id);
     const res = await fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/upload-export/${portalKey}`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        payrollRun,
+        payStubs: runStubs,
+        employees,
+      }),
     });
     const data = await res.json();
     if (!data.success) {
@@ -159,8 +166,15 @@ export function PaymentConciergeDrawer({
   };
 
   const handleDownloadUploadExport = async (portalKey: string) => {
+    const runStubs = payStubs.filter((s) => s.payrollRunId === payrollRun.id);
     const res = await fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/upload-export/${portalKey}`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        payrollRun,
+        payStubs: runStubs,
+        employees,
+      }),
     });
     const data = await res.json();
     if (!data.success) {

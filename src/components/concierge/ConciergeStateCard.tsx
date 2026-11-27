@@ -202,35 +202,15 @@ export function ConciergeStateCard({
                       : undefined;
                     const resolvedUrl = portalMeta?.portalUrl || rem.portalUrl;
                     return (
-                      <>
-                        <a
-                          href={resolvedUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2.5 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 font-semibold text-[10px] flex items-center gap-1 hover:bg-teal-100 transition shrink-0"
-                        >
-                          <span>Portal</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                        {tpl && onDownloadUploadExport && (
-                          <button
-                            type="button"
-                            disabled={downloadingKey === tpl.portalKey}
-                            onClick={async () => {
-                              setDownloadingKey(tpl.portalKey);
-                              try {
-                                await onDownloadUploadExport(tpl.portalKey);
-                              } finally {
-                                setDownloadingKey(null);
-                              }
-                            }}
-                            className="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-semibold text-[10px] flex items-center gap-1 hover:bg-emerald-100 transition shrink-0 cursor-pointer disabled:opacity-50"
-                          >
-                            <Download className="w-3 h-3" />
-                            <span>{downloadingKey === tpl.portalKey ? 'Building...' : `Upload (${tpl.fileFormat})`}</span>
-                          </button>
-                        )}
-                      </>
+                      <a
+                        href={resolvedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 font-semibold text-[10px] flex items-center gap-1 hover:bg-teal-100 transition shrink-0"
+                      >
+                        <span>Portal</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
                     );
                   })()}
                   <input

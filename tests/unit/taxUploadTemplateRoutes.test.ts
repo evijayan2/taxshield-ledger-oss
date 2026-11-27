@@ -134,4 +134,52 @@ describe('taxUploadTemplateRoutes', () => {
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.supportedPortals)).toBe(true);
   });
+
+  it('exports using request-body payrollRun fallback when DB run is not yet persisted', async () => {
+    (prisma.company.findUnique as any).mockResolvedValue({
+      id: 'comp-1',
+      name: 'ImpactFlow Labs LLC',
+      stateTaxId: '20443336',
+      ein: '42-4656601',
+      address: '542 Prizer Ct',
+      city: 'Downingtown',
+      state: 'PA',
+      zip: '19335',
+    });
+    (prisma.taxFilingUploadTemplate.findUnique as any).mockResolvedValue({
+      id: 'tpl-1',
+      companyId: 'comp-1',
+      portalKey: 'PA_KEYSTONE_EIT',
+      portalLabel: 'PA Local EIT — Keystone Collections Group',
+      jurisdiction: 'PA-LOCAL',
+      fileFormat: 'CSV',
+      isEnabled: true,
+      templateFileName: 'keystone.csv',
+      templateContent: 'TaxYear,Quarter,GrossWages,EITWithheld\n',
+      templateHashSha256: 'abc',
+      detectedHeaders: ['TaxYear', 'Quarter', 'GrossWages', 'EITWithheld'],
+      businessLocationPsd: '150302',
+    });
+    (prisma.payrollRun.findFirst as any).mockResolvedValue(null);
+    (prisma.employee.findMany as any).mockResolvedValue([
+      { id: 'emp-1', firstName: 'Jane', lastName: 'Doe', ssnLast4: '1234', residentPsdCode: '150302' },
+    ]);
+
+    const res = await requestRoute('POST', '/api/companies/comp-1/payroll-runs/run-local-1/upload-export/PA_KEYSTONE_EIT', {
+      payrollRun: {
+        id: 'run-local-1',
+        periodStart: '2026-11-16',
+        periodEnd: '2026-11-30',
+        payDate: '2026-12-05',
+      },
+      payStubs: [
+        { id: 'stub-1', payrollRunId: 'run-local-1', employeeId: 'emp-1', grossEarnings: 1500, localIncomeTax: 15 },
+      ],
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.fileName).toBe('pa_keystone_eit-2026-q4.csv');
+    expect(res.body.content).toContain('2026,4,1500.00,15.00');
+  });
 });

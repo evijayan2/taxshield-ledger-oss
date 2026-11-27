@@ -248,9 +248,34 @@ taxUploadTemplateRouter.post(
       if (!template) {
         return res.status(404).json({ success: false, error: 'Upload template not configured for this portal.' });
       }
-      if (!payrollRun) {
+
+      const fallbackRun = req.body?.payrollRun;
+      const fallbackStubs = Array.isArray(req.body?.payStubs) ? req.body.payStubs : null;
+      const fallbackEmployees = Array.isArray(req.body?.employees) ? req.body.employees : [];
+
+      if (!payrollRun && (!fallbackRun || fallbackRun.id !== runId)) {
         return res.status(404).json({ success: false, error: 'Payroll run not found.' });
       }
+
+      const resolvedRun = payrollRun
+        ? {
+            id: payrollRun.id,
+            periodStart: payrollRun.periodStart.toISOString().slice(0, 10),
+            periodEnd: payrollRun.periodEnd.toISOString().slice(0, 10),
+            payDate: payrollRun.payDate.toISOString().slice(0, 10),
+          }
+        : {
+            id: String(fallbackRun.id),
+            periodStart: String(fallbackRun.periodStart || ''),
+            periodEnd: String(fallbackRun.periodEnd || ''),
+            payDate: String(fallbackRun.payDate || fallbackRun.periodEnd || ''),
+          };
+
+      const resolvedStubs = payrollRun?.payStubs?.length
+        ? payrollRun.payStubs
+        : (fallbackStubs ?? []);
+
+      const resolvedEmployees = employees.length > 0 ? employees : fallbackEmployees;
 
       const exported = generateTaxUploadExport({
         template: {
@@ -260,14 +285,9 @@ taxUploadTemplateRouter.post(
             : [],
         },
         company,
-        payrollRun: {
-          id: payrollRun.id,
-          periodStart: payrollRun.periodStart.toISOString().slice(0, 10),
-          periodEnd: payrollRun.periodEnd.toISOString().slice(0, 10),
-          payDate: payrollRun.payDate.toISOString().slice(0, 10),
-        },
-        payStubs: payrollRun.payStubs as any,
-        employees: employees as any,
+        payrollRun: resolvedRun,
+        payStubs: resolvedStubs as any,
+        employees: resolvedEmployees as any,
       });
 
       return res.json({ success: true, ...exported });

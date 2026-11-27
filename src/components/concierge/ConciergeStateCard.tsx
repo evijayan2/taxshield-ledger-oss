@@ -1,16 +1,40 @@
 import React, { useState } from 'react';
-import { ExternalLink, Copy, Check, CheckCircle2 } from 'lucide-react';
+import { ExternalLink, Copy, Check, CheckCircle2, Download } from 'lucide-react';
+import { SUPPORTED_UPLOAD_PORTALS, type TaxFilingUploadTemplateRecord } from 'taxshield-ledger-core';
 import { StateRemittanceSummary } from '../../types';
 
 export interface ConciergeStateCardProps {
   remittances: StateRemittanceSummary[];
   onSettle: (liabilityId: string, confirmationNumber: string) => Promise<void>;
+  uploadTemplates?: TaxFilingUploadTemplateRecord[];
+  onDownloadUploadExport?: (portalKey: string) => Promise<void>;
 }
 
-export function ConciergeStateCard({ remittances, onSettle }: ConciergeStateCardProps) {
+function findMatchingUploadTemplate(
+  taxType: string,
+  templates: TaxFilingUploadTemplateRecord[]
+): TaxFilingUploadTemplateRecord | undefined {
+  const upper = taxType.toUpperCase();
+  const enabled = templates.filter((t) => t.isEnabled);
+  if (upper.includes('EIT')) return enabled.find((t) => t.portalKey === 'PA_KEYSTONE_EIT');
+  if (upper.includes('LST')) return enabled.find((t) => t.portalKey === 'PA_KEYSTONE_LST');
+  if (upper.includes('SUTA') || upper.includes('UC')) return enabled.find((t) => t.portalKey === 'PA_UC_QUARTERLY');
+  if (upper.includes('SIT') || upper.includes('PIT') || upper.includes('WITHHOLD')) {
+    return enabled.find((t) => t.portalKey === 'PA_MYPATH_WITHHOLDING');
+  }
+  return enabled.find((t) => t.portalKey === 'CUSTOM');
+}
+
+export function ConciergeStateCard({
+  remittances,
+  onSettle,
+  uploadTemplates = [],
+  onDownloadUploadExport,
+}: ConciergeStateCardProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confs, setConfs] = useState<Record<string, string>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
   const copyTXP = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -57,7 +81,16 @@ export function ConciergeStateCard({ remittances, onSettle }: ConciergeStateCard
             <strong>PA UC (SUTA / 0.07% EE):</strong> Click <strong>Portal</strong> (<code>uctax.pa.gov</code>) → file quarterly <strong>UC-2/UC-2A</strong> → pay via ACH Debit from Mercury.
           </li>
           <li>
-            <strong>Local EIT / LST (Act 32):</strong> Log into your county Tax Collector (e.g., Berkheimer, Keystone, Jordan) → file quarterly return for your PSD code → pay via ACH Debit from Mercury.
+            <strong>Local EIT / LST (Act 32):</strong> Log into your county Tax Collector (e.g.,{' '}
+            <a
+              href="https://business.KeystoneCollects.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline font-semibold text-teal-700 dark:text-teal-300"
+            >
+              business.KeystoneCollects.com
+            </a>
+            , Berkheimer, Jordan) → file quarterly return (or upload CSV) for your PSD code → pay via ACH Debit from Mercury.
           </li>
           <li>
             Paste each portal&apos;s <strong>Confirmation #</strong> below and click <strong>Mark Paid</strong>.
@@ -66,6 +99,55 @@ export function ConciergeStateCard({ remittances, onSettle }: ConciergeStateCard
       </div>
 
       <div className="divide-y divide-slate-200 dark:divide-slate-800 pt-1">
+        {uploadTemplates.some((t) => t.isEnabled) && onDownloadUploadExport && (
+          <div className="pb-3 mb-2 space-y-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Configured Portal Upload Files
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {uploadTemplates
+                .filter((t) => t.isEnabled)
+                .map((tpl) => {
+                  const portalMeta = SUPPORTED_UPLOAD_PORTALS.find((p) => p.portalKey === tpl.portalKey);
+                  return (
+                    <div key={tpl.portalKey} className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={downloadingKey === tpl.portalKey}
+                        onClick={async () => {
+                          setDownloadingKey(tpl.portalKey);
+                          try {
+                            await onDownloadUploadExport(tpl.portalKey);
+                          } finally {
+                            setDownloadingKey(null);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-semibold text-[10px] inline-flex items-center gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>
+                          {downloadingKey === tpl.portalKey
+                            ? 'Generating...'
+                            : `Download ${tpl.portalLabel} (${tpl.fileFormat})`}
+                        </span>
+                      </button>
+                      {portalMeta?.portalUrl && (
+                        <a
+                          href={portalMeta.portalUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 font-semibold text-[10px] inline-flex items-center gap-1 hover:bg-teal-100 dark:hover:bg-teal-500/20 transition"
+                        >
+                          <span>Portal</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
         {remittances.length === 0 ? (
           <p className="text-[11px] text-slate-400 py-2">No state or local taxes due for this run.</p>
         ) : (
@@ -113,15 +195,44 @@ export function ConciergeStateCard({ remittances, onSettle }: ConciergeStateCard
                 </div>
               ) : (
                 <div className="flex items-center gap-2 pt-1">
-                  <a
-                    href={rem.portalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-2.5 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 font-semibold text-[10px] flex items-center gap-1 hover:bg-teal-100 transition shrink-0"
-                  >
-                    <span>Portal</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  {(() => {
+                    const tpl = findMatchingUploadTemplate(rem.taxType, uploadTemplates);
+                    const portalMeta = tpl
+                      ? SUPPORTED_UPLOAD_PORTALS.find((p) => p.portalKey === tpl.portalKey)
+                      : undefined;
+                    const resolvedUrl = portalMeta?.portalUrl || rem.portalUrl;
+                    return (
+                      <>
+                        <a
+                          href={resolvedUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2.5 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30 font-semibold text-[10px] flex items-center gap-1 hover:bg-teal-100 transition shrink-0"
+                        >
+                          <span>Portal</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        {tpl && onDownloadUploadExport && (
+                          <button
+                            type="button"
+                            disabled={downloadingKey === tpl.portalKey}
+                            onClick={async () => {
+                              setDownloadingKey(tpl.portalKey);
+                              try {
+                                await onDownloadUploadExport(tpl.portalKey);
+                              } finally {
+                                setDownloadingKey(null);
+                              }
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-semibold text-[10px] flex items-center gap-1 hover:bg-emerald-100 transition shrink-0 cursor-pointer disabled:opacity-50"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>{downloadingKey === tpl.portalKey ? 'Building...' : `Upload (${tpl.fileFormat})`}</span>
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                   <input
                     type="text"
                     placeholder="Confirmation #"

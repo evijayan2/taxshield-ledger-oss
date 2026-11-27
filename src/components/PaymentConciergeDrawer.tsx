@@ -4,6 +4,7 @@ import {
   decomposePayStubsToLiabilities,
   buildFederal941Bundle,
   buildStateRemittanceSummaries,
+  type TaxFilingUploadTemplateRecord,
 } from 'taxshield-ledger-core';
 import {
   PayrollRun,
@@ -41,6 +42,7 @@ export function PaymentConciergeDrawer({
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [federalBundle, setFederalBundle] = useState<Federal941BundleSummary | null>(null);
   const [stateRemittances, setStateRemittances] = useState<StateRemittanceSummary[]>([]);
+  const [uploadTemplates, setUploadTemplates] = useState<TaxFilingUploadTemplateRecord[]>([]);
 
   const fallbackSummary = useMemo(() => {
     if (!payrollRun) return { federalBundle: null, stateRemittances: [] as StateRemittanceSummary[] };
@@ -90,7 +92,36 @@ export function PaymentConciergeDrawer({
 
     loadLiabilities(0);
 
-    return () => {
+    fetch(`/api/companies/${company.id}/upload-templates`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.success && Array.isArray(data.templates)) {
+          setUploadTemplates(data.templates);
+        }
+      })
+      .catch(() => {});
+
+    const handleDownloadUploadExport = async (portalKey: string) => {
+    const res = await fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/upload-export/${portalKey}`, {
+      method: 'POST',
+    });
+    const data = await res.json();
+    if (!data.success) {
+      setFeedback({ type: 'error', message: data.error || 'Failed to generate upload file.' });
+      return;
+    }
+    const blob = new Blob([data.content], { type: data.mimeType || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = data.fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+    const warnText = Array.isArray(data.warnings) && data.warnings.length > 0 ? ` (${data.warnings[0]})` : '';
+    setFeedback({ type: 'success', message: `Downloaded ${data.fileName}${warnText}` });
+  };
+
+  return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
     };
@@ -125,6 +156,26 @@ export function PaymentConciergeDrawer({
     );
     setFeedback({ type: 'success', message: 'State tax liability marked as settled!' });
     onLiabilitySettled?.();
+  };
+
+  const handleDownloadUploadExport = async (portalKey: string) => {
+    const res = await fetch(`/api/companies/${company.id}/payroll-runs/${payrollRun.id}/upload-export/${portalKey}`, {
+      method: 'POST',
+    });
+    const data = await res.json();
+    if (!data.success) {
+      setFeedback({ type: 'error', message: data.error || 'Failed to generate upload file.' });
+      return;
+    }
+    const blob = new Blob([data.content], { type: data.mimeType || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = data.fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+    const warnText = Array.isArray(data.warnings) && data.warnings.length > 0 ? ` (${data.warnings[0]})` : '';
+    setFeedback({ type: 'success', message: `Downloaded ${data.fileName}${warnText}` });
   };
 
   return (
@@ -176,6 +227,8 @@ export function PaymentConciergeDrawer({
           <ConciergeStateCard
             remittances={stateRemittances}
             onSettle={handleSettleState}
+            uploadTemplates={uploadTemplates}
+            onDownloadUploadExport={handleDownloadUploadExport}
           />
         </div>
       </div>

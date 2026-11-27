@@ -113,6 +113,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Sync Regulatory Tax Rule Packages to Production
+        if: env.TAXPACK_SERVER_URL != ''
         run: |
           pnpm exec tsx scripts/sync-tax-packages.ts --server "${TAXPACK_SERVER_URL}" --confirm
         env:

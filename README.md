@@ -55,10 +55,17 @@ Copy `.env.example` to `.env` and configure your database connection:
 cp .env.example .env
 ```
 
-Set the database connection string:
+Set the database connection string and TIN/SSN encryption key:
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/taxledger?schema=public"
+TIN_ENCRYPTION_KEY="<64-char-hex-key>"
 ```
+
+Generate a 256-bit `TIN_ENCRYPTION_KEY` (used for AES-256-GCM encryption of employee SSNs and contractor TINs at rest):
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+*(Accepted formats: 64-character hex string, 32-byte base64 string, or a passphrase string which is SHA-256 hashed. Keep the key consistent across deployments—changing it makes previously encrypted TINs undecryptable.)*
 
 ### 3. Initialize Database & Run Migrations
 

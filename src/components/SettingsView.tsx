@@ -27,6 +27,7 @@ import { AccountSecuritySection } from './AccountSecuritySection';
 import { EmployeeSecurityRoster } from './EmployeeSecurityRoster';
 import { ResetLedgerConfirmDrawer } from './ResetLedgerConfirmDrawer';
 import { SutaSettingsDrawer } from './SutaSettingsDrawer';
+import { TaxUploadTemplatesDrawer } from './TaxUploadTemplatesDrawer';
 
 interface SettingsViewProps {
   org: Organization;
@@ -67,6 +68,7 @@ export function SettingsView({
   const [mercuryTestResult, setMercuryTestResult] = useState<{ success: boolean; message: string; accounts?: any[] } | null>(null);
   const [showResetConfirmDrawer, setShowResetConfirmDrawer] = useState(false);
   const [showSutaDrawer, setShowSutaDrawer] = useState(false);
+  const [showUploadTemplatesDrawer, setShowUploadTemplatesDrawer] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -337,6 +339,25 @@ export function SettingsView({
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300">
                   Record company-assigned state unemployment contribution rates (e.g. PA Form UC-657) with statutory bounds validation.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/60 dark:border-slate-800/60 space-y-2 col-span-full">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                    <Upload className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" /> Electronic Tax Filing &amp; Upload Templates
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadTemplatesDrawer(true)}
+                    className="text-xs text-teal-600 dark:text-teal-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Configure Upload Options</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Configure portal file-upload formats (e.g. PA Keystone EIT/LST CSV or MMREF-1) by attaching each portal&apos;s template file.
                 </p>
               </div>
             </div>
@@ -766,6 +787,14 @@ export function SettingsView({
         onClose={() => setShowSutaDrawer(false)}
         companyId={org.id}
         companyState={org.state || 'PA'}
+        onSaved={onSyncToPostgres}
+      />
+
+      {/* Slide-over Drawer for Electronic Tax Filing Upload Templates */}
+      <TaxUploadTemplatesDrawer
+        isOpen={showUploadTemplatesDrawer}
+        onClose={() => setShowUploadTemplatesDrawer(false)}
+        companyId={org.id}
         onSaved={onSyncToPostgres}
       />
     </div>

@@ -12,6 +12,7 @@ import { sutaRouter } from './server/routes/sutaRoutes.js';
 import { nachaRouter } from './server/routes/nachaRoutes.js';
 import { payrollLiabilityRouter } from './server/routes/payrollLiabilityRoutes.js';
 import { providerAuditRouter } from './server/routes/providerAuditRoutes.js';
+import { taxUploadTemplateRouter } from './server/routes/taxUploadTemplateRoutes.js';
 import { requireAuth, requireOwner, type AuthenticatedRequest } from './server/auth/middleware.js';
 
 const getCurrentDirname = () => {
@@ -44,6 +45,7 @@ export function createServerApp(): express.Express {
   app.use('/api', nachaRouter);
   app.use('/api', payrollLiabilityRouter);
   app.use('/api', providerAuditRouter);
+  app.use('/api', taxUploadTemplateRouter);
 
   // Serve favicon gracefully
   app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {

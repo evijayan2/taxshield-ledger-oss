@@ -170,7 +170,8 @@ describe('payStubPdfBuilder', () => {
     };
 
     const doc = generatePayStubPdf(salariedStub, salariedEmployee, mockOrg);
-    const pageContent = (doc.internal.pages[1] || []).join('\n');
+    const rawPage = (doc.internal.pages as unknown as Record<number, string[] | undefined>)[1];
+    const pageContent = (Array.isArray(rawPage) ? rawPage : []).join('\n');
 
     expect(pageContent).toContain('Period Salary');
     expect(pageContent).toContain('Fixed Salary');

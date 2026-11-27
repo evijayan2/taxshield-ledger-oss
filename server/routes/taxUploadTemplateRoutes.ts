@@ -11,6 +11,7 @@ import {
   SUPPORTED_UPLOAD_PORTALS,
   parseTaxUploadTemplate,
   generateTaxUploadExport,
+  decryptTIN,
   type UploadFileFormat,
 } from 'taxshield-ledger-core';
 
@@ -239,7 +240,14 @@ taxUploadTemplateRouter.post(
           where: { id: runId, companyId },
           include: { payStubs: true },
         }),
-        prisma.employee.findMany({ where: { companyId } }),
+        prisma.employee.findMany({
+          where: { companyId },
+          include: {
+            residenceHistory: {
+              orderBy: { effectiveDate: 'desc' },
+            },
+          },
+        }),
       ]);
 
       if (!company) {
@@ -257,12 +265,15 @@ taxUploadTemplateRouter.post(
         return res.status(404).json({ success: false, error: 'Payroll run not found.' });
       }
 
+      const toIsoDate = (val: Date | string): string =>
+        (val instanceof Date ? val.toISOString() : String(val || '')).slice(0, 10);
+
       const resolvedRun = payrollRun
         ? {
             id: payrollRun.id,
-            periodStart: payrollRun.periodStart.toISOString().slice(0, 10),
-            periodEnd: payrollRun.periodEnd.toISOString().slice(0, 10),
-            payDate: payrollRun.payDate.toISOString().slice(0, 10),
+            periodStart: toIsoDate(payrollRun.periodStart as Date | string),
+            periodEnd: toIsoDate(payrollRun.periodEnd as Date | string),
+            payDate: toIsoDate(payrollRun.payDate as Date | string),
           }
         : {
             id: String(fallbackRun.id),
@@ -275,11 +286,28 @@ taxUploadTemplateRouter.post(
         ? payrollRun.payStubs
         : (fallbackStubs ?? []);
 
-      const resolvedEmployees = employees.length > 0 ? employees : fallbackEmployees;
+      const rawEmployees = employees.length > 0 ? employees : fallbackEmployees;
+      const resolvedEmployees = rawEmployees.map((emp: any) => {
+        let ssn = emp?.ssn;
+        if (!ssn && emp?.ssnEncrypted) {
+          try {
+            ssn = decryptTIN(emp.ssnEncrypted);
+          } catch {
+            // Fall back to ssnLastFour if decryption key is unavailable or payload is invalid
+          }
+        }
+        return { ...emp, ...(ssn ? { ssn } : {}) };
+      });
 
       const exported = generateTaxUploadExport({
         template: {
           ...template,
+          businessLocationPsd: template.businessLocationPsd ?? undefined,
+          notes: template.notes ?? undefined,
+          updatedAt:
+            template.updatedAt instanceof Date
+              ? template.updatedAt.toISOString()
+              : String(template.updatedAt ?? ''),
           detectedHeaders: Array.isArray(template.detectedHeaders)
             ? (template.detectedHeaders as string[])
             : [],

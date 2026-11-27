@@ -182,4 +182,66 @@ describe('taxUploadTemplateRoutes', () => {
     expect(res.body.fileName).toBe('pa_keystone_eit-2026-q4.csv');
     expect(res.body.content).toContain('2026,4,1500.00,15.00');
   });
+
+  it('decrypts ssnEncrypted and maps Prisma streetAddress and localTaxJurisdictionCode for Keystone E-record CSV', async () => {
+    const { encryptTIN } = await import('taxshield-ledger-core');
+    const encryptedSsn = encryptTIN('123-45-6789');
+
+    (prisma.company.findUnique as any).mockResolvedValue({
+      id: 'comp-1',
+      name: 'ImpactFlow Labs LLC',
+      stateTaxId: '00000000',
+      ein: '42-4656601',
+      address: '542 Prizer Ct',
+      city: 'Downingtown',
+      state: 'PA',
+      zip: '19335',
+    });
+    (prisma.taxFilingUploadTemplate.findUnique as any).mockResolvedValue({
+      id: 'tpl-1',
+      companyId: 'comp-1',
+      portalKey: 'PA_KEYSTONE_EIT',
+      portalLabel: 'PA Local EIT — Keystone Collections Group',
+      jurisdiction: 'PA-LOCAL',
+      fileFormat: 'CSV',
+      isEnabled: true,
+      templateFileName: 'keystone.csv',
+      templateContent: 'E,2026,1,259638527,7001,SAMPLE CO,100 MAIN ST,IRWIN,PA,15642,02180\n',
+      templateHashSha256: 'abc',
+      detectedHeaders: ['E'],
+      businessLocationPsd: '150302',
+    });
+    (prisma.payrollRun.findFirst as any).mockResolvedValue({
+      id: 'run-1',
+      periodStart: new Date('2026-10-01'),
+      periodEnd: new Date('2026-10-15'),
+      payDate: new Date('2026-10-20'),
+      payStubs: [
+        { id: 'stub-1', payrollRunId: 'run-1', employeeId: 'emp-1', grossEarnings: 800, localIncomeTax: 9 },
+      ],
+    });
+    (prisma.employee.findMany as any).mockResolvedValue([
+      {
+        id: 'emp-1',
+        firstName: 'Abirami',
+        lastName: 'Natarajan',
+        ssnLastFour: '6789',
+        ssnEncrypted: encryptedSsn,
+        streetAddress: '100 Oak Ln',
+        city: 'Downingtown',
+        state: 'PA',
+        zip: '19335',
+        localTaxJurisdictionCode: '150202',
+        residenceHistory: [],
+      },
+    ]);
+
+    const res = await requestRoute('POST', '/api/companies/comp-1/payroll-runs/run-1/upload-export/PA_KEYSTONE_EIT');
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const lines = res.body.content.split('\r\n');
+    expect(lines[1]).toBe('123456789,Natarajan Abirami,100 Oak Ln,Downingtown,PA,19335,2026,4,800.00,9.00,150202');
+    expect(res.body.warnings).toEqual([]);
+  });
 });
